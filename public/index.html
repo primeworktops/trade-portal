@@ -2,53 +2,112 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Prime Worktops Trade</title>
+  <title>Prime Worktops Trade | Free Quote System for Kitchen Professionals</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Free instant quote system for kitchen fitters, builders and showrooms. Professional PDF quotes with your branding. Premium Silestone, Dekton & Neolith worktops.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #033f2a;
       --primary-light: #065f40;
+      --primary-dark: #022a1c;
       --secondary: #f6d466;
-      --background: #f8f9fa;
+      --secondary-light: #f9e299;
+      --accent: #e8f5e9;
+      --background: #fafbfc;
       --card: #ffffff;
       --text: #1a1a1a;
-      --text-muted: #6b7280;
-      --border: #e5e7eb;
+      --text-light: #4a5568;
+      --text-muted: #718096;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
       --success: #10b981;
       --error: #ef4444;
       --radius: 12px;
       --radius-lg: 20px;
+      --radius-xl: 28px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
       --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+      --shadow-xl: 0 25px 50px -12px rgba(0,0,0,0.25);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html { scroll-behavior: smooth; }
+    
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--background);
       color: var(--text);
       line-height: 1.6;
-      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* Navigation */
-    .nav {
-      background: white;
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    /* ========== ANIMATIONS ========== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+    .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+
+    /* ========== NAVIGATION ========== */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    
+    .nav.scrolled {
+      box-shadow: var(--shadow);
+    }
+
     .nav-inner {
-      max-width: 1200px;
+      max-width: 1280px;
       margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 70px;
+      height: 72px;
+      padding: 0 24px;
     }
+
     .logo {
       display: flex;
       align-items: center;
@@ -56,228 +115,1075 @@
       text-decoration: none;
       color: var(--primary);
     }
+
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--primary);
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--secondary);
-      font-weight: 800;
-      font-size: 18px;
+      font-weight: 900;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(3,63,42,0.3);
     }
-    .logo-text { font-weight: 700; font-size: 20px; }
-    .logo-text span { color: var(--text-muted); font-weight: 500; }
-    .nav-user { display: flex; align-items: center; gap: 16px; }
-    .nav-user-name { font-weight: 600; color: var(--text); }
 
-    /* Buttons */
+    .logo-text {
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-light);
+      font-weight: 500;
+      font-size: 15px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+      background: var(--accent);
+    }
+
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* ========== BUTTONS ========== */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 12px 24px;
+      gap: 10px;
+      padding: 14px 28px;
       border-radius: var(--radius);
       font-weight: 600;
       font-size: 15px;
       text-decoration: none;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
+
     .btn-primary {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: white;
+      box-shadow: 0 4px 14px rgba(3,63,42,0.4);
     }
+
     .btn-primary:hover {
-      background: var(--primary-light);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(3,63,42,0.5);
     }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
     .btn-secondary {
       background: white;
       color: var(--primary);
-      border: 2px solid var(--primary);
+      border: 2px solid var(--border);
     }
+
     .btn-secondary:hover {
-      background: var(--primary);
-      color: white;
+      border-color: var(--primary);
+      background: var(--accent);
     }
+
     .btn-ghost {
       background: transparent;
-      color: var(--text-muted);
-      padding: 8px 16px;
+      color: var(--text-light);
+      padding: 10px 18px;
     }
-    .btn-ghost:hover { color: var(--primary); }
+
+    .btn-ghost:hover {
+      color: var(--primary);
+      background: var(--accent);
+    }
+
     .btn-large {
-      padding: 16px 32px;
+      padding: 18px 36px;
       font-size: 17px;
-    }
-    .btn-small {
-      padding: 8px 16px;
-      font-size: 13px;
+      border-radius: var(--radius-lg);
     }
 
-    /* Page Sections */
-    .page { display: none; }
-    .page.active { display: block; }
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+    }
 
-    /* Hero Section */
+    /* ========== HERO SECTION ========== */
     .hero {
-      padding: 80px 24px;
-      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
-      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 24px 80px;
+      background: linear-gradient(180deg, #f0fdf4 0%, var(--background) 100%);
+      position: relative;
+      overflow: hidden;
     }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -300px;
+      right: -300px;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(3,63,42,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -200px;
+      left: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(246,212,102,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
     .hero-inner {
-      max-width: 800px;
+      max-width: 1280px;
       margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
     }
+
+    .hero-content {
+      opacity: 0;
+      animation: fadeInUp 0.8s ease-out forwards;
+    }
+
     .hero-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(3,63,42,0.1);
+      gap: 10px;
+      background: white;
+      border: 1px solid var(--border);
       color: var(--primary);
-      padding: 8px 16px;
+      padding: 10px 20px;
       border-radius: 999px;
       font-size: 14px;
       font-weight: 600;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
     }
+
+    .hero-badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
     .hero h1 {
-      font-size: 48px;
-      font-weight: 800;
+      font-size: 56px;
+      font-weight: 900;
       line-height: 1.1;
+      margin-bottom: 24px;
+      color: var(--text);
+      letter-spacing: -1.5px;
+    }
+
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 20px;
+      color: var(--text-light);
+      margin-bottom: 40px;
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 48px;
+    }
+
+    .hero-stat {
+      text-align: left;
+    }
+
+    .hero-stat-value {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: -1px;
+    }
+
+    .hero-stat-label {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Hero Visual */
+    .hero-visual {
+      position: relative;
+      opacity: 0;
+      animation: fadeIn 1s ease-out 0.3s forwards;
+    }
+
+    .hero-mockup {
+      background: white;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      padding: 0;
+      overflow: hidden;
+      transform: perspective(1000px) rotateY(-5deg) rotateX(2deg);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .mockup-browser {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mockup-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .mockup-dot.red { background: #f87171; }
+    .mockup-dot.yellow { background: #fbbf24; }
+    .mockup-dot.green { background: #34d399; }
+
+    .mockup-url {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 12px;
+    }
+
+    .mockup-content {
+      padding: 24px;
+    }
+
+    .mockup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 20px;
     }
-    .hero h1 span { color: var(--primary); }
-    .hero p {
-      font-size: 20px;
+
+    .mockup-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--primary);
+    }
+
+    .mockup-logo-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary);
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .mockup-nav {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
       color: var(--text-muted);
+    }
+
+    .mockup-card {
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .mockup-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .mockup-swatch {
+      height: 50px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%);
+    }
+
+    .mockup-swatch.s1 { background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%); }
+    .mockup-swatch.s2 { background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%); }
+    .mockup-swatch.s3 { background: linear-gradient(135deg, #d4c4a8 0%, #b8a88c 100%); }
+
+    .mockup-price-card {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border-radius: var(--radius);
+      padding: 20px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mockup-price-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .mockup-price-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .mockup-btn {
+      background: var(--secondary);
+      color: var(--primary);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Floating elements */
+    .floating-card {
+      position: absolute;
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .floating-card.card-1 {
+      top: 20%;
+      right: -30px;
+      animation: slideIn 0.6s ease-out 0.8s forwards, float 5s ease-in-out 1.4s infinite;
+      opacity: 0;
+    }
+
+    .floating-card.card-2 {
+      bottom: 25%;
+      left: -20px;
+      animation: slideIn 0.6s ease-out 1s forwards, float 6s ease-in-out 1.6s infinite;
+      opacity: 0;
+    }
+
+    .floating-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .floating-icon.green { background: #d1fae5; }
+    .floating-icon.blue { background: #dbeafe; }
+
+    /* ========== TRUSTED BY SECTION ========== */
+    .trusted {
+      padding: 60px 24px;
+      background: white;
+      border-top: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .trusted-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .trusted-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
       margin-bottom: 32px;
     }
-    .hero-buttons {
+
+    .trusted-logos {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      opacity: 0.6;
+    }
+
+    .trusted-logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: -0.5px;
+    }
+
+    /* ========== FEATURES SECTION ========== */
+    .features {
+      padding: 120px 24px;
+      background: var(--background);
+    }
+
+    .features-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 72px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 16px;
+      background: var(--accent);
+      padding: 8px 16px;
+      border-radius: 999px;
+    }
+
+    .section-title {
+      font-size: 44px;
+      font-weight: 900;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      font-size: 18px;
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 40px 32px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-light);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      transform: scaleX(0);
+      transition: transform 0.4s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-lg);
+      border-color: transparent;
+    }
+
+    .feature-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .feature-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent) 0%, #d1fae5 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 24px;
+    }
+
+    .feature-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .feature-desc {
+      color: var(--text-light);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ========== HOW IT WORKS ========== */
+    .how-it-works {
+      padding: 120px 24px;
+      background: white;
+    }
+
+    .how-it-works-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      margin-top: 72px;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 48px;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      z-index: 0;
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-number {
+      width: 96px;
+      height: 96px;
+      background: white;
+      border: 3px solid var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 36px;
+      color: var(--primary);
+      margin: 0 auto 28px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .step:hover .step-number {
+      background: var(--primary);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .step-title {
+      font-weight: 700;
+      font-size: 20px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .step-desc {
+      font-size: 15px;
+      color: var(--text-light);
+      line-height: 1.6;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+
+    /* ========== TESTIMONIALS ========== */
+    .testimonials {
+      padding: 120px 24px;
+      background: linear-gradient(180deg, var(--background) 0%, white 100%);
+    }
+
+    .testimonials-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 72px;
+    }
+
+    .testimonial-card {
+      background: white;
+      padding: 40px;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-light);
+      transition: all 0.3s ease;
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .testimonial-stars {
+      color: #fbbf24;
+      font-size: 20px;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    .testimonial-text {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text-light);
+      margin-bottom: 28px;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .testimonial-avatar {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .testimonial-name {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .testimonial-role {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* ========== PRICING PREVIEW ========== */
+    .pricing-preview {
+      padding: 120px 24px;
+      background: white;
+    }
+
+    .pricing-preview-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: var(--radius-xl);
+      padding: 60px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-card::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(246,212,102,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .pricing-card::after {
+      content: '';
+      position: absolute;
+      bottom: -50px;
+      left: -50px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .pricing-header {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 48px;
+    }
+
+    .pricing-badge {
+      display: inline-block;
+      background: var(--secondary);
+      color: var(--primary);
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .pricing-title {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .pricing-subtitle {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .pricing-features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 48px;
+    }
+
+    .pricing-feature {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 16px;
+    }
+
+    .pricing-feature-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .pricing-cta {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pricing-cta .btn {
+      background: var(--secondary);
+      color: var(--primary);
+    }
+
+    .pricing-cta .btn:hover {
+      background: var(--secondary-light);
+    }
+
+    /* ========== CTA SECTION ========== */
+    .cta {
+      padding: 120px 24px;
+      background: var(--background);
+      text-align: center;
+    }
+
+    .cta-inner {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .cta h2 {
+      font-size: 44px;
+      font-weight: 900;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+
+    .cta p {
+      font-size: 18px;
+      color: var(--text-light);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    .cta-buttons {
       display: flex;
       gap: 16px;
       justify-content: center;
       flex-wrap: wrap;
     }
 
-    /* Features */
-    .features {
-      padding: 80px 24px;
-      background: white;
-    }
-    .features-inner {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 32px;
-    }
-    .feature-card {
-      padding: 32px;
-      background: var(--background);
-      border-radius: var(--radius-lg);
-    }
-    .feature-icon {
-      font-size: 32px;
-      margin-bottom: 16px;
-    }
-    .feature-title {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .feature-desc {
-      color: var(--text-muted);
+    /* ========== FOOTER ========== */
+    .footer {
+      padding: 80px 24px 40px;
+      background: var(--text);
+      color: white;
     }
 
-    /* Modal */
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 60px;
+    }
+
+    .footer-brand {
+      max-width: 300px;
+    }
+
+    .footer-brand .logo {
+      margin-bottom: 20px;
+    }
+
+    .footer-brand .logo-text {
+      color: white;
+    }
+
+    .footer-brand .logo-text span {
+      color: rgba(255,255,255,0.5);
+    }
+
+    .footer-brand p {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .footer-column h4 {
+      font-weight: 700;
+      margin-bottom: 24px;
+      font-size: 16px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      max-width: 1280px;
+      margin: 60px auto 0;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* ========== MODALS ========== */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 200;
+      z-index: 2000;
       padding: 24px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
-    .modal-backdrop.active { display: flex; }
+
+    .modal-backdrop.active {
+      display: flex;
+      opacity: 1;
+    }
+
     .modal {
       background: white;
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-xl);
       width: 100%;
-      max-width: 440px;
+      max-width: 480px;
       max-height: 90vh;
       overflow-y: auto;
+      transform: scale(0.95) translateY(20px);
+      transition: transform 0.3s ease;
+      box-shadow: var(--shadow-xl);
     }
+
+    .modal-backdrop.active .modal {
+      transform: scale(1) translateY(0);
+    }
+
     .modal-header {
-      padding: 24px 24px 0;
+      padding: 32px 32px 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+
     .modal-header h3 {
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 28px;
+      font-weight: 800;
     }
+
     .modal-close {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       border: none;
       background: var(--background);
       cursor: pointer;
-      font-size: 18px;
+      font-size: 20px;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .modal-body { padding: 24px; }
+
+    .modal-close:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .modal-body {
+      padding: 32px;
+    }
 
     /* Forms */
-    .form-group { margin-bottom: 20px; }
+    .form-group {
+      margin-bottom: 24px;
+    }
+
     .form-label {
       display: block;
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 8px;
+      color: var(--text);
     }
+
     .form-input {
       width: 100%;
-      padding: 14px 16px;
+      padding: 16px 18px;
       border: 2px solid var(--border);
       border-radius: var(--radius);
       font-size: 16px;
       font-family: inherit;
       transition: all 0.2s;
+      background: white;
     }
+
     .form-input:focus {
       outline: none;
       border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(3,63,42,0.1);
     }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
-    .form-error {
-      color: var(--error);
-      font-size: 14px;
-      margin-top: 8px;
-    }
+
     .form-footer {
       text-align: center;
-      margin-top: 20px;
-      padding-top: 20px;
+      margin-top: 24px;
+      padding-top: 24px;
       border-top: 1px solid var(--border);
       color: var(--text-muted);
       font-size: 14px;
     }
+
     .form-footer a {
       color: var(--primary);
       font-weight: 600;
@@ -285,139 +1191,338 @@
       cursor: pointer;
     }
 
-    /* Dashboard */
+    .form-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .alert {
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    /* ========== DASHBOARD ========== */
+    .page { display: none; }
+    .page.active { display: block; }
+
     .dashboard {
       padding: 32px 24px;
-      max-width: 1200px;
+      max-width: 1280px;
       margin: 0 auto;
+      min-height: calc(100vh - 72px);
     }
+
     .dashboard-header {
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
+
     .dashboard-header h1 {
-      font-size: 32px;
-      font-weight: 800;
+      font-size: 36px;
+      font-weight: 900;
       margin-bottom: 8px;
+      letter-spacing: -0.5px;
     }
+
     .dashboard-header p {
-      color: var(--text-muted);
+      color: var(--text-light);
+      font-size: 16px;
     }
+
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 32px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
     }
+
     .stat-card {
       background: white;
-      padding: 24px;
-      border-radius: var(--radius);
+      padding: 28px;
+      border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
+      border: 1px solid var(--border-light);
     }
+
+    .stat-card-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
     .stat-value {
       font-size: 36px;
-      font-weight: 800;
+      font-weight: 900;
       color: var(--primary);
+      letter-spacing: -1px;
     }
+
     .stat-label {
       color: var(--text-muted);
       font-size: 14px;
+      font-weight: 500;
     }
+
     .card {
       background: white;
-      border-radius: var(--radius);
+      border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
-      padding: 24px;
+      border: 1px solid var(--border-light);
+      padding: 32px;
       margin-bottom: 24px;
     }
+
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
+
     .card-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
     }
 
-    /* Quotes Table */
     .quotes-table {
       width: 100%;
       border-collapse: collapse;
     }
+
     .quotes-table th,
     .quotes-table td {
-      padding: 12px;
+      padding: 16px;
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-light);
     }
+
     .quotes-table th {
       font-weight: 600;
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: 12px;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
+
+    .quotes-table tr:hover {
+      background: var(--background);
+    }
+
     .status-badge {
       display: inline-block;
-      padding: 4px 12px;
+      padding: 6px 14px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
     }
+
     .status-draft { background: #f3f4f6; color: #6b7280; }
     .status-sent { background: #dbeafe; color: #1d4ed8; }
     .status-accepted { background: #d1fae5; color: #059669; }
     .status-rejected { background: #fee2e2; color: #dc2626; }
 
-    /* Empty State */
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: 80px 20px;
       color: var(--text-muted);
     }
+
     .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-
-    /* Alert */
-    .alert {
-      padding: 16px 20px;
-      border-radius: var(--radius);
+      font-size: 64px;
       margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .alert-success {
-      background: #d1fae5;
-      color: #059669;
-    }
-    .alert-error {
-      background: #fee2e2;
-      color: #dc2626;
+      opacity: 0.5;
     }
 
-    /* Responsive */
-    @media (max-width: 640px) {
-      .hero h1 { font-size: 32px; }
-      .form-row { grid-template-columns: 1fr; }
-      .nav-user-name { display: none; }
+    .empty-state h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      margin-bottom: 24px;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1024px) {
+      .hero-inner {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 60px;
+      }
+
+      .hero-subtitle {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hero-buttons {
+        justify-content: center;
+      }
+
+      .hero-stats {
+        justify-content: center;
+      }
+
+      .hero-visual {
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .hero-mockup {
+        transform: none;
+      }
+
+      .floating-card {
+        display: none;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 48px;
+      }
+
+      .steps::before {
+        display: none;
+      }
+
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pricing-features {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-inner {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: 40px;
+      }
+
+      .hero-stat-value {
+        font-size: 28px;
+      }
+
+      .section-title {
+        font-size: 32px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .pricing-card {
+        padding: 40px 24px;
+      }
+
+      .footer-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        padding: 100px 16px 60px;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+      }
+
+      .hero-buttons .btn {
+        width: 100%;
+      }
+
+      .hero-stats {
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .cta h2 {
+        font-size: 28px;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+      }
+
+      .cta-buttons .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
 
   <!-- Navigation -->
-  <nav class="nav">
+  <nav class="nav" id="nav">
     <div class="nav-inner">
-      <a href="#" class="logo" onclick="goHome()">
+      <a href="#" class="logo" onclick="goHome(); return false;">
         <div class="logo-icon">P</div>
         <div class="logo-text">Prime Worktops <span>Trade</span></div>
       </a>
-      <div class="nav-user">
-        <span class="nav-user-name" id="navUserName"></span>
+      <div class="nav-links" id="navLinksPublic">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#testimonials">Reviews</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div class="nav-buttons">
         <button class="btn btn-ghost" id="navLoginBtn" onclick="openModal('login')">Log In</button>
-        <button class="btn btn-primary btn-small" id="navRegisterBtn" onclick="openModal('register')">Start Free Trial</button>
+        <button class="btn btn-primary" id="navRegisterBtn" onclick="openModal('register')">Start Free Trial</button>
+        <span id="navUserName" style="font-weight: 600; display: none;"></span>
         <button class="btn btn-ghost" id="navLogoutBtn" onclick="logout()" style="display:none;">Log Out</button>
       </div>
     </div>
@@ -425,54 +1530,333 @@
 
   <!-- Landing Page -->
   <div id="landingPage" class="page active">
+    
+    <!-- Hero Section -->
     <section class="hero">
       <div class="hero-inner">
-        <div class="hero-badge">✨ Free for Trade Professionals</div>
-        <h1>Instant worktop quotes <span>for your customers</span></h1>
-        <p>Give your customers professional quotes in seconds, not days. Your branding, our manufacturing quality.</p>
-        <div class="hero-buttons">
-          <button class="btn btn-primary btn-large" onclick="openModal('register')">Start 14-Day Free Trial</button>
-          <button class="btn btn-secondary btn-large" onclick="openModal('login')">Log In</button>
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            Free for Trade Professionals
+          </div>
+          <h1>Instant worktop quotes <span class="highlight">in seconds</span></h1>
+          <p class="hero-subtitle">Stop waiting for callbacks. Create professional, branded quotes for your customers instantly. Free to use – you only pay trade price when you order.</p>
+          <div class="hero-buttons">
+            <button class="btn btn-primary btn-large" onclick="openModal('register')">
+              Start 14-Day Free Trial
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+            </button>
+            <button class="btn btn-secondary btn-large" onclick="openModal('login')">Log In</button>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <div class="hero-stat-value">500+</div>
+              <div class="hero-stat-label">Trade Partners</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">£2.4M</div>
+              <div class="hero-stat-label">Quotes Generated</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">60 sec</div>
+              <div class="hero-stat-label">Average Quote Time</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-mockup">
+            <div class="mockup-browser">
+              <div class="mockup-dot red"></div>
+              <div class="mockup-dot yellow"></div>
+              <div class="mockup-dot green"></div>
+              <div class="mockup-url">trade.primeworktops.co.uk/quote</div>
+            </div>
+            <div class="mockup-content">
+              <div class="mockup-header">
+                <div class="mockup-logo">
+                  <div class="mockup-logo-icon">S</div>
+                  Smith Kitchens
+                </div>
+                <div class="mockup-nav">Dashboard • Quotes • Settings</div>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-title">Select Material</div>
+                <div class="mockup-grid">
+                  <div class="mockup-swatch s1"></div>
+                  <div class="mockup-swatch s2"></div>
+                  <div class="mockup-swatch s3"></div>
+                </div>
+              </div>
+              <div class="mockup-price-card">
+                <div>
+                  <div class="mockup-price-label">Customer Price</div>
+                  <div class="mockup-price-value">£2,847</div>
+                </div>
+                <div class="mockup-btn">Send Quote</div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-card card-1">
+            <div class="floating-icon green">✓</div>
+            <div>
+              <div style="font-weight: 700;">Quote Accepted!</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Jones Kitchen - £3,240</div>
+            </div>
+          </div>
+          <div class="floating-card card-2">
+            <div class="floating-icon blue">📄</div>
+            <div>
+              <div style="font-weight: 700;">PDF Generated</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Ready to send</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="features">
+    <!-- Trusted By -->
+    <section class="trusted">
+      <div class="trusted-inner">
+        <div class="trusted-label">Premium Materials From Leading Brands</div>
+        <div class="trusted-logos">
+          <div class="trusted-logo">SILESTONE</div>
+          <div class="trusted-logo">DEKTON</div>
+          <div class="trusted-logo">NEOLITH</div>
+          <div class="trusted-logo">COMPAC</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
       <div class="features-inner">
+        <div class="section-header">
+          <div class="section-label">Features</div>
+          <h2 class="section-title">Everything you need to win more jobs</h2>
+          <p class="section-subtitle">Professional tools that help you quote faster, look more professional, and close more deals.</p>
+        </div>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon">⚡</div>
-            <h3 class="feature-title">Instant Quotes</h3>
-            <p class="feature-desc">Generate accurate worktop quotes in under 60 seconds.</p>
+            <h3 class="feature-title">60-Second Quotes</h3>
+            <p class="feature-desc">Enter dimensions, select material, get an instant price. No more waiting for callbacks or emails from suppliers.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">🎨</div>
             <h3 class="feature-title">Your Branding</h3>
-            <p class="feature-desc">Your logo, your colours. Quotes look like they're from your own system.</p>
+            <p class="feature-desc">Upload your logo, set your colours. Every quote looks like it came from your own professional system.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">📄</div>
             <h3 class="feature-title">Professional PDFs</h3>
-            <p class="feature-desc">Beautiful PDF quotes that help you close more deals.</p>
+            <p class="feature-desc">Beautiful, detailed PDF quotes with material images, dimensions, and your terms. Email or print instantly.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">💰</div>
             <h3 class="feature-title">Your Markup</h3>
-            <p class="feature-desc">Set your own profit margins on every quote.</p>
+            <p class="feature-desc">Set your own profit margins. We show you trade price, you decide what to charge your customers.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">📊</div>
             <h3 class="feature-title">Track Everything</h3>
-            <p class="feature-desc">See all quotes and conversions in one dashboard.</p>
+            <p class="feature-desc">See all your quotes, follow-ups, and conversions in one dashboard. Never lose track of a lead again.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">📱</div>
             <h3 class="feature-title">Works Anywhere</h3>
-            <p class="feature-desc">Quote on-site from any device - phone, tablet, or laptop.</p>
+            <p class="feature-desc">Quote on-site from your phone, tablet, or laptop. Works great on all devices, even with poor signal.</p>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+      <div class="how-it-works-inner">
+        <div class="section-header">
+          <div class="section-label">How It Works</div>
+          <h2 class="section-title">From quote to worktop in 4 simple steps</h2>
+          <p class="section-subtitle">We've made it as easy as possible to get your customers their dream worktops.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3 class="step-title">Create Quote</h3>
+            <p class="step-desc">Enter dimensions, choose material, add extras. Takes less than a minute.</p>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3 class="step-title">Send to Customer</h3>
+            <p class="step-desc">Email a professional PDF or share a link. Your branding, your price.</p>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3 class="step-title">Customer Accepts</h3>
+            <p class="step-desc">They click to accept, you get notified instantly. Convert to order in one click.</p>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <h3 class="step-title">We Manufacture</h3>
+            <p class="step-desc">We template, manufacture, and deliver. You fit and get paid. Simple.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials" id="testimonials">
+      <div class="testimonials-inner">
+        <div class="section-header">
+          <div class="section-label">Testimonials</div>
+          <h2 class="section-title">Trusted by kitchen professionals</h2>
+          <p class="section-subtitle">See what other trade partners say about working with us.</p>
+        </div>
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"Game changer for our business. We used to spend hours getting quotes from suppliers. Now we can quote customers on the spot during kitchen consultations."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">JM</div>
+              <div>
+                <div class="testimonial-name">James Mitchell</div>
+                <div class="testimonial-role">Mitchell Kitchens, Manchester</div>
+              </div>
+            </div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"The branded quotes look so professional. Customers think we have our own supply chain. It's helped us close at least 30% more jobs since we started using it."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">SH</div>
+              <div>
+                <div class="testimonial-name">Sarah Hughes</div>
+                <div class="testimonial-role">Dream Kitchens Ltd, Birmingham</div>
+              </div>
+            </div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"Finally, a system that actually works. The worktops arrive exactly as quoted, on time, every time. Customer service is excellent when we need it."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">DW</div>
+              <div>
+                <div class="testimonial-name">David Wilson</div>
+                <div class="testimonial-role">Wilson & Sons Builders, Leeds</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Preview -->
+    <section class="pricing-preview" id="pricing">
+      <div class="pricing-preview-inner">
+        <div class="pricing-card">
+          <div class="pricing-header">
+            <div class="pricing-badge">100% Free to Use</div>
+            <h2 class="pricing-title">No subscription. No hidden fees.</h2>
+            <p class="pricing-subtitle">You only pay trade price when you place an order. That's it.</p>
+          </div>
+          <div class="pricing-features">
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>Unlimited quotes</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>Custom branding</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>PDF generation</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>Quote tracking</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>Customer portal</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>Email support</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>No minimum orders</span>
+            </div>
+            <div class="pricing-feature">
+              <div class="pricing-feature-icon">✓</div>
+              <span>14-day trial</span>
+            </div>
+          </div>
+          <div class="pricing-cta">
+            <button class="btn btn-large" onclick="openModal('register')">Start Your Free Trial</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+      <div class="cta-inner">
+        <h2>Ready to win more worktop jobs?</h2>
+        <p>Join hundreds of kitchen professionals already using Prime Worktops Trade. Get set up in 5 minutes.</p>
+        <div class="cta-buttons">
+          <button class="btn btn-primary btn-large" onclick="openModal('register')">Start Free Trial</button>
+          <button class="btn btn-secondary btn-large" onclick="window.location.href='mailto:trade@primeworktops.co.uk'">Contact Us</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <a href="#" class="logo">
+            <div class="logo-icon">P</div>
+            <div class="logo-text">Prime Worktops <span>Trade</span></div>
+          </a>
+          <p>The free quote system for kitchen professionals. Premium worktops, simple ordering, reliable delivery. Powered by SPM Granite Ltd.</p>
+        </div>
+        <div class="footer-column">
+          <h4>Product</h4>
+          <ul class="footer-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#testimonials">Reviews</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Materials</h4>
+          <ul class="footer-links">
+            <li><a href="#">Silestone</a></li>
+            <li><a href="#">Dekton</a></li>
+            <li><a href="#">Neolith</a></li>
+            <li><a href="#">Compac</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Contact</h4>
+          <ul class="footer-links">
+            <li><a href="mailto:trade@primeworktops.co.uk">trade@primeworktops.co.uk</a></li>
+            <li><a href="tel:01onal">0161 XXX XXXX</a></li>
+            <li><a href="#">Manchester, UK</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>© 2024 Prime Worktops Trade. A division of SPM Granite Ltd.</div>
+        <div>
+          <a href="#" style="color: rgba(255,255,255,0.6); text-decoration: none; margin-left: 24px;">Privacy</a>
+          <a href="#" style="color: rgba(255,255,255,0.6); text-decoration: none; margin-left: 24px;">Terms</a>
+        </div>
+      </div>
+    </footer>
+
   </div>
 
   <!-- Dashboard Page -->
@@ -485,18 +1869,22 @@
 
       <div class="stats-grid">
         <div class="stat-card">
+          <div class="stat-card-icon">📝</div>
           <div class="stat-value" id="statTotalQuotes">0</div>
           <div class="stat-label">Total Quotes</div>
         </div>
         <div class="stat-card">
+          <div class="stat-card-icon">✅</div>
           <div class="stat-value" id="statAccepted">0</div>
           <div class="stat-label">Accepted</div>
         </div>
         <div class="stat-card">
+          <div class="stat-card-icon">⏳</div>
           <div class="stat-value" id="statPending">0</div>
           <div class="stat-label">Pending</div>
         </div>
         <div class="stat-card">
+          <div class="stat-card-icon">💷</div>
           <div class="stat-value" id="statValue">£0</div>
           <div class="stat-label">Total Value</div>
         </div>
@@ -505,12 +1893,14 @@
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">Recent Quotes</h2>
-          <button class="btn btn-primary btn-small" onclick="openQuoteWizard()">+ New Quote</button>
+          <a href="/quote.html" class="btn btn-primary">+ New Quote</a>
         </div>
         <div id="quotesContainer">
           <div class="empty-state">
             <div class="empty-state-icon">📝</div>
-            <p>No quotes yet. Create your first quote to get started!</p>
+            <h3>No quotes yet</h3>
+            <p>Create your first quote to get started!</p>
+            <a href="/quote.html" class="btn btn-primary">Create Quote</a>
           </div>
         </div>
       </div>
@@ -518,24 +1908,24 @@
   </div>
 
   <!-- Login Modal -->
-  <div class="modal-backdrop" id="loginModal">
+  <div class="modal-backdrop" id="loginModal" onclick="if(event.target === this) closeModal('login')">
     <div class="modal">
       <div class="modal-header">
-        <h3>Log In</h3>
-        <button class="modal-close" onclick="closeModal('login')">&times;</button>
+        <h3>Welcome back</h3>
+        <button class="modal-close" onclick="closeModal('login')">×</button>
       </div>
       <div class="modal-body">
         <div id="loginError" class="alert alert-error" style="display:none;"></div>
         <form onsubmit="handleLogin(event)">
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input type="email" class="form-input" id="loginEmail" required>
+            <input type="email" class="form-input" id="loginEmail" placeholder="you@company.com" required>
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-input" id="loginPassword" required>
+            <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" required>
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">Log In</button>
+          <button type="submit" class="btn btn-primary btn-large" style="width:100%;">Log In</button>
         </form>
         <div class="form-footer">
           Don't have an account? <a onclick="switchModal('login', 'register')">Start free trial</a>
@@ -545,46 +1935,48 @@
   </div>
 
   <!-- Register Modal -->
-  <div class="modal-backdrop" id="registerModal">
+  <div class="modal-backdrop" id="registerModal" onclick="if(event.target === this) closeModal('register')">
     <div class="modal">
       <div class="modal-header">
-        <h3>Start Free Trial</h3>
-        <button class="modal-close" onclick="closeModal('register')">&times;</button>
+        <h3>Start your free trial</h3>
+        <button class="modal-close" onclick="closeModal('register')">×</button>
       </div>
       <div class="modal-body">
         <div id="registerError" class="alert alert-error" style="display:none;"></div>
         <form onsubmit="handleRegister(event)">
           <div class="form-group">
             <label class="form-label">Company Name</label>
-            <input type="text" class="form-input" id="regCompany" required>
+            <input type="text" class="form-input" id="regCompany" placeholder="Your Kitchen Company Ltd" required>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">First Name</label>
-              <input type="text" class="form-input" id="regFirstName" required>
+              <input type="text" class="form-input" id="regFirstName" placeholder="John" required>
             </div>
             <div class="form-group">
               <label class="form-label">Last Name</label>
-              <input type="text" class="form-input" id="regLastName" required>
+              <input type="text" class="form-input" id="regLastName" placeholder="Smith" required>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input type="email" class="form-input" id="regEmail" required>
+            <input type="email" class="form-input" id="regEmail" placeholder="you@company.com" required>
           </div>
-          <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input type="tel" class="form-input" id="regPhone">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Postcode</label>
-            <input type="text" class="form-input" id="regPostcode" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" id="regPhone" placeholder="07xxx xxxxxx">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Postcode</label>
+              <input type="text" class="form-input" id="regPostcode" placeholder="M1 1AA" required>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-input" id="regPassword" required minlength="8">
+            <input type="password" class="form-input" id="regPassword" placeholder="Min. 8 characters" required minlength="8">
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
+          <button type="submit" class="btn btn-primary btn-large" style="width:100%;">Create Account</button>
         </form>
         <div class="form-footer">
           Already have an account? <a onclick="switchModal('register', 'login')">Log in</a>
@@ -594,17 +1986,28 @@
   </div>
 
   <script>
-    // State
+    // ========== STATE ==========
     let currentUser = null;
     let authToken = localStorage.getItem('authToken');
 
-    // Check auth on load
+    // ========== INIT ==========
     document.addEventListener('DOMContentLoaded', () => {
       if (authToken) {
         checkAuth();
       }
+
+      // Nav scroll effect
+      window.addEventListener('scroll', () => {
+        const nav = document.getElementById('nav');
+        if (window.scrollY > 50) {
+          nav.classList.add('scrolled');
+        } else {
+          nav.classList.remove('scrolled');
+        }
+      });
     });
 
+    // ========== AUTH ==========
     async function checkAuth() {
       try {
         const res = await fetch('/api/me', {
@@ -621,22 +2024,6 @@
       }
     }
 
-    // Modal functions
-    function openModal(type) {
-      document.getElementById(type + 'Modal').classList.add('active');
-    }
-
-    function closeModal(type) {
-      document.getElementById(type + 'Modal').classList.remove('active');
-      document.getElementById(type + 'Error')?.style && (document.getElementById(type + 'Error').style.display = 'none');
-    }
-
-    function switchModal(from, to) {
-      closeModal(from);
-      openModal(to);
-    }
-
-    // Auth functions
     async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
@@ -714,14 +2101,15 @@
       showLanding();
     }
 
-    // Navigation
+    // ========== NAVIGATION ==========
     function showLanding() {
       document.getElementById('landingPage').classList.add('active');
       document.getElementById('dashboardPage').classList.remove('active');
       document.getElementById('navLoginBtn').style.display = '';
       document.getElementById('navRegisterBtn').style.display = '';
       document.getElementById('navLogoutBtn').style.display = 'none';
-      document.getElementById('navUserName').textContent = '';
+      document.getElementById('navUserName').style.display = 'none';
+      document.getElementById('navLinksPublic').style.display = '';
     }
 
     function showDashboard() {
@@ -730,7 +2118,9 @@
       document.getElementById('navLoginBtn').style.display = 'none';
       document.getElementById('navRegisterBtn').style.display = 'none';
       document.getElementById('navLogoutBtn').style.display = '';
+      document.getElementById('navUserName').style.display = '';
       document.getElementById('navUserName').textContent = currentUser?.first_name || currentUser?.firstName || '';
+      document.getElementById('navLinksPublic').style.display = 'none';
       loadQuotes();
     }
 
@@ -739,10 +2129,29 @@
         showDashboard();
       } else {
         showLanding();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
 
-    // Quotes
+    // ========== MODALS ==========
+    function openModal(type) {
+      document.getElementById(type + 'Modal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(type) {
+      document.getElementById(type + 'Modal').classList.remove('active');
+      document.body.style.overflow = '';
+      const errorEl = document.getElementById(type + 'Error');
+      if (errorEl) errorEl.style.display = 'none';
+    }
+
+    function switchModal(from, to) {
+      closeModal(from);
+      setTimeout(() => openModal(to), 100);
+    }
+
+    // ========== QUOTES ==========
     async function loadQuotes() {
       try {
         const res = await fetch('/api/quotes', {
@@ -763,7 +2172,9 @@
         container.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">📝</div>
-            <p>No quotes yet. Create your first quote to get started!</p>
+            <h3>No quotes yet</h3>
+            <p>Create your first quote to get started!</p>
+            <a href="/quote.html" class="btn btn-primary">Create Quote</a>
           </div>
         `;
         return;
@@ -789,7 +2200,7 @@
                 <td>${q.material_name || '-'}</td>
                 <td>£${(q.customer_price_inc_vat || 0).toFixed(2)}</td>
                 <td><span class="status-badge status-${q.status}">${q.status}</span></td>
-                <td>${new Date(q.created_at).toLocaleDateString()}</td>
+                <td>${new Date(q.created_at).toLocaleDateString('en-GB')}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -806,11 +2217,7 @@
       document.getElementById('statTotalQuotes').textContent = total;
       document.getElementById('statAccepted').textContent = accepted;
       document.getElementById('statPending').textContent = pending;
-      document.getElementById('statValue').textContent = '£' + value.toFixed(0);
-    }
-
-    function openQuoteWizard() {
-      alert('Quote wizard coming soon! This will open the worktop calculator.');
+      document.getElementById('statValue').textContent = '£' + value.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
   </script>
 </body>
