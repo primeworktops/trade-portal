@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Quote - Prime Worktops Trade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #033f2a;
+      --primary-light: #065f40;
+      --secondary: #f6d466;
+      --background: #f8f9fa;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --success: #10b981;
+      --error: #ef4444;
+      --radius: 12px;
+      --radius-lg: 20px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--primary);
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary);
+      font-weight: 800;
+      font-size: 18px;
+    }
+    .logo-text { font-weight: 700; font-size: 20px; }
+    .logo-text span { color: var(--text-muted); font-weight: 500; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--primary); }
+    .btn-ghost { background: transparent; color: var(--text-muted); padding: 8px 16px; }
+    .btn-ghost:hover { color: var(--primary); }
+
+    /* Layout */
+    .page-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+    }
+
+    /* Steps */
+    .steps-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .step-item {
+      flex: 1;
+      padding: 12px 16px;
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .step-item.active {
+      border-color: var(--primary);
+      background: rgba(3,63,42,0.05);
+      color: var(--primary);
+    }
+    .step-item.completed {
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-right: 8px;
+    }
+    .step-item.active .step-number {
+      background: var(--primary);
+      color: white;
+    }
+    .step-item.completed .step-number {
+      background: var(--success);
+      color: white;
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Forms */
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s;
+      background: white;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Material Selection */
+    .material-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .material-card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .material-card:hover {
+      border-color: var(--primary);
+    }
+    .material-card.selected {
+      border-color: var(--primary);
+      background: rgba(3,63,42,0.05);
+    }
+    .material-swatch {
+      width: 100%;
+      height: 80px;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      margin-bottom: 8px;
+    }
+    .material-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .material-price {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Worktop Runs */
+    .runs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .run-item {
+      background: var(--background);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .run-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .run-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .run-remove {
+      background: none;
+      border: none;
+      color: var(--error);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .run-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .run-input-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .run-input-group input, .run-input-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .run-input-group input:focus, .run-input-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .run-area {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 10px 0;
+    }
+
+    /* Edge Selection */
+    .edge-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .edge-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .edge-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .edge-btn {
+      padding: 6px 12px;
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+      color: var(--text-muted);
+    }
+    .edge-btn:hover {
+      border-color: var(--primary);
+    }
+    .edge-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .edge-btn.mitre.active {
+      background: #1e88e5;
+      border-color: #1e88e5;
+    }
+
+    /* Extras */
+    .extras-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .extra-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--background);
+      border-radius: var(--radius);
+    }
+    .extra-label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .extra-input {
+      width: 70px;
+      padding: 8px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    /* Summary Panel */
+    .summary-panel {
+      position: sticky;
+      top: 94px;
+    }
+    .summary-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 24px;
+    }
+    .summary-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+    .summary-section {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-section:last-of-type {
+      border-bottom: none;
+    }
+    .summary-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .summary-row span:first-child {
+      color: var(--text-muted);
+    }
+    .summary-row span:last-child {
+      font-weight: 600;
+    }
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid var(--primary);
+    }
+    .summary-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .summary-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* Slab Preview */
+    .slab-preview {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--background);
+      border-radius: var(--radius);
+    }
+    .slab-preview-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .slab-visual {
+      position: relative;
+      width: 100%;
+      height: 80px;
+      background: #e8e8e8;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .slab-piece {
+      position: absolute;
+      background: rgba(246,212,102,0.4);
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Step Content */
+    .step-content {
+      display: none;
+    }
+    .step-content.active {
+      display: block;
+    }
+
+    /* Thickness Toggle */
+    .thickness-toggle {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .thickness-btn {
+      flex: 1;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .thickness-btn:hover {
+      border-color: var(--primary);
+    }
+    .thickness-btn.active {
+      border-color: var(--primary);
+      background: rgba(3,63,42,0.05);
+    }
+    .thickness-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .thickness-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Edge Profile Select */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .profile-card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .profile-card:hover {
+      border-color: var(--primary);
+    }
+    .profile-card.selected {
+      border-color: var(--primary);
+      background: rgba(3,63,42,0.05);
+    }
+    .profile-name {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .profile-price {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Nav buttons */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .page-container {
+        grid-template-columns: 1fr;
+      }
+      .summary-panel {
+        position: relative;
+        top: 0;
+      }
+    }
+    @media (max-width: 640px) {
+      .steps-bar {
+        flex-direction: column;
+      }
+      .form-row, .extras-grid {
+        grid-template-columns: 1fr;
+      }
+      .run-inputs {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">P</div>
+        <div class="logo-text">Prime Worktops <span>Trade</span></div>
+      </a>
+      <div>
+        <a href="/" class="btn btn-ghost">← Back to Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Steps Bar -->
+      <div class="steps-bar">
+        <div class="step-item active" onclick="goToStep(1)">
+          <span class="step-number">1</span> Customer
+        </div>
+        <div class="step-item" onclick="goToStep(2)">
+          <span class="step-number">2</span> Material
+        </div>
+        <div class="step-item" onclick="goToStep(3)">
+          <span class="step-number">3</span> Layout
+        </div>
+        <div class="step-item" onclick="goToStep(4)">
+          <span class="step-number">4</span> Extras
+        </div>
+      </div>
+
+      <!-- Step 1: Customer Details -->
+      <div class="step-content active" id="step1">
+        <div class="card">
+          <h2 class="card-title">👤 Customer Details</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Customer Name *</label>
+              <input type="text" class="form-input" id="customerName" placeholder="Mr & Mrs Smith" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="customerEmail" placeholder="customer@email.com">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" id="customerPhone" placeholder="07xxx xxxxxx">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Postcode *</label>
+              <input type="text" class="form-input" id="customerPostcode" placeholder="M1 1AA" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Installation Address</label>
+            <input type="text" class="form-input" id="customerAddress" placeholder="123 High Street, Manchester">
+          </div>
+          <div class="nav-buttons">
+            <span></span>
+            <button class="btn btn-primary" onclick="goToStep(2)">Next: Choose Material →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Material Selection -->
+      <div class="step-content" id="step2">
+        <div class="card">
+          <h2 class="card-title">🎨 Select Material</h2>
+          
+          <div class="form-group">
+            <label class="form-label">Brand</label>
+            <select class="form-select" id="brandSelect" onchange="updateColours()">
+              <option value="">Select a brand...</option>
+              <option value="silestone">Silestone</option>
+              <option value="dekton">Dekton</option>
+              <option value="neolith">Neolith</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="colourSection" style="display:none;">
+            <label class="form-label">Colour</label>
+            <div class="material-grid" id="colourGrid"></div>
+          </div>
+
+          <div class="form-group" id="thicknessSection" style="display:none;">
+            <label class="form-label">Thickness</label>
+            <div class="thickness-toggle">
+              <div class="thickness-btn active" onclick="selectThickness(20)">
+                <div class="thickness-value">20mm</div>
+                <div class="thickness-label">Standard</div>
+              </div>
+              <div class="thickness-btn" onclick="selectThickness(30)">
+                <div class="thickness-value">30mm</div>
+                <div class="thickness-label">Premium</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-buttons">
+            <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+            <button class="btn btn-primary" onclick="goToStep(3)">Next: Layout →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Worktop Layout -->
+      <div class="step-content" id="step3">
+        <div class="card">
+          <h2 class="card-title">📐 Worktop Layout</h2>
+          
+          <div class="runs-list" id="runsList">
+            <!-- Runs will be added here -->
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="addRun('run')">+ Add Worktop Run</button>
+            <button class="btn btn-secondary" onclick="addRun('island')">+ Add Island</button>
+          </div>
+
+          <div class="form-group" style="margin-top: 24px;">
+            <label class="form-label">Edge Profile</label>
+            <div class="profile-grid">
+              <div class="profile-card selected" onclick="selectProfile('chamfer')">
+                <div class="profile-name">Chamfer</div>
+                <div class="profile-price">Included</div>
+              </div>
+              <div class="profile-card" onclick="selectProfile('pencil')">
+                <div class="profile-name">Pencil</div>
+                <div class="profile-price">Included</div>
+              </div>
+              <div class="profile-card" onclick="selectProfile('bullnose')">
+                <div class="profile-name">Bullnose</div>
+                <div class="profile-price">+£66.67/m</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-top: 16px;">
+            <div class="form-group">
+              <label class="form-label">Splashback Length (mm)</label>
+              <input type="number" class="form-input" id="splashLength" value="0" min="0" onchange="recalculate()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Upstands Length (mm)</label>
+              <input type="number" class="form-input" id="upstandLength" value="0" min="0" onchange="recalculate()">
+            </div>
+          </div>
+
+          <div class="nav-buttons">
+            <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+            <button class="btn btn-primary" onclick="goToStep(4)">Next: Extras →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Extras -->
+      <div class="step-content" id="step4">
+        <div class="card">
+          <h2 class="card-title">✨ Cut-outs & Extras</h2>
+          
+          <div class="extras-grid">
+            <div class="extra-item">
+              <span class="extra-label">Undermount Sink</span>
+              <input type="number" class="extra-input" id="sinkUnder" value="1" min="0" onchange="recalculate()">
+            </div>
+            <div class="extra-item">
+              <span class="extra-label">Overmount Sink</span>
+              <input type="number" class="extra-input" id="sinkOver" value="0" min="0" onchange="recalculate()">
+            </div>
+            <div class="extra-item">
+              <span class="extra-label">Hob Cut-out</span>
+              <input type="number" class="extra-input" id="hobCut" value="1" min="0" onchange="recalculate()">
+            </div>
+            <div class="extra-item">
+              <span class="extra-label">Tap Holes</span>
+              <input type="number" class="extra-input" id="tapHoles" value="1" min="0" onchange="recalculate()">
+            </div>
+            <div class="extra-item">
+              <span class="extra-label">Drainer Grooves</span>
+              <input type="number" class="extra-input" id="drainerGrooves" value="1" min="0" onchange="recalculate()">
+            </div>
+            <div class="extra-item">
+              <span class="extra-label">Mitre Joints</span>
+              <input type="number" class="extra-input" id="mitreJoints" value="0" min="0" onchange="recalculate()">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 24px;">
+            <label class="form-label">Notes (optional)</label>
+            <textarea class="form-input" id="quoteNotes" rows="3" placeholder="Any special requirements..."></textarea>
+          </div>
+
+          <div class="nav-buttons">
+            <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+            <button class="btn btn-primary" onclick="saveQuote()">💾 Save Quote</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Panel -->
+    <div class="summary-panel">
+      <div class="summary-card">
+        <h3 class="summary-title">Quote Summary</h3>
+        
+        <div class="summary-section">
+          <div class="summary-section-title">Material</div>
+          <div class="summary-row">
+            <span>Brand</span>
+            <span id="sumBrand">-</span>
+          </div>
+          <div class="summary-row">
+            <span>Colour</span>
+            <span id="sumColour">-</span>
+          </div>
+          <div class="summary-row">
+            <span>Thickness</span>
+            <span id="sumThickness">20mm</span>
+          </div>
+        </div>
+
+        <div class="summary-section">
+          <div class="summary-section-title">Dimensions</div>
+          <div class="summary-row">
+            <span>Worktop Area</span>
+            <span id="sumArea">0 m²</span>
+          </div>
+          <div class="summary-row">
+            <span>Edge Profile</span>
+            <span id="sumEdge">Chamfer</span>
+          </div>
+          <div class="summary-row">
+            <span>Slabs Required</span>
+            <span id="sumSlabs">1</span>
+          </div>
+        </div>
+
+        <div class="summary-section">
+          <div class="summary-section-title">Pricing</div>
+          <div class="summary-row">
+            <span>Trade (ex VAT)</span>
+            <span id="sumTradeEx">£0.00</span>
+          </div>
+          <div class="summary-row">
+            <span>Trade (inc VAT)</span>
+            <span id="sumTradeInc">£0.00</span>
+          </div>
+          <div class="summary-row" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);">
+            <span>Your markup (20%)</span>
+            <span id="sumMarkup">£0.00</span>
+          </div>
+        </div>
+
+        <div class="summary-total">
+          <span>Customer Price</span>
+          <span id="sumTotal">£0.00</span>
+        </div>
+
+        <div class="summary-actions">
+          <button class="btn btn-primary" onclick="saveQuote()">💾 Save Quote</button>
+          <button class="btn btn-secondary" onclick="downloadPDF()">📄 Download PDF</button>
+        </div>
+
+        <div class="slab-preview">
+          <div class="slab-preview-title">Slab Layout Preview</div>
+          <div class="slab-visual" id="slabVisual">
+            <div class="slab-piece" style="left:5%;top:10%;width:60%;height:35%;">Run 1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auth check
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      window.location.href = '/';
+    }
+
+    // State
+    let currentStep = 1;
+    let quoteData = {
+      customer: {},
+      material: { brand: '', colour: '', colourName: '', thickness: 20, priceGroup: 1 },
+      runs: [],
+      extras: { sinkUnder: 1, sinkOver: 0, hobCut: 1, tapHoles: 1, drainerGrooves: 1, mitreJoints: 0 },
+      edgeProfile: 'chamfer',
+      splashLength: 0,
+      upstandLength: 0
+    };
+
+    // Pricing config
+    const PRICING = {
+      profitFirstSlab: 1400,
+      profitPerAdditionalSlab: 600,
+      vat: 0.20,
+      sinkUnder: 110,
+      sinkOver: 55,
+      hob: 55,
+      tap: 9.17,
+      grooves: 110,
+      mitre: 20,
+      edgeProfiles: {
+        chamfer: 0,
+        pencil: 0,
+        bullnose: 66.67,
+        ogee: 66.67,
+        demi: 66.67
+      },
+      slabCosts: {
+        1: { 20: 280, 30: 350 },
+        2: { 20: 320, 30: 400 },
+        3: { 20: 380, 30: 480 },
+        4: { 20: 450, 30: 550 },
+        5: { 20: 520, 30: 650 }
+      }
+    };
+
+    // Material data
+    const MATERIALS = {
+      silestone: [
+        { id: 'eternal-white', name: 'Eternal Statuario', priceGroup: 4, image: 'https://via.placeholder.com/150/f5f5f5/333?text=Statuario' },
+        { id: 'calacatta', name: 'Calacatta Gold', priceGroup: 5, image: 'https://via.placeholder.com/150/fff8e7/333?text=Calacatta' },
+        { id: 'charcoal', name: 'Charcoal Soapstone', priceGroup: 3, image: 'https://via.placeholder.com/150/444/fff?text=Charcoal' },
+        { id: 'white-storm', name: 'White Storm', priceGroup: 2, image: 'https://via.placeholder.com/150/eee/333?text=White' },
+      ],
+      dekton: [
+        { id: 'bergen', name: 'Bergen', priceGroup: 3, image: 'https://via.placeholder.com/150/ddd/333?text=Bergen' },
+        { id: 'aura', name: 'Aura 15', priceGroup: 4, image: 'https://via.placeholder.com/150/f0f0f0/333?text=Aura' },
+        { id: 'entzo', name: 'Entzo', priceGroup: 5, image: 'https://via.placeholder.com/150/f8f0e0/333?text=Entzo' },
+      ],
+      neolith: [
+        { id: 'estatuario', name: 'Estatuario', priceGroup: 4, image: 'https://via.placeholder.com/150/fafafa/333?text=Estatuario' },
+        { id: 'nero', name: 'Nero Marquina', priceGroup: 3, image: 'https://via.placeholder.com/150/222/fff?text=Nero' },
+      ]
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      addRun('run');
+      recalculate();
+    });
+
+    // Step navigation
+    function goToStep(step) {
+      currentStep = step;
+      document.querySelectorAll('.step-content').forEach((el, i) => {
+        el.classList.toggle('active', i === step - 1);
+      });
+      document.querySelectorAll('.step-item').forEach((el, i) => {
+        el.classList.toggle('active', i === step - 1);
+        el.classList.toggle('completed', i < step - 1);
+      });
+    }
+
+    // Material selection
+    function updateColours() {
+      const brand = document.getElementById('brandSelect').value;
+      const colourSection = document.getElementById('colourSection');
+      const thicknessSection = document.getElementById('thicknessSection');
+      const grid = document.getElementById('colourGrid');
+      
+      if (!brand) {
+        colourSection.style.display = 'none';
+        thicknessSection.style.display = 'none';
+        return;
+      }
+
+      const colours = MATERIALS[brand] || [];
+      grid.innerHTML = colours.map(c => `
+        <div class="material-card" onclick="selectColour('${brand}', '${c.id}', '${c.name}', ${c.priceGroup})">
+          <div class="material-swatch" style="background-image: url('${c.image}')"></div>
+          <div class="material-name">${c.name}</div>
+          <div class="material-price">${'£'.repeat(c.priceGroup)}</div>
+        </div>
+      `).join('');
+
+      colourSection.style.display = 'block';
+      quoteData.material.brand = brand;
+      document.getElementById('sumBrand').textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
+      recalculate();
+    }
+
+    function selectColour(brand, colourId, colourName, priceGroup) {
+      document.querySelectorAll('.material-card').forEach(el => el.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      
+      quoteData.material.colour = colourId;
+      quoteData.material.colourName = colourName;
+      quoteData.material.priceGroup = priceGroup;
+      
+      document.getElementById('sumColour').textContent = colourName;
+      document.getElementById('thicknessSection').style.display = 'block';
+      recalculate();
+    }
+
+    function selectThickness(mm) {
+      document.querySelectorAll('.thickness-btn').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      quoteData.material.thickness = mm;
+      document.getElementById('sumThickness').textContent = mm + 'mm';
+      recalculate();
+    }
+
+    // Runs management
+    let runCounter = 0;
+    function addRun(type) {
+      runCounter++;
+      const id = 'run-' + runCounter;
+      const defaultLength = type === 'island' ? 2000 : 3000;
+      const defaultDepth = type === 'island' ? 1000 : 600;
+      
+      const runHtml = `
+        <div class="run-item" id="${id}">
+          <div class="run-header">
+            <span class="run-title">${type === 'island' ? '🏝️ Island' : '📏 Run'} ${runCounter}</span>
+            <button class="run-remove" onclick="removeRun('${id}')">&times;</button>
+          </div>
+          <div class="run-inputs">
+            <div class="run-input-group">
+              <label>Length (mm)</label>
+              <input type="number" value="${defaultLength}" min="100" onchange="recalculate()">
+            </div>
+            <div class="run-input-group">
+              <label>Depth (mm)</label>
+              <input type="number" value="${defaultDepth}" min="100" onchange="recalculate()">
+            </div>
+            <div class="run-area" id="${id}-area">0.00 m²</div>
+          </div>
+          <div class="edge-section">
+            <div class="edge-title">Profile Edges</div>
+            <div class="edge-buttons">
+              <button class="edge-btn ${type === 'island' ? 'active' : 'active'}" onclick="toggleEdge(this)" data-edge="front">Front</button>
+              <button class="edge-btn ${type === 'island' ? 'active' : ''}" onclick="toggleEdge(this)" data-edge="back">Back</button>
+              <button class="edge-btn ${type === 'island' ? 'active' : ''}" onclick="toggleEdge(this)" data-edge="left">Left</button>
+              <button class="edge-btn ${type === 'island' ? 'active' : ''}" onclick="toggleEdge(this)" data-edge="right">Right</button>
+            </div>
+            <div class="edge-title" style="margin-top: 10px;">Mitre Joints</div>
+            <div class="edge-buttons">
+              <button class="edge-btn mitre" onclick="toggleEdge(this)" data-edge="mitre-front">Front</button>
+              <button class="edge-btn mitre" onclick="toggleEdge(this)" data-edge="mitre-back">Back</button>
+              <button class="edge-btn mitre" onclick="toggleEdge(this)" data-edge="mitre-left">Left</button>
+              <button class="edge-btn mitre" onclick="toggleEdge(this)" data-edge="mitre-right">Right</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('runsList').insertAdjacentHTML('beforeend', runHtml);
+      recalculate();
+    }
+
+    function removeRun(id) {
+      document.getElementById(id).remove();
+      recalculate();
+    }
+
+    function toggleEdge(btn) {
+      btn.classList.toggle('active');
+      recalculate();
+    }
+
+    function selectProfile(profile) {
+      document.querySelectorAll('.profile-card').forEach(el => el.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      quoteData.edgeProfile = profile;
+      document.getElementById('sumEdge').textContent = profile.charAt(0).toUpperCase() + profile.slice(1);
+      recalculate();
+    }
+
+    // Calculations
+    function recalculate() {
+      // Get all runs
+      const runs = [];
+      let totalArea = 0;
+      let totalEdgeMetres = 0;
+      let totalMitres = 0;
+
+      document.querySelectorAll('.run-item').forEach(runEl => {
+        const inputs = runEl.querySelectorAll('input[type="number"]');
+        const length = parseInt(inputs[0].value) || 0;
+        const depth = parseInt(inputs[1].value) || 0;
+        const area = (length / 1000) * (depth / 1000);
+        totalArea += area;
+
+        // Update area display
+        const areaEl = runEl.querySelector('.run-area');
+        if (areaEl) areaEl.textContent = area.toFixed(2) + ' m²';
+
+        // Count edges
+        runEl.querySelectorAll('.edge-btn.active').forEach(btn => {
+          const edge = btn.dataset.edge;
+          if (edge.startsWith('mitre')) {
+            totalMitres++;
+          } else {
+            if (edge === 'front' || edge === 'back') {
+              totalEdgeMetres += length / 1000;
+            } else {
+              totalEdgeMetres += depth / 1000;
+            }
+          }
+        });
+
+        runs.push({ length, depth, area });
+      });
+
+      quoteData.runs = runs;
+
+      // Calculate slabs needed (simple estimation: 3200x1600 = 5.12m²)
+      const slabArea = 5.12;
+      const slabsNeeded = Math.max(1, Math.ceil(totalArea / (slabArea * 0.7))); // 70% efficiency
+
+      // Get extras
+      const sinkUnder = parseInt(document.getElementById('sinkUnder')?.value) || 0;
+      const sinkOver = parseInt(document.getElementById('sinkOver')?.value) || 0;
+      const hobCut = parseInt(document.getElementById('hobCut')?.value) || 0;
+      const tapHoles = parseInt(document.getElementById('tapHoles')?.value) || 0;
+      const drainerGrooves = parseInt(document.getElementById('drainerGrooves')?.value) || 0;
+      const mitreJoints = totalMitres + (parseInt(document.getElementById('mitreJoints')?.value) || 0);
+
+      // Calculate pricing
+      const priceGroup = quoteData.material.priceGroup || 1;
+      const thickness = quoteData.material.thickness || 20;
+      const slabCost = PRICING.slabCosts[priceGroup]?.[thickness] || 280;
+
+      // Material cost
+      const materialCost = slabsNeeded * slabCost;
+
+      // Profit (your pricing model)
+      const profit = PRICING.profitFirstSlab + Math.max(0, slabsNeeded - 1) * PRICING.profitPerAdditionalSlab;
+
+      // Extras cost (above included allowance)
+      let extrasCost = 0;
+      if (sinkUnder > 1) extrasCost += (sinkUnder - 1) * PRICING.sinkUnder;
+      if (sinkOver > 0) extrasCost += sinkOver * PRICING.sinkOver;
+      if (hobCut > 1) extrasCost += (hobCut - 1) * PRICING.hob;
+      if (tapHoles > 1) extrasCost += (tapHoles - 1) * PRICING.tap;
+      if (drainerGrooves > 1) extrasCost += (drainerGrooves - 1) * PRICING.grooves;
+      extrasCost += mitreJoints * PRICING.mitre;
+
+      // Edge profile cost
+      const edgeCostPerM = PRICING.edgeProfiles[quoteData.edgeProfile] || 0;
+      extrasCost += totalEdgeMetres * edgeCostPerM;
+
+      // Trade price
+      const tradeExVat = materialCost + profit + extrasCost;
+      const tradeIncVat = tradeExVat * (1 + PRICING.vat);
+
+      // Customer price (with 20% markup)
+      const markup = 0.20;
+      const customerExVat = tradeExVat * (1 + markup);
+      const customerIncVat = customerExVat * (1 + PRICING.vat);
+
+      // Update summary
+      document.getElementById('sumArea').textContent = totalArea.toFixed(2) + ' m²';
+      document.getElementById('sumSlabs').textContent = slabsNeeded;
+      document.getElementById('sumTradeEx').textContent = '£' + tradeExVat.toFixed(2);
+      document.getElementById('sumTradeInc').textContent = '£' + tradeIncVat.toFixed(2);
+      document.getElementById('sumMarkup').textContent = '£' + (tradeExVat * markup).toFixed(2);
+      document.getElementById('sumTotal').textContent = '£' + customerIncVat.toFixed(2);
+
+      // Store for saving
+      quoteData.pricing = {
+        slabsNeeded,
+        tradeExVat,
+        tradeIncVat,
+        customerExVat,
+        customerIncVat,
+        totalArea,
+        totalEdgeMetres
+      };
+
+      // Update slab preview
+      updateSlabPreview(runs, slabsNeeded);
+    }
+
+    function updateSlabPreview(runs, slabsNeeded) {
+      const visual = document.getElementById('slabVisual');
+      if (!runs.length) {
+        visual.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:12px;">Add worktops to see preview</div>';
+        return;
+      }
+
+      // Simple visualization
+      let html = '';
+      const slabW = 3200;
+      const slabH = 1600;
+      let x = 5;
+      let y = 10;
+      
+      runs.forEach((run, i) => {
+        const w = Math.min((run.length / slabW) * 90, 90 - x);
+        const h = Math.min((run.depth / slabH) * 80, 80);
+        html += `<div class="slab-piece" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;">Run ${i + 1}</div>`;
+        x += w + 2;
+        if (x > 85) { x = 5; y += h + 5; }
+      });
+
+      visual.innerHTML = html;
+    }
+
+    // Save quote
+    async function saveQuote() {
+      // Gather customer data
+      quoteData.customer = {
+        name: document.getElementById('customerName').value,
+        email: document.getElementById('customerEmail').value,
+        phone: document.getElementById('customerPhone').value,
+        address: document.getElementById('customerAddress').value,
+        postcode: document.getElementById('customerPostcode').value
+      };
+
+      if (!quoteData.customer.name) {
+        alert('Please enter customer name');
+        goToStep(1);
+        return;
+      }
+
+      if (!quoteData.material.colour) {
+        alert('Please select a material');
+        goToStep(2);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/quotes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            customerName: quoteData.customer.name,
+            customerEmail: quoteData.customer.email,
+            customerPhone: quoteData.customer.phone,
+            customerAddress: quoteData.customer.address,
+            customerPostcode: quoteData.customer.postcode,
+            materialName: quoteData.material.colourName,
+            materialBrand: quoteData.material.brand,
+            thickness: quoteData.material.thickness,
+            edgeProfile: quoteData.edgeProfile,
+            slabsRequired: quoteData.pricing.slabsNeeded,
+            tradePriceExVat: quoteData.pricing.tradeExVat,
+            tradePriceIncVat: quoteData.pricing.tradeIncVat,
+            customerPriceExVat: quoteData.pricing.customerExVat,
+            customerPriceIncVat: quoteData.pricing.customerIncVat,
+            quoteData: quoteData
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('Quote saved! Reference: ' + result.quote_reference);
+          window.location.href = '/';
+        } else {
+          alert('Error saving quote: ' + (result.error || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error('Save error:', err);
+        alert('Failed to save quote. Please try again.');
+      }
+    }
+
+    function downloadPDF() {
+      alert('PDF generation coming soon!');
+    }
+  </script>
+</body>
+</html>
