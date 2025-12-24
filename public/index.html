@@ -9,12 +9,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #033f2a;
-      --primary-light: #065f40;
-      --primary-dark: #022a1c;
-      --secondary: #f6d466;
-      --secondary-light: #f9e299;
-      --accent: #e8f5e9;
+      /* Prime Worktops Brand Colours */
+      --primary: #1e4d3a;
+      --primary-light: #2d6b52;
+      --primary-dark: #163a2c;
+      --gold: #d4a843;
+      --gold-light: #e3c06a;
+      --gold-dark: #b8923a;
+      
+      /* UI Colours */
       --background: #fafbfc;
       --card: #ffffff;
       --text: #1a1a1a;
@@ -24,9 +27,13 @@
       --border-light: #f1f5f9;
       --success: #10b981;
       --error: #ef4444;
+      
+      /* Spacing & Radius */
       --radius: 12px;
       --radius-lg: 20px;
       --radius-xl: 28px;
+      
+      /* Shadows */
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
       --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
@@ -34,7 +41,6 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
     html { scroll-behavior: smooth; }
     
     body {
@@ -71,22 +77,13 @@
       to { opacity: 1; transform: translateX(0); }
     }
 
-    .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
-    .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
-    .animate-float { animation: float 6s ease-in-out infinite; }
-    
-    .delay-100 { animation-delay: 0.1s; }
-    .delay-200 { animation-delay: 0.2s; }
-    .delay-300 { animation-delay: 0.3s; }
-    .delay-400 { animation-delay: 0.4s; }
-
     /* ========== NAVIGATION ========== */
     .nav {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.97);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(0,0,0,0.05);
@@ -104,36 +101,28 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 72px;
+      height: 180px;
       padding: 0 24px;
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       text-decoration: none;
       color: var(--primary);
     }
 
-    .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--secondary);
-      font-weight: 900;
-      font-size: 20px;
-      box-shadow: 0 4px 12px rgba(3,63,42,0.3);
+    .logo-img {
+      height: 170px;
+      width: auto;
     }
 
     .logo-text {
       font-weight: 800;
       font-size: 22px;
       letter-spacing: -0.5px;
+      color: var(--primary);
     }
 
     .logo-text span {
@@ -159,7 +148,7 @@
 
     .nav-links a:hover {
       color: var(--primary);
-      background: var(--accent);
+      background: rgba(30,77,58,0.08);
     }
 
     .nav-buttons {
@@ -189,16 +178,23 @@
     .btn-primary {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: white;
-      box-shadow: 0 4px 14px rgba(3,63,42,0.4);
+      box-shadow: 0 4px 14px rgba(30,77,58,0.4);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(3,63,42,0.5);
+      box-shadow: 0 6px 20px rgba(30,77,58,0.5);
     }
 
-    .btn-primary:active {
-      transform: translateY(0);
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color: var(--primary-dark);
+      box-shadow: 0 4px 14px rgba(212,168,67,0.4);
+    }
+
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212,168,67,0.5);
     }
 
     .btn-secondary {
@@ -209,7 +205,7 @@
 
     .btn-secondary:hover {
       border-color: var(--primary);
-      background: var(--accent);
+      background: rgba(30,77,58,0.05);
     }
 
     .btn-ghost {
@@ -220,7 +216,7 @@
 
     .btn-ghost:hover {
       color: var(--primary);
-      background: var(--accent);
+      background: rgba(30,77,58,0.08);
     }
 
     .btn-large {
@@ -239,8 +235,8 @@
       min-height: 100vh;
       display: flex;
       align-items: center;
-      padding: 120px 24px 80px;
-      background: linear-gradient(180deg, #f0fdf4 0%, var(--background) 100%);
+      padding: 220px 24px 80px;
+      background: linear-gradient(180deg, rgba(30,77,58,0.03) 0%, var(--background) 100%);
       position: relative;
       overflow: hidden;
     }
@@ -252,7 +248,7 @@
       right: -300px;
       width: 800px;
       height: 800px;
-      background: radial-gradient(circle, rgba(3,63,42,0.08) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(30,77,58,0.08) 0%, transparent 70%);
       border-radius: 50%;
       pointer-events: none;
     }
@@ -264,7 +260,7 @@
       left: -200px;
       width: 600px;
       height: 600px;
-      background: radial-gradient(circle, rgba(246,212,102,0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(212,168,67,0.12) 0%, transparent 70%);
       border-radius: 50%;
       pointer-events: none;
     }
@@ -309,7 +305,7 @@
     }
 
     .hero h1 {
-      font-size: 56px;
+      font-size: 52px;
       font-weight: 900;
       line-height: 1.1;
       margin-bottom: 24px;
@@ -318,14 +314,15 @@
     }
 
     .hero h1 .highlight {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--primary);
+    }
+
+    .hero h1 .gold {
+      color: var(--gold);
     }
 
     .hero-subtitle {
-      font-size: 20px;
+      font-size: 19px;
       color: var(--text-light);
       margin-bottom: 40px;
       max-width: 520px;
@@ -435,7 +432,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--secondary);
+      color: var(--gold);
       font-weight: 800;
       font-size: 12px;
     }
@@ -470,7 +467,6 @@
     .mockup-swatch {
       height: 50px;
       border-radius: 8px;
-      background: linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%);
     }
 
     .mockup-swatch.s1 { background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%); }
@@ -498,8 +494,8 @@
     }
 
     .mockup-btn {
-      background: var(--secondary);
-      color: var(--primary);
+      background: var(--gold);
+      color: var(--primary-dark);
       padding: 10px 20px;
       border-radius: 8px;
       font-size: 12px;
@@ -544,24 +540,24 @@
       font-size: 20px;
     }
 
-    .floating-icon.green { background: #d1fae5; }
-    .floating-icon.blue { background: #dbeafe; }
+    .floating-icon.green { background: rgba(30,77,58,0.1); }
+    .floating-icon.gold { background: rgba(212,168,67,0.15); }
 
-    /* ========== TRUSTED BY SECTION ========== */
-    .trusted {
+    /* ========== BRANDS SECTION ========== */
+    .brands {
       padding: 60px 24px;
       background: white;
       border-top: 1px solid var(--border-light);
       border-bottom: 1px solid var(--border-light);
     }
 
-    .trusted-inner {
+    .brands-inner {
       max-width: 1280px;
       margin: 0 auto;
       text-align: center;
     }
 
-    .trusted-label {
+    .brands-label {
       font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
@@ -570,16 +566,16 @@
       margin-bottom: 32px;
     }
 
-    .trusted-logos {
+    .brands-logos {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 60px;
       flex-wrap: wrap;
-      opacity: 0.6;
+      opacity: 0.7;
     }
 
-    .trusted-logo {
+    .brands-logo {
       font-size: 24px;
       font-weight: 700;
       color: var(--text-muted);
@@ -610,7 +606,7 @@
       text-transform: uppercase;
       letter-spacing: 0.15em;
       margin-bottom: 16px;
-      background: var(--accent);
+      background: rgba(30,77,58,0.08);
       padding: 8px 16px;
       border-radius: 999px;
     }
@@ -654,7 +650,7 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      background: linear-gradient(90deg, var(--primary) 0%, var(--gold) 100%);
       transform: scaleX(0);
       transition: transform 0.4s ease;
     }
@@ -672,7 +668,7 @@
     .feature-icon {
       width: 64px;
       height: 64px;
-      background: linear-gradient(135deg, var(--accent) 0%, #d1fae5 100%);
+      background: linear-gradient(135deg, rgba(30,77,58,0.1) 0%, rgba(30,77,58,0.05) 100%);
       border-radius: 16px;
       display: flex;
       align-items: center;
@@ -719,9 +715,10 @@
       top: 48px;
       left: 15%;
       right: 15%;
-      height: 2px;
-      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--gold) 100%);
       z-index: 0;
+      border-radius: 2px;
     }
 
     .step {
@@ -768,93 +765,77 @@
       margin: 0 auto;
     }
 
-    /* ========== TESTIMONIALS ========== */
-    .testimonials {
+    /* ========== WHY CHOOSE US ========== */
+    .why-us {
       padding: 120px 24px;
       background: linear-gradient(180deg, var(--background) 0%, white 100%);
     }
 
-    .testimonials-inner {
+    .why-us-inner {
       max-width: 1280px;
       margin: 0 auto;
     }
 
-    .testimonials-grid {
+    .why-us-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 32px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 48px;
       margin-top: 72px;
     }
 
-    .testimonial-card {
+    .why-us-card {
+      display: flex;
+      gap: 24px;
+      padding: 32px;
       background: white;
-      padding: 40px;
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow);
       border: 1px solid var(--border-light);
       transition: all 0.3s ease;
     }
 
-    .testimonial-card:hover {
+    .why-us-card:hover {
       transform: translateY(-4px);
       box-shadow: var(--shadow-lg);
     }
 
-    .testimonial-stars {
-      color: #fbbf24;
-      font-size: 20px;
-      margin-bottom: 20px;
-      letter-spacing: 2px;
-    }
-
-    .testimonial-text {
-      font-size: 16px;
-      line-height: 1.8;
-      color: var(--text-light);
-      margin-bottom: 28px;
-    }
-
-    .testimonial-author {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .testimonial-avatar {
-      width: 52px;
-      height: 52px;
+    .why-us-icon {
+      width: 64px;
+      height: 64px;
+      min-width: 64px;
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      border-radius: 50%;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 18px;
+      font-size: 28px;
     }
 
-    .testimonial-name {
+    .why-us-content h3 {
+      font-size: 20px;
       font-weight: 700;
+      margin-bottom: 8px;
       color: var(--text);
     }
 
-    .testimonial-role {
-      font-size: 14px;
-      color: var(--text-muted);
+    .why-us-content p {
+      color: var(--text-light);
+      font-size: 15px;
+      line-height: 1.7;
     }
 
-    /* ========== PRICING PREVIEW ========== */
-    .pricing-preview {
+    /* ========== GUARANTEE SECTION ========== */
+    .guarantee {
       padding: 120px 24px;
       background: white;
     }
 
-    .pricing-preview-inner {
+    .guarantee-inner {
       max-width: 900px;
       margin: 0 auto;
     }
 
-    .pricing-card {
+    .guarantee-card {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       border-radius: var(--radius-xl);
       padding: 60px;
@@ -863,18 +844,18 @@
       overflow: hidden;
     }
 
-    .pricing-card::before {
+    .guarantee-card::before {
       content: '';
       position: absolute;
       top: -100px;
       right: -100px;
       width: 300px;
       height: 300px;
-      background: radial-gradient(circle, rgba(246,212,102,0.2) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(212,168,67,0.2) 0%, transparent 70%);
       border-radius: 50%;
     }
 
-    .pricing-card::after {
+    .guarantee-card::after {
       content: '';
       position: absolute;
       bottom: -50px;
@@ -885,17 +866,17 @@
       border-radius: 50%;
     }
 
-    .pricing-header {
+    .guarantee-header {
       text-align: center;
       position: relative;
       z-index: 1;
       margin-bottom: 48px;
     }
 
-    .pricing-badge {
+    .guarantee-badge {
       display: inline-block;
-      background: var(--secondary);
-      color: var(--primary);
+      background: var(--gold);
+      color: var(--primary-dark);
       padding: 8px 20px;
       border-radius: 999px;
       font-size: 14px;
@@ -903,18 +884,18 @@
       margin-bottom: 20px;
     }
 
-    .pricing-title {
+    .guarantee-title {
       font-size: 36px;
       font-weight: 900;
       margin-bottom: 12px;
     }
 
-    .pricing-subtitle {
+    .guarantee-subtitle {
       font-size: 18px;
       opacity: 0.9;
     }
 
-    .pricing-features {
+    .guarantee-features {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 20px;
@@ -923,14 +904,14 @@
       margin-bottom: 48px;
     }
 
-    .pricing-feature {
+    .guarantee-feature {
       display: flex;
       align-items: center;
       gap: 14px;
       font-size: 16px;
     }
 
-    .pricing-feature-icon {
+    .guarantee-feature-icon {
       width: 28px;
       height: 28px;
       background: rgba(255,255,255,0.2);
@@ -941,19 +922,19 @@
       font-size: 14px;
     }
 
-    .pricing-cta {
+    .guarantee-cta {
       text-align: center;
       position: relative;
       z-index: 1;
     }
 
-    .pricing-cta .btn {
-      background: var(--secondary);
-      color: var(--primary);
+    .guarantee-cta .btn {
+      background: var(--gold);
+      color: var(--primary-dark);
     }
 
-    .pricing-cta .btn:hover {
-      background: var(--secondary-light);
+    .guarantee-cta .btn:hover {
+      background: var(--gold-light);
     }
 
     /* ========== CTA SECTION ========== */
@@ -992,7 +973,7 @@
     /* ========== FOOTER ========== */
     .footer {
       padding: 80px 24px 40px;
-      background: var(--text);
+      background: var(--primary-dark);
       color: white;
     }
 
@@ -1012,12 +993,16 @@
       margin-bottom: 20px;
     }
 
+    .footer-brand .logo-img {
+      height: 140px;
+    }
+
     .footer-brand .logo-text {
       color: white;
     }
 
     .footer-brand .logo-text span {
-      color: rgba(255,255,255,0.5);
+      color: rgba(255,255,255,0.6);
     }
 
     .footer-brand p {
@@ -1030,6 +1015,7 @@
       font-weight: 700;
       margin-bottom: 24px;
       font-size: 16px;
+      color: var(--gold);
     }
 
     .footer-links {
@@ -1109,6 +1095,7 @@
     .modal-header h3 {
       font-size: 28px;
       font-weight: 800;
+      color: var(--primary);
     }
 
     .modal-close {
@@ -1162,7 +1149,7 @@
     .form-input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 4px rgba(3,63,42,0.1);
+      box-shadow: 0 0 0 4px rgba(30,77,58,0.1);
     }
 
     .form-input::placeholder {
@@ -1223,7 +1210,7 @@
       padding: 32px 24px;
       max-width: 1280px;
       margin: 0 auto;
-      min-height: calc(100vh - 72px);
+      min-height: calc(100vh - 180px);
     }
 
     .dashboard-header {
@@ -1235,6 +1222,7 @@
       font-weight: 900;
       margin-bottom: 8px;
       letter-spacing: -0.5px;
+      color: var(--primary);
     }
 
     .dashboard-header p {
@@ -1260,7 +1248,7 @@
     .stat-card-icon {
       width: 48px;
       height: 48px;
-      background: var(--accent);
+      background: rgba(30,77,58,0.1);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -1301,6 +1289,7 @@
     .card-title {
       font-size: 20px;
       font-weight: 700;
+      color: var(--primary);
     }
 
     .quotes-table {
@@ -1410,11 +1399,11 @@
         display: none;
       }
 
-      .testimonials-grid {
+      .why-us-grid {
         grid-template-columns: 1fr;
       }
 
-      .pricing-features {
+      .guarantee-features {
         grid-template-columns: 1fr;
       }
 
@@ -1429,7 +1418,7 @@
       }
 
       .hero h1 {
-        font-size: 40px;
+        font-size: 36px;
       }
 
       .hero-stat-value {
@@ -1448,7 +1437,7 @@
         grid-template-columns: 1fr;
       }
 
-      .pricing-card {
+      .guarantee-card {
         padding: 40px 24px;
       }
 
@@ -1510,19 +1499,19 @@
   <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="#" class="logo" onclick="goHome(); return false;">
-        <div class="logo-icon">P</div>
+        <img src="https://lh3.googleusercontent.com/d/1FSPVDprwM2mmL2QNaR2arxaJ-oQC5jff" alt="Prime Worktops" class="logo-img">
         <div class="logo-text">Prime Worktops <span>Trade</span></div>
       </a>
       <div class="nav-links" id="navLinksPublic">
         <a href="#features">Features</a>
         <a href="#how-it-works">How It Works</a>
-        <a href="#testimonials">Reviews</a>
-        <a href="#pricing">Pricing</a>
+        <a href="#why-us">Why Us</a>
+        <a href="#guarantee">Guarantee</a>
       </div>
       <div class="nav-buttons">
         <button class="btn btn-ghost" id="navLoginBtn" onclick="openModal('login')">Log In</button>
         <button class="btn btn-primary" id="navRegisterBtn" onclick="openModal('register')">Start Free Trial</button>
-        <span id="navUserName" style="font-weight: 600; display: none;"></span>
+        <span id="navUserName" style="font-weight: 600; display: none; color: var(--primary);"></span>
         <button class="btn btn-ghost" id="navLogoutBtn" onclick="logout()" style="display:none;">Log Out</button>
       </div>
     </div>
@@ -1550,16 +1539,16 @@
           </div>
           <div class="hero-stats">
             <div class="hero-stat">
-              <div class="hero-stat-value">500+</div>
-              <div class="hero-stat-label">Trade Partners</div>
-            </div>
-            <div class="hero-stat">
-              <div class="hero-stat-value">£2.4M</div>
-              <div class="hero-stat-label">Quotes Generated</div>
-            </div>
-            <div class="hero-stat">
               <div class="hero-stat-value">60 sec</div>
               <div class="hero-stat-label">Average Quote Time</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">100%</div>
+              <div class="hero-stat-label">Free to Use</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">24/7</div>
+              <div class="hero-stat-label">Always Available</div>
             </div>
           </div>
         </div>
@@ -1599,30 +1588,30 @@
           <div class="floating-card card-1">
             <div class="floating-icon green">✓</div>
             <div>
-              <div style="font-weight: 700;">Quote Accepted!</div>
-              <div style="font-size: 12px; color: var(--text-muted);">Jones Kitchen - £3,240</div>
+              <div style="font-weight: 700;">Quote Saved!</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Ready to send or use</div>
             </div>
           </div>
           <div class="floating-card card-2">
-            <div class="floating-icon blue">📄</div>
+            <div class="floating-icon gold">📄</div>
             <div>
               <div style="font-weight: 700;">PDF Generated</div>
-              <div style="font-size: 12px; color: var(--text-muted);">Ready to send</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Your branding applied</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Trusted By -->
-    <section class="trusted">
-      <div class="trusted-inner">
-        <div class="trusted-label">Premium Materials From Leading Brands</div>
-        <div class="trusted-logos">
-          <div class="trusted-logo">SILESTONE</div>
-          <div class="trusted-logo">DEKTON</div>
-          <div class="trusted-logo">NEOLITH</div>
-          <div class="trusted-logo">COMPAC</div>
+    <!-- Brands -->
+    <section class="brands">
+      <div class="brands-inner">
+        <div class="brands-label">Premium Materials From Leading Brands</div>
+        <div class="brands-logos">
+          <div class="brands-logo">SILESTONE</div>
+          <div class="brands-logo">DEKTON</div>
+          <div class="brands-logo">NEOLITH</div>
+          <div class="brands-logo">COMPAC</div>
         </div>
       </div>
     </section>
@@ -1657,9 +1646,9 @@
             <p class="feature-desc">Set your own profit margins. We show you trade price, you decide what to charge your customers.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3 class="feature-title">Track Everything</h3>
-            <p class="feature-desc">See all your quotes, follow-ups, and conversions in one dashboard. Never lose track of a lead again.</p>
+            <div class="feature-icon">🏠</div>
+            <h3 class="feature-title">Use In-House</h3>
+            <p class="feature-desc">Use quotes internally for quick pricing on phone calls and site visits - or send directly to customers. Your choice.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">📱</div>
@@ -1686,113 +1675,108 @@
           </div>
           <div class="step">
             <div class="step-number">2</div>
-            <h3 class="step-title">Send to Customer</h3>
-            <p class="step-desc">Email a professional PDF or share a link. Your branding, your price.</p>
+            <h3 class="step-title">Use or Send</h3>
+            <p class="step-desc">Use internally for pricing, or send a professional PDF to your customer.</p>
           </div>
           <div class="step">
             <div class="step-number">3</div>
-            <h3 class="step-title">Customer Accepts</h3>
-            <p class="step-desc">They click to accept, you get notified instantly. Convert to order in one click.</p>
+            <h3 class="step-title">Place Order</h3>
+            <p class="step-desc">When you're ready, convert the quote to an order with one click.</p>
           </div>
           <div class="step">
             <div class="step-number">4</div>
-            <h3 class="step-title">We Manufacture</h3>
+            <h3 class="step-title">We Deliver</h3>
             <p class="step-desc">We template, manufacture, and deliver. You fit and get paid. Simple.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Testimonials -->
-    <section class="testimonials" id="testimonials">
-      <div class="testimonials-inner">
+    <!-- Why Choose Us -->
+    <section class="why-us" id="why-us">
+      <div class="why-us-inner">
         <div class="section-header">
-          <div class="section-label">Testimonials</div>
-          <h2 class="section-title">Trusted by kitchen professionals</h2>
-          <p class="section-subtitle">See what other trade partners say about working with us.</p>
+          <div class="section-label">Why Choose Us</div>
+          <h2 class="section-title">Built for kitchen professionals</h2>
+          <p class="section-subtitle">We understand what you need because we work with trade customers every day.</p>
         </div>
-        <div class="testimonials-grid">
-          <div class="testimonial-card">
-            <div class="testimonial-stars">★★★★★</div>
-            <p class="testimonial-text">"Game changer for our business. We used to spend hours getting quotes from suppliers. Now we can quote customers on the spot during kitchen consultations."</p>
-            <div class="testimonial-author">
-              <div class="testimonial-avatar">JM</div>
-              <div>
-                <div class="testimonial-name">James Mitchell</div>
-                <div class="testimonial-role">Mitchell Kitchens, Manchester</div>
-              </div>
+        <div class="why-us-grid">
+          <div class="why-us-card">
+            <div class="why-us-icon">🏭</div>
+            <div class="why-us-content">
+              <h3>Direct from Manufacturer</h3>
+              <p>We manufacture everything in-house. No middlemen, no delays, better prices for you.</p>
             </div>
           </div>
-          <div class="testimonial-card">
-            <div class="testimonial-stars">★★★★★</div>
-            <p class="testimonial-text">"The branded quotes look so professional. Customers think we have our own supply chain. It's helped us close at least 30% more jobs since we started using it."</p>
-            <div class="testimonial-author">
-              <div class="testimonial-avatar">SH</div>
-              <div>
-                <div class="testimonial-name">Sarah Hughes</div>
-                <div class="testimonial-role">Dream Kitchens Ltd, Birmingham</div>
-              </div>
+          <div class="why-us-card">
+            <div class="why-us-icon">📐</div>
+            <div class="why-us-content">
+              <h3>Professional Templating</h3>
+              <p>Our templating team ensures perfect fit every time. We measure, you relax.</p>
             </div>
           </div>
-          <div class="testimonial-card">
-            <div class="testimonial-stars">★★★★★</div>
-            <p class="testimonial-text">"Finally, a system that actually works. The worktops arrive exactly as quoted, on time, every time. Customer service is excellent when we need it."</p>
-            <div class="testimonial-author">
-              <div class="testimonial-avatar">DW</div>
-              <div>
-                <div class="testimonial-name">David Wilson</div>
-                <div class="testimonial-role">Wilson & Sons Builders, Leeds</div>
-              </div>
+          <div class="why-us-card">
+            <div class="why-us-icon">🚚</div>
+            <div class="why-us-content">
+              <h3>Reliable Delivery</h3>
+              <p>We deliver when we say we will. Your customers stay happy, your schedule stays on track.</p>
+            </div>
+          </div>
+          <div class="why-us-card">
+            <div class="why-us-icon">💬</div>
+            <div class="why-us-content">
+              <h3>Real Support</h3>
+              <p>Talk to real people who understand worktops. No call centres, no scripts, just help.</p>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Pricing Preview -->
-    <section class="pricing-preview" id="pricing">
-      <div class="pricing-preview-inner">
-        <div class="pricing-card">
-          <div class="pricing-header">
-            <div class="pricing-badge">100% Free to Use</div>
-            <h2 class="pricing-title">No subscription. No hidden fees.</h2>
-            <p class="pricing-subtitle">You only pay trade price when you place an order. That's it.</p>
+    <!-- Guarantee Section -->
+    <section class="guarantee" id="guarantee">
+      <div class="guarantee-inner">
+        <div class="guarantee-card">
+          <div class="guarantee-header">
+            <div class="guarantee-badge">Our Guarantee</div>
+            <h2 class="guarantee-title">No subscription. No hidden fees.</h2>
+            <p class="guarantee-subtitle">You only pay trade price when you place an order. That's it.</p>
           </div>
-          <div class="pricing-features">
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>Unlimited quotes</span>
+          <div class="guarantee-features">
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>Unlimited quotes forever</span>
             </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>Custom branding</span>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>Custom branding included</span>
             </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>PDF generation</span>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>PDF generation included</span>
             </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>Quote tracking</span>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>Quote tracking included</span>
             </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>Customer portal</span>
-            </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>Email support</span>
-            </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
               <span>No minimum orders</span>
             </div>
-            <div class="pricing-feature">
-              <div class="pricing-feature-icon">✓</div>
-              <span>14-day trial</span>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>Email support included</span>
+            </div>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>14-day free trial</span>
+            </div>
+            <div class="guarantee-feature">
+              <div class="guarantee-feature-icon">✓</div>
+              <span>Cancel anytime</span>
             </div>
           </div>
-          <div class="pricing-cta">
+          <div class="guarantee-cta">
             <button class="btn btn-large" onclick="openModal('register')">Start Your Free Trial</button>
           </div>
         </div>
@@ -1802,8 +1786,8 @@
     <!-- CTA Section -->
     <section class="cta">
       <div class="cta-inner">
-        <h2>Ready to win more worktop jobs?</h2>
-        <p>Join hundreds of kitchen professionals already using Prime Worktops Trade. Get set up in 5 minutes.</p>
+        <h2>Ready to quote faster?</h2>
+        <p>Join kitchen professionals who've simplified their worktop ordering. Get set up in 5 minutes.</p>
         <div class="cta-buttons">
           <button class="btn btn-primary btn-large" onclick="openModal('register')">Start Free Trial</button>
           <button class="btn btn-secondary btn-large" onclick="window.location.href='mailto:trade@primeworktops.co.uk'">Contact Us</button>
@@ -1816,18 +1800,19 @@
       <div class="footer-inner">
         <div class="footer-brand">
           <a href="#" class="logo">
-            <div class="logo-icon">P</div>
+            <img src="https://lh3.googleusercontent.com/d/1FSPVDprwM2mmL2QNaR2arxaJ-oQC5jff" alt="Prime Worktops" class="logo-img">
             <div class="logo-text">Prime Worktops <span>Trade</span></div>
           </a>
-          <p>The free quote system for kitchen professionals. Premium worktops, simple ordering, reliable delivery. Powered by SPM Granite Ltd.</p>
+          <p style="margin-top: 16px;">The free quote system for kitchen professionals. Premium worktops, simple ordering, reliable delivery.</p>
+          <p style="margin-top: 12px; font-size: 13px;">Powered by SPM Granite Ltd.</p>
         </div>
         <div class="footer-column">
           <h4>Product</h4>
           <ul class="footer-links">
             <li><a href="#features">Features</a></li>
             <li><a href="#how-it-works">How It Works</a></li>
-            <li><a href="#pricing">Pricing</a></li>
-            <li><a href="#testimonials">Reviews</a></li>
+            <li><a href="#guarantee">Pricing</a></li>
+            <li><a href="#why-us">Why Us</a></li>
           </ul>
         </div>
         <div class="footer-column">
@@ -1842,8 +1827,8 @@
         <div class="footer-column">
           <h4>Contact</h4>
           <ul class="footer-links">
-            <li><a href="mailto:trade@primeworktops.co.uk">trade@primeworktops.co.uk</a></li>
-            <li><a href="tel:01onal">0161 XXX XXXX</a></li>
+            <li><a href="/cdn-cgi/l/email-protection#87f3f5e6e3e2c7f7f5eeeae2f0e8f5ecf3e8f7f4a9e4e8a9f2ec"><span class="__cf_email__" data-cfemail="7400061510113404061d1911031b061f001b04075a171b5a011f">[email&#160;protected]</span></a></li>
+            <li><a href="tel:+441onal">0161 XXX XXXX</a></li>
             <li><a href="#">Manchester, UK</a></li>
           </ul>
         </div>
@@ -1985,7 +1970,7 @@
     </div>
   </div>
 
-  <script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     // ========== STATE ==========
     let currentUser = null;
     let authToken = localStorage.getItem('authToken');
@@ -2215,10 +2200,4 @@
       const value = quotes.reduce((sum, q) => sum + (parseFloat(q.customer_price_inc_vat) || 0), 0);
 
       document.getElementById('statTotalQuotes').textContent = total;
-      document.getElementById('statAccepted').textContent = accepted;
-      document.getElementById('statPending').textContent = pending;
-      document.getElementById('statValue').textContent = '£' + value.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    }
-  </script>
-</body>
-</html>
+      document.getElementById('statAccepted').textContent = accepted
