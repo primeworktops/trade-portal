@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote Summary - Prime Worktops</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --primary: #1e4d3a;
+      --primary-light: #2d6b4f;
+      --accent: #d4a843;
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --border: #e0e0e0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #f5f5f5;
+      color: #333;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo img, .logo svg {
+      height: 120px;
+      width: auto;
+    }
+    
+    .logo-text {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .logo-text-fallback {
+      font-size: 36px;
+      font-weight: 800;
+      color: #1e4d3a;
+      letter-spacing: -0.5px;
+    }
+    
+    .logo-text-fallback span {
+      color: #d4a843;
+    }
+    
+    .quote-info {
+      text-align: right;
+      font-size: 14px;
+      color: #555;
+    }
+    
+    .quote-number {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    
+    .quote-info {
+      text-align: right;
+      font-size: 14px;
+    }
+    
+    .quote-number {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    /* 3D Preview Section */
+    .preview-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .render-container {
+      background: #f0f0f0;
+      border-radius: 8px;
+      height: 400px;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+    
+    .render-container:active {
+      cursor: grabbing;
+    }
+    
+    #render3d, #render3dImage {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .view-thumbnails {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      overflow-x: auto;
+    }
+    
+    .view-thumb {
+      flex: 0 0 auto;
+      width: 80px;
+      height: 60px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .view-thumb:hover {
+      border-color: #007bff;
+      transform: scale(1.05);
+    }
+    
+    .view-thumb.active {
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.3);
+    }
+    
+    .view-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .view-thumb-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      font-size: 9px;
+      padding: 2px 4px;
+      text-align: center;
+    }
+    
+    .material-info {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    
+    .material-swatch {
+      width: 200px;
+      height: 150px;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      border: 2px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .material-details {
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .material-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    
+    .material-brand {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    
+    .material-type {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 12px;
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .tier-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .tier-1 { background: rgba(76,175,80,0.15); color: #4CAF50; }
+    .tier-2 { background: rgba(139,195,74,0.15); color: #8BC34A; }
+    .tier-3 { background: rgba(255,193,7,0.15); color: #FFC107; }
+    .tier-4 { background: rgba(255,152,0,0.15); color: #FF9800; }
+    .tier-5 { background: rgba(244,67,54,0.15); color: #f44336; }
+    
+    /* Pieces Grid */
+    .pieces-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    
+    .piece-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    .piece-drawing {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .piece-drawing svg {
+      max-width: 100%;
+      max-height: 60px;
+    }
+    
+    .piece-name {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    
+    .piece-dims {
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    
+    .piece-type {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    
+    /* Summary Table */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .summary-table th,
+    .summary-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .summary-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    
+    .summary-table td {
+      font-size: 14px;
+    }
+    
+    .summary-table .amount {
+      text-align: right;
+      font-weight: 500;
+    }
+    
+    .summary-table .subtotal {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+    
+    .summary-table .total {
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+    }
+    
+    .summary-table .total td {
+      border-bottom: none;
+      font-size: 18px;
+      padding: 16px;
+    }
+    
+    .summary-table .total .amount {
+      font-size: 28px;
+    }
+    
+    .included {
+      color: #4CAF50;
+      font-size: 12px;
+    }
+    
+    /* Customer Details */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .detail-group {
+      margin-bottom: 12px;
+    }
+    
+    .detail-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    
+    .detail-value {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    /* Notes */
+    .notes {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    
+    .notes h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .notes ul {
+      margin-left: 16px;
+    }
+    
+    .notes li {
+      margin-bottom: 4px;
+    }
+    
+    /* Actions (hidden in print) */
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-light);
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    
+    .btn-secondary:hover {
+      background: #f0f7f4;
+    }
+    
+    /* Print styles */
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      body {
+        background: white;
+        font-size: 9pt;
+      }
+      
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+      
+      .actions {
+        display: none !important;
+      }
+      
+      /* Hide accept section in print/PDF */
+      .accept-section {
+        display: none !important;
+      }
+      
+      .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        margin-bottom: 6px;
+        padding: 8px;
+      }
+      
+      .card-title {
+        font-size: 12pt;
+        margin-bottom: 6px;
+      }
+      
+      /* PAGE 1: Header + Customer + Design */
+      .header {
+        margin-bottom: 3px !important;
+        padding: 6px 12px !important;
+      }
+      
+      /* Logo - good size but not too big */
+      .logo img, .logo svg {
+        height: 80px !important;
+        max-height: 80px !important;
+      }
+      
+      #customerCard {
+        page-break-after: avoid;
+        padding: 4px 8px !important;
+        margin-bottom: 3px !important;
+      }
+      
+      /* Very compact customer details for print */
+      .details-grid {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 4px 20px !important;
+      }
+      
+      .detail-group {
+        margin-bottom: 0 !important;
+        display: flex !important;
+        align-items: baseline !important;
+        gap: 6px !important;
+      }
+      
+      .detail-label {
+        font-size: 8px !important;
+        margin-bottom: 0 !important;
+        min-width: auto !important;
+      }
+      
+      .detail-value {
+        font-size: 11px !important;
+      }
+      
+      #designCard {
+        page-break-inside: avoid;
+        padding: 5px !important;
+        margin-bottom: 0 !important;
+      }
+      
+      .card-title {
+        font-size: 11px !important;
+        margin-bottom: 4px !important;
+        padding-bottom: 3px !important;
+      }
+      
+      /* SHOW material info in print - original size */
+      .material-info {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 15px !important;
+        margin-bottom: 8px !important;
+        align-items: flex-start !important;
+      }
+      
+      .material-swatch {
+        width: 100px !important;
+        height: 75px !important;
+        flex-shrink: 0 !important;
+        border-radius: 6px !important;
+      }
+      
+      .material-details {
+        padding: 6px !important;
+        flex: 1 !important;
+      }
+      
+      .material-name {
+        font-size: 14px !important;
+        line-height: 1.2 !important;
+        margin-bottom: 2px !important;
+      }
+      
+      .material-brand {
+        font-size: 10px !important;
+      }
+      
+      .material-type, .tier-badge {
+        font-size: 10px !important;
+        padding: 2px 8px !important;
+      }
+      
+      /* Hide 2D image in PDF - only show 3D */
+      #plan2dContainer {
+        display: none !important;
+      }
+      
+      /* 3D image only - BIGGER to fill space */
+      .images-row {
+        display: block !important;
+      }
+      
+      /* Hide image labels in print */
+      .image-wrapper > div[style*="font-size:12px"] {
+        display: none !important;
+      }
+      
+      /* Render container - BIG 3D only */
+      .render-container {
+        height: 380px !important;
+        min-height: 380px !important;
+        max-height: 380px !important;
+        width: 100% !important;
+      }
+      
+      .render-container img {
+        object-fit: contain !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      
+      /* Hide reset button in print */
+      .render-container button {
+        display: none !important;
+      }
+      
+      /* Hide thumbnails in print */
+      .view-thumbnails {
+        display: none !important;
+      }
+      
+      .preview-section {
+        flex-direction: column;
+        gap: 4px;
+      }
+      
+      /* PAGE 2: Worktop Pieces */
+      #piecesCard {
+        page-break-before: always !important;
+        page-break-inside: avoid !important;
+      }
+      
+      .pieces-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+      }
+      
+      .piece-card {
+        padding: 8px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      .piece-drawing {
+        min-height: 50px !important;
+        padding: 5px !important;
+      }
+      
+      .piece-name {
+        font-size: 11px !important;
+      }
+      
+      .piece-dims {
+        font-size: 12px !important;
+      }
+      
+      #additionsCard {
+        page-break-inside: avoid !important;
+      }
+      
+      /* PAGE 3+: Price Summary & Terms */
+      #priceCard {
+        page-break-before: always !important;
+        page-break-inside: avoid !important;
+      }
+      
+      #termsCard {
+        page-break-inside: avoid !important;
+      }
+      
+      .summary-table {
+        page-break-inside: avoid !important;
+      }
+      
+      .summary-table th,
+      .summary-table td {
+        padding: 8px 12px;
+        font-size: 10pt;
+      }
+      
+      .summary-table .total .amount {
+        font-size: 18pt;
+      }
+      
+      .notes {
+        font-size: 9pt;
+        padding: 10px;
+      }
+      
+      .notes li {
+        margin-bottom: 2px;
+      }
+    }
+    
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+    
+    @page :first {
+      margin-top: 10mm;
+    }
+    
+    /* Accept button */
+    .accept-section {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      border: 2px solid #4CAF50;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .accept-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2e7d32;
+      margin-bottom: 8px;
+    }
+    
+    .accept-subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    
+    .btn-accept {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    
+    .btn-accept:hover {
+      background: #43a047;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+    
+    @media print {
+      .accept-section {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Actions (hidden in print/PDF) -->
+    <div class="actions">
+      <button class="btn btn-primary" onclick="downloadPDF()">
+        📄 Download PDF
+      </button>
+      <button class="btn btn-secondary" onclick="window.print()">
+        🖨️ Print Quote
+      </button>
+      <button class="btn btn-secondary" onclick="saveQuote()">
+        💾 Save Quote
+      </button>
+      <button class="btn btn-secondary" onclick="saveAndNewQuote()" style="background:#e8f5e9;border-color:#4CAF50;color:#2e7d32;">
+        💾+ Save & New Material Quote
+      </button>
+      <button class="btn btn-secondary" onclick="goBack()">
+        ← Back to Designer
+      </button>
+    </div>
+    
+    <!-- Main content for PDF -->
+    <div id="quoteContent">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo">
+          <!-- Default Prime Worktops SVG logo (cropped viewBox for no whitespace) -->
+          <svg id="logoSvg" xmlns="http://www.w3.org/2000/svg" viewBox="90 388 820 240" style="height:120px;width:auto;">
+            <defs>
+              <linearGradient id="lg1" x1="379.23" y1="537.63" x2="601.52" y2="537.63" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffdb42"/><stop offset="0.32" stop-color="#efbc00"/></linearGradient>
+              <linearGradient id="lg2" x1="617.24" y1="537.63" x2="659.84" y2="537.63" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffdb42"/><stop offset="0.32" stop-color="#efbc00"/></linearGradient>
+              <linearGradient id="lg3" x1="672.75" y1="537.63" x2="899.53" y2="537.63" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffdb42"/><stop offset="0.32" stop-color="#efbc00"/></linearGradient>
+            </defs>
+            <path fill="url(#lg1)" d="M601.52,538.89H379.23v-2.53H595.54Q598.51,537.74,601.52,538.89Z"/>
+            <path fill="url(#lg2)" d="M617.24,536.36h42.6a75.87,75.87,0,0,1-20.07,2.53c-2.71,0-5.43-.13-8.17-.34A97.14,97.14,0,0,1,617.24,536.36Z"/>
+            <path fill="url(#lg3)" d="M899.53,536.36v2.53H672.75c.12-.07.21-.14.33-.2l3.87-2.33Z"/>
+            <path fill="#033f2a" d="M669.12,531.87c-.81.21-1.64.35-2.43.63-17.12,6-33.76,4.65-50-3.15a97.87,97.87,0,0,1-30.13-23c-12.78-14.07-25-28.64-37.49-43-1.12-1.29-2.15-2.64-3.52-4.34,3.13-.51,5.81-.91,8.44-1.41,7.38-1.39,14.36-3.69,20-8.94,14.72-13.72,10.86-39.63-7.38-49.5-8.83-4.79-18.45-6.43-28.32-6.56-16.84-.21-33.67-.12-50.51-.15a22.54,22.54,0,0,0-2.44.29l-.06.85c.7.21,1.39.46,2.11.63,4.88,1.13,7,3.34,7.67,8.36a34.92,34.92,0,0,1,.34,4.91q0,47.73,0,95.48a24.27,24.27,0,0,1-.54,5.17c-.87,4-3.25,6.07-7.28,6.78a6.63,6.63,0,0,0-2,1.15,7.12,7.12,0,0,0,2.08.74c6.49,0,13,0,19.49,0,4.57,0,9.14.05,13.72,0,.55,0,1.08-.6,1.63-.92-.47-.31-.93-.87-1.41-.89-6.52-.19-8.64-5-8.75-10.14-.09-3.57,0-7.13,0-10.71q0-48.14-.06-96.3c0-2.68.79-3.46,3.41-3.39,6,.18,12.08-.1,18.12.17,8.73.38,16.81,2.68,23,9.31,7.13,7.62,9.1,16.94,8.3,27-1.11,13.73-8.87,23.43-21.14,25.67-6,1.11-12.16.89-18.26,1.24-.76,0-1.52,0-2.61,0a12.81,12.81,0,0,0,.78,1.27c11.59,13.56,22.87,27.39,34.84,40.6,16.33,18,35.3,31.42,58.55,36.72a97.14,97.14,0,0,0,14.36,2.19c2.74.21,5.46.34,8.17.34a75.87,75.87,0,0,0,20.07-2.53,63.17,63.17,0,0,0,7.83-2.63,14.88,14.88,0,0,0,1.8-1.06C669.36,532.41,669.23,532.14,669.12,531.87Z"/>
+            <path fill="#033f2a" d="M660.75,392.8a14.27,14.27,0,0,1,2.13-.33c7.23,0,14.46.07,21.68,0,1.74,0,2.33.83,2.93,2.22q21.07,48.66,42.22,97.28c.5,1.16,1.07,2.28,1.87,4,.87-1.71,1.58-2.92,2.13-4.21q20.47-48.31,40.87-96.66c.85-2,1.84-2.72,4-2.67,6.49.15,13,.06,19.49.08.95,0,1.9.12,2.85.19l.17.79a13.42,13.42,0,0,1-2.13.87c-5.62,1.26-8.31,4.35-8.36,10.17-.11,10.79-.05,21.58-.05,32.37q0,32.5,0,65a24.68,24.68,0,0,0,.5,5.43c1.14,5,3.84,7.24,9,7.63a2.46,2.46,0,0,1,1.62.84c-.58.35-1.15,1-1.73,1q-17.84.09-35.68,0c-.48,0-.95-.54-1.43-.83.43-.34.81-.88,1.28-1,5.86-1.23,8.29-3.67,9.24-9.55a31.15,31.15,0,0,0,.39-4.91q0-46.78,0-93.55c0-.63-.08-1.26-.17-2.64a24.13,24.13,0,0,0-1.35,2.19q-21.86,51.31-43.69,102.62c-.83,1.93-1.61,3.89-2.57,5.76a8.44,8.44,0,0,1-1.74,1.8,8.47,8.47,0,0,1-1.71-1.9q-6.82-15.25-13.56-30.56Q692.58,447,676.2,409.73a7.86,7.86,0,0,0-2.23-3.18c-.07.75-.21,1.5-.21,2.25q0,45.27.07,90.54a26.82,26.82,0,0,0,1,7.56c1.29,4.34,4.19,7.21,8.88,7.9a3.37,3.37,0,0,1,2,1c-.62.32-1.23.92-1.86.92q-10.83.12-21.68.06c-.51,0-1-.48-1.52-.74.43-.46.78-1.15,1.31-1.33,6.85-2.36,9.58-5.83,9.59-13.13q.07-47.33,0-94.64a21,21,0,0,0-1-5.92c-1.11-3.68-3.49-6.14-7.47-6.76a22.39,22.39,0,0,1-2.4-.65Z"/>
+            <path fill="#033f2a" d="M379.7,392.65c.85-.08,1.69-.23,2.54-.23,16.83,0,33.67,0,50.5.17a71.06,71.06,0,0,1,23.65,4.19c15.84,5.77,24,17.15,24,33.3s-8.39,27.86-24,33.36c-12.09,4.25-24.51,4.73-37.06,2.38a6.61,6.61,0,0,1-1.91-1.1l.31-.83c1.93.26,3.85.56,5.79.78,7.15.8,14.25,1,21-2.11,11.12-5.14,16.23-14.51,17.3-26.09a57.19,57.19,0,0,0-1-17.37c-3-13.5-13.29-22.58-27.05-23.93-8.25-.81-16.62-.46-24.93-.68-2.37-.06-2,1.54-2,3q0,20.58,0,41.16,0,32.37,0,64.75a21,21,0,0,0,.39,4.62c1,4.41,3.23,6.27,7.73,6.93.62.09,1.17.69,1.76,1.06-.59.28-1.17.79-1.76.8q-16.74.06-33.49,0c-.57,0-1.14-.55-1.71-.84.5-.35.95-.94,1.5-1,5.46-.94,7.93-3.61,8.32-9.15.06-.91.07-1.83.07-2.74q0-47.74,0-95.48c0-1.46,0-2.93-.11-4.39-.43-5.08-2.8-7.74-7.77-8.89a19.45,19.45,0,0,1-2.16-.81Z"/>
+            <path fill="#033f2a" d="M896.37,420.44c-1-1-1.67-1.43-2-2.06a24.31,24.31,0,0,1-1.18-3.36c-4.1-12.91-13.65-18.89-26.47-19.84-9.92-.74-19.91-.48-29.87-.71-1.69,0-2.25.69-2.25,2.29q0,26.6.06,53.21c0,1.18-.07,2.51,1.74,2.47,7.76-.21,15.6.2,23.26-.76,8.5-1.08,13.2-6.65,14.63-15.17a14,14,0,0,1,.79-2.28l.81.16v39.68l-.75.17a31.1,31.1,0,0,1-1-3.07c-2.27-10.65-7.61-15.61-18.5-16.56-4.82-.42-9.69-.26-14.54-.21-7.43.06-6.48-1.14-6.51,6.56-.06,16.74.05,33.47,0,50.2,0,2.7.68,3.73,3.53,3.62,11.14-.42,22.29-.58,33.43-1a41.75,41.75,0,0,0,7.26-1.35c11.1-2.45,18.19-9.22,21.42-20.08a29.89,29.89,0,0,1,1.14-3.66,7.53,7.53,0,0,1,1.59-1.77,6,6,0,0,1,.57,2.13c-1.18,8.69-2.41,17.37-3.76,26-.1.65-1.11,1.3-1.83,1.67a4.6,4.6,0,0,1-1.9.06l-84.79,0a4.81,4.81,0,0,1-1.37,0,17.1,17.1,0,0,1-2-.85,6.44,6.44,0,0,1,1.79-1.07c4.92-1,6.67-2.69,7.62-7.69a24.66,24.66,0,0,0,.37-4.63q0-47.86,0-95.73a29.62,29.62,0,0,0-.17-4.11c-.73-5.29-2.57-7.25-7.79-8.5a16,16,0,0,1-1.87-.67v-.77a15.77,15.77,0,0,1,2.34-.36q40.62,0,81.23.15c.77,0,2.12.91,2.21,1.53,1.07,7.87,2,15.76,2.87,23.66A20,20,0,0,1,896.37,420.44Z"/>
+            <path fill="#033f2a" d="M616.35,392.75h36.86l.23.65a9.22,9.22,0,0,1-1.82.88c-5.76,1.38-8,4-8.1,9.94-.11,5.48,0,11,0,16.45q0,41.15,0,82.28a22.17,22.17,0,0,0,.54,5.14c1,4.31,3.17,6.12,7.52,6.82a6.2,6.2,0,0,1,1.84,1,6,6,0,0,1-2,.86q-16.61.08-33.2,0a6,6,0,0,1-2-.79l.15-.7a6.65,6.65,0,0,1,1.19-.34c5.68-.58,8.11-3,8.63-8.69.16-1.81.25-3.65.24-5.47q0-46.89-.15-93.79a37.65,37.65,0,0,0-.17-4.38c-.58-4.82-3-7.3-7.74-8.24a12.84,12.84,0,0,1-2.17-.85Z"/>
+            <path fill="#033f2a" d="M446,612.62c1.35-4.24,2.72-8.47,4.06-12.72,3.64-11.58,7.32-23.16,10.91-34.76,1.63-5.28,1.2-6.12-4-8.76h12.48c-4.28,1-5.72,4.24-6.86,7.83-5.6,17.67-11.25,35.33-16.81,53-.61,1.94-1.25,3.1-3.67,3.07s-3.25-.87-4-3c-4.19-12.75-8.54-25.45-12.85-38.16-.19-.58-.46-1.15-.95-2.37-.53,1.29-.88,2-1.14,2.81-4.17,12.66-8.42,25.3-12.43,38-.77,2.44-2.09,2.65-4.18,2.74-2.26.1-2.89-1-3.5-2.87q-8.68-27.13-17.54-54.21c-.91-2.8-1.92-5.6-5.28-6.74h18.6c-1.1.34-1.44.47-1.79.56-3,.71-3.8,1.68-2.95,4.64,1.64,5.7,3.45,11.35,5.25,17q5.1,16.05,10.26,32.09c.21.66.55,1.27,1,2.39a22,22,0,0,0,1.06-2.24c3.62-10.92,7.18-21.86,10.83-32.78a10,10,0,0,0,0-7.41c-1.18-2.86-1.92-5.9-2.9-8.84-.86-2.56-2.24-4.63-5.21-5.39h18.76c0,.08,0,.33-.06.35-5.08,1.56-5.48,2.29-3.8,7.44Q437,587.6,444.62,610.9c.19.57.47,1.12.7,1.69Z"/>
+            <path fill="#033f2a" d="M572.31,591c2.48,3.08,4.9,6,7.27,9,3.17,4,6.3,8.07,9.46,12.1,2.87,3.66,5.51,7.64,10.89,8.09-5,0-9.92,0-14.88-.05a2.45,2.45,0,0,1-1.52-1c-7.39-9.41-14.75-18.85-22.64-29,2.52,0,4.29.07,6.05,0,10.06-.42,15.76-6.18,15.75-15.86s-6.14-16.32-15.82-16.76c-3.19-.15-6.4.08-9.6-.09-2.21-.12-2.82.71-2.8,2.83.08,9.79,0,19.57,0,29.35,0,8,0,16.1,0,24.14,0,4.27.71,5,4.69,6.33H539.92c4.69-1.6,5.48-2.69,5.49-7.66,0-15.82,0-31.64.07-47.45,0-4-.4-7.43-6.06-8.14a8.47,8.47,0,0,1,1.75-.61c10.42.11,20.86-.08,31.25.53a32.24,32.24,0,0,1,11.92,3.58c5.92,2.89,7.83,8.36,7.49,14.69-.33,6.13-3.28,10.68-8.92,13C579.67,589.41,576.1,590,572.31,591Z"/>
+            <path fill="#033f2a" d="M624.68,620.21H605.44c4.44-1.09,4.81-4.4,4.8-8.08,0-16.19,0-32.37,0-48.55,0-4.49-.65-5.37-4.73-7.1h19.13c-5.25,1.8-5.36,2-5.37,7.4q0,12.61,0,25.24c0,.77.13,1.55.25,3,2.5-2.4,4.63-4.33,6.64-6.38q11-11.15,21.88-22.34c3.21-3.29,3.13-4.14-1-6.94H662c-.19.44-.26.72-.32.72-5.1-.13-8.43,3.06-11.71,6.27-6.07,6-12,12-18.13,17.94-1.3,1.27-1.16,2.13-.15,3.44,7.68,10,15.29,20.07,23,30.08,2,2.56,4.12,5,7.94,4.64l-.14.86c-4.55,0-9.1.09-13.65-.08-.78,0-1.67-1-2.25-1.79-6.8-8.85-13.54-17.73-20.3-26.6-.65-.86-1.36-1.67-2.11-2.58-3.14,2.53-5.48,5-5,9.44.49,4.79.1,9.68.16,14.52C619.37,617.83,620.31,618.92,624.68,620.21Z"/>
+            <path fill="#033f2a" d="M502.14,621.25c-16.63.08-28.45-10.54-30.34-27.07a43,43,0,0,1,1.09-16.56c4.38-15.86,17.1-23.41,33.15-21.86,20.42,2,28.24,17.67,27.35,35.06a40.68,40.68,0,0,1-1.57,9.15C527.88,613.51,517.07,621.18,502.14,621.25Zm21.82-33c0-1.55.1-3.11,0-4.65-.53-7-2-13.73-6.52-19.4a19,19,0,0,0-31.2,1.69,29.61,29.61,0,0,0-3.55,8,56.3,56.3,0,0,0,.49,30.81c1.52,5.19,4.23,9.71,9,12.65,10.18,6.24,23.31,1.86,28.37-9.53C523.3,601.62,524.1,595,524,588.29Z"/>
+            <path fill="#033f2a" d="M726.24,588.07c.21-11.14,3.55-20.73,13-27.38,19.15-13.44,46.12-1.17,48.66,22a41.65,41.65,0,0,1-2.54,20.7C781,614.06,772.74,619.8,761.52,621a39.9,39.9,0,0,1-13.3-.81c-12.35-3-18.66-11.72-21-23.7C726.63,593.73,726.54,590.88,726.24,588.07Zm52.51.45c.06-7.31-.89-14.44-4.54-20.91-3.9-6.89-9.79-10.78-17.89-10.62s-13.27,4.54-16.77,11.35A25.79,25.79,0,0,0,737.4,574a57.6,57.6,0,0,0,.55,30.33A22.64,22.64,0,0,0,745,615.79c10.14,8.44,25,4.43,30.36-8.24C778,601.48,778.67,595.05,778.75,588.52Z"/>
+            <path fill="#033f2a" d="M814.31,594.52c2.86,0,5.17.07,7.48,0,8.62-.29,14.73-5.21,15.89-13.71a29.17,29.17,0,0,0-.88-12.12c-2.3-7.58-8.45-10.63-16-11.13-3.28-.22-6.59,0-9.88-.1-1.63,0-2.28.55-2.27,2.22q0,27.3,0,54.59a5.57,5.57,0,0,0,4.68,6H794.9c4.22-1,4.69-4.13,4.69-7.59q0-24.29,0-48.56c0-4.7-.69-5.65-5.27-7.42a4.3,4.3,0,0,1,1.26-.45c10.6.12,21.21.15,31.8.47a25.31,25.31,0,0,1,7.7,1.79c8.05,2.92,12.35,9.11,12.46,17.53.11,7.87-4.2,14.31-11.9,17.4a36,36,0,0,1-19.41,1.77A15.51,15.51,0,0,1,814.31,594.52Z"/>
+            <path fill="#033f2a" d="M894.79,557.68v14.1l-.69.18c-.4-1.11-.79-2.23-1.2-3.35a17.52,17.52,0,0,0-21.36-11.22c-5.1,1.3-8.1,4.51-8.79,9.65-.67,4.92.86,9.21,5.25,11.77a91.25,91.25,0,0,0,10.46,4.72c4.28,1.81,8.71,3.31,12.86,5.38,5.89,3,8.46,8,8.2,14.61-.27,6.78-3,12-9.3,15-7.83,3.7-16,3.22-24.15,1.4-1.51-.34-3-1-4.49-1.22a37.77,37.77,0,0,0-5,0V602.92l.7-.18c.28.94.57,1.88.86,2.82,3.42,11.26,14.37,17.2,25.16,13.58,4.92-1.66,8-4.91,8.68-10.23s-1.18-9.49-5.77-12c-3.8-2.11-8-3.59-12-5.36-3.42-1.51-7-2.8-10.22-4.59-6.56-3.6-8.79-9.45-7.89-16.66.85-6.71,4.88-10.87,11-13.14,6.59-2.46,13.31-1.71,20-.25a26,26,0,0,0,3.19.78C891.65,557.79,893.07,557.68,894.79,557.68Z"/>
+            <path fill="#033f2a" d="M720.18,571.07a15.5,15.5,0,0,1-.7-1.82c-2-7.68-5-10.4-12.74-11.4-2.08-.27-4.21-.14-6.29-.37-2.23-.26-2.8.67-2.78,2.78.08,12.53,0,25.06.05,37.59,0,5.21,0,10.42.07,15.63.07,4.46.92,5.41,5.18,6.56H684c4.35-.75,4.85-3.89,4.83-7.53q-.09-26.06,0-52.12c0-2.28-.68-3.15-3-2.92-2.08.21-4.19.17-6.29.31-6.61.45-10.14,4.39-11.8,10.44a6.19,6.19,0,0,1-1.52,3,7.11,7.11,0,0,1-.24-1.56c.24-3.74.61-7.47.75-11.21.06-1.67.65-2.23,2.29-2.23,16.19,0,32.38,0,48.57.08.75,0,2.12.56,2.16,1,.52,4.55.84,9.12,1.2,13.69Z"/>
+            <path fill="#f6d466" d="M360.83,462.59c-3.63,0-6.3-.18-8.92,0-11.45.94-20.75,6.39-29.08,13.78-.24.18-.46.4-.69.6-2.05,1.85-4,3.74-6,5.7-2.47,2.51-4.85,5.1-7.17,7.75-1.22,1.38-2.4,2.78-3.56,4.2-4.17,5-8.13,10.16-12.05,15.38q-16.22,21.54-32.6,43c-2.34,3.07-4.06,3.4-7.66,2.31Q265,516,276.86,476.68l-.39-.23c-.54.69-1.12,1.34-1.63,2.07-11.75,16.46-23.22,33.13-35.31,49.35-6.81,9.11-14.57,17.52-22,26.16-2.23,2.6-3.47,2.69-7.15,1.43.36-.92.7-1.87,1.09-2.77,6.77-16.29,13.2-32.67,16.86-50,1.84-8.57,2.94-17.23,1.36-26-1.54-8.59-7.57-15.42-14.61-16.34s-13.29,1.14-19.3,5.41c.89.71,1.58,1.27,2.3,1.83,12,9.3,14.69,24.9,6.38,36.61-6.43,9-20.28,14.38-31.07,11.89-1.38-.33-3.72-.16-3.32-2.54,3.18,0,6.21.36,9.13-.08,11.13-1.61,19.86-10.8,22.55-23.22,1.71-7.91.46-14.94-5.86-20.55-.71-.62-1.49-1.15-2.85-2.2-3.34,4.12-7.07,7.66-9.5,12-6.37,11.15-12.31,22.59-18.19,34-4,7.85-8,15.71-13.62,22.59-8.53,10.46-19.19,17.58-32.5,20.35a37.76,37.76,0,0,1-8.75.86,34,34,0,0,1-3.76-.27,31,31,0,0,1-7.37-1.91c-.4-.16-.82-.33-1.22-.51A15.6,15.6,0,0,1,93,551c-3-3.25-4.19-7.52-2.81-11.42A6.81,6.81,0,0,1,93,536.07a6.37,6.37,0,0,1,3.79-.94,5.23,5.23,0,0,1,2.53.85,5.72,5.72,0,0,1,2.34,3.49,5.25,5.25,0,0,1-2.34,5.77,7.88,7.88,0,0,1-2,.93c-2.36.72-1.85,1.78-.91,3.16a9.26,9.26,0,0,0,2.89,2.7,14.9,14.9,0,0,0,4.5,1.75c1,.21,1.93.39,2.87.52a26.91,26.91,0,0,0,3.76.33c7.68.25,14.72-2.31,21.11-7.37,7.14-5.67,12.57-12.86,17.07-20.7,5.54-9.66,10.79-19.5,16.2-29.23,6.48-11.66,14.1-22.39,24.62-30.82a7.92,7.92,0,0,0,.72-1.21c-3.79-1.13-7.31-2.49-11-3.16-18-3.38-35.19-1-50.69,9.13-8.41,5.52-14.87,12.67-18.05,22a40.36,40.36,0,0,0-1.58,6.1,25.71,25.71,0,0,0,0,8.75,14.16,14.16,0,0,0,1.62,4.5c3.08,5.47,9.6,8,16.87,6.09,11.42-3.07,18.39-11.12,22.89-21.61a28.22,28.22,0,0,0,2-15.25c0-.08.34-.21.4-.23.66-.19,1.41,1.21,1.62,1.71a8.07,8.07,0,0,1,.46,1.94,27.28,27.28,0,0,1-1.3,13.08,35.69,35.69,0,0,1-5.37,9.65,40.7,40.7,0,0,1-8.09,7.91,33.17,33.17,0,0,1-9.7,5,27.33,27.33,0,0,1-3.36.79c-6.52,1.07-12.29-.29-16.45-3.56a15.93,15.93,0,0,1-3.76-4.12c-2.29-3.56-3.36-8.19-2.8-13.62a37.79,37.79,0,0,1,2.8-11,35.41,35.41,0,0,1,3.76-6.77,49.06,49.06,0,0,1,12.69-12.28c19.17-13.2,40.33-15.72,62.35-9.28,5.23,1.53,9,1.91,13.94-.74,7.05-3.81,14.91-4.21,22.68-1.71,10,3.23,14.56,10.9,16.2,20.63,1.76,10.55.25,21-2.87,31-3.31,10.63-7.5,21-11.31,31.4a1.21,1.21,0,0,0,.14,1.16c1.69-2.09,3.51-4.1,5.07-6.3,12.93-18.07,25.74-36.21,38.73-54.25,4.43-6.18,9.16-12.11,13.79-18.16.42-.55.89-1.36,1.42-1.45a40.12,40.12,0,0,1,4.65-.24,15.42,15.42,0,0,1-.26,3.27c-3.59,12.53-7.19,25-10.89,37.55s-7.55,25.09-11.33,37.65a10.06,10.06,0,0,0,0,1.31c.91-1.05,1.51-1.69,2-2.41,10-13.48,19.85-27,29.91-40.46,2.61-3.46,5.26-6.9,8-10.22,1.15-1.4,2.33-2.79,3.56-4.16,2.29-2.65,4.67-5.23,7.17-7.69,2.15-2.13,4.36-4.20,6.65-6.16q1.8-1.54,3.68-3c7.34-5.74,15.46-9.86,25.11-9.72a18.25,18.25,0,0,1,6.07,1.15C358.78,459.91,359.52,461.25,360.83,462.59Z"/>
+          </svg>
+          <!-- Hidden img for trade partner logos -->
+          <img id="logoImg" style="display:none;height:120px;width:auto;" alt="Logo">
+          <div id="logoPdfFallback" style="display:none;font-size:32px;font-weight:800;color:#1e4d3a;">Prime<span style="color:#d4a843;">Worktops</span></div>
+        </div>
+        <div class="quote-info">
+          <div class="quote-number" id="quoteNumber">Quote #PW-2024-001</div>
+          <div id="quoteDate">29 December 2024</div>
+          <div>Valid for 30 days</div>
+        </div>
+      </div>
+      
+      <!-- Customer Details -->
+      <div class="card" id="customerCard">
+        <div class="card-title">Customer Details</div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-group">
+              <div class="detail-label">Customer Name</div>
+              <div class="detail-value" id="customerName">-</div>
+            </div>
+            <div class="detail-group">
+              <div class="detail-label">Email</div>
+              <div class="detail-value" id="customerEmail">-</div>
+            </div>
+          </div>
+          <div>
+            <div class="detail-group">
+              <div class="detail-label">Phone</div>
+              <div class="detail-value" id="customerPhone">-</div>
+            </div>
+            <div class="detail-group">
+              <div class="detail-label">Address</div>
+              <div class="detail-value" id="customerAddress">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 3D Preview & Material -->
+      <div class="card" id="designCard">
+        <div class="card-title">Your Worktop Design</div>
+        <div class="preview-section">
+          <!-- Material info ABOVE the views -->
+          <div class="material-info">
+            <div class="material-swatch" id="materialSwatch"></div>
+            <div class="material-details">
+              <div class="material-name" id="materialName">Calacatta Gold</div>
+              <div class="material-brand" id="materialBrand">Silestone • Quartz</div>
+              <div>
+                <span class="material-type" id="materialThickness">20mm</span>
+                <span class="tier-badge tier-3" id="materialTier">£££</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Image containers wrapper for side-by-side in PDF -->
+          <div class="images-row" id="imagesRow" style="display:flex;flex-direction:column;gap:15px;">
+            <!-- 3D Preview (first) -->
+            <div class="image-wrapper" id="image3dWrapper">
+              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">🎨 3D Preview</div>
+              <div class="render-container" id="renderContainer">
+                <!-- Main 3D view image (shown when captured images available) -->
+                <img id="mainViewImage" style="width:100%;height:100%;object-fit:contain;background:#f5f5f5;display:none;">
+                <!-- Fallback canvas for interactive 3D (when no captured images) -->
+                <canvas id="render3d" style="display:none;"></canvas>
+                <button onclick="resetCameraView()" id="resetViewBtn" style="display:none;position:absolute;top:10px;right:10px;padding:6px 12px;background:rgba(255,255,255,0.9);border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">↺ Reset View</button>
+              </div>
+              <div class="view-thumbnails" id="viewThumbnails">
+                <!-- Populated with thumbnail images for each angle -->
+              </div>
+            </div>
+            
+            <!-- 2D Plan View (below 3D normally, side-by-side in PDF) -->
+            <div class="image-wrapper" id="plan2dContainer" style="display:none;">
+              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">📐 Plan View</div>
+              <div style="background:#f9f9f9;border-radius:8px;padding:10px;border:1px solid #e0e0e0;">
+                <img id="plan2dImage" style="width:100%;height:auto;max-height:300px;object-fit:contain;display:block;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Worktop Pieces -->
+      <div class="card" id="piecesCard">
+        <div class="card-title">Worktop Pieces</div>
+        <div class="pieces-grid" id="piecesGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      
+      <!-- Additional Items -->
+      <div class="card" id="additionsCard" style="display:none;">
+        <div class="card-title">Additional Items</div>
+        <div class="pieces-grid" id="additionsGrid">
+          <!-- Upstands, splashbacks, etc -->
+        </div>
+      </div>
+      
+      <!-- Price Summary -->
+      <div class="card" id="priceCard">
+        <div class="card-title">Price Summary</div>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Details</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="priceBody">
+            <!-- Populated by JS -->
+          </tbody>
+          <tfoot>
+            <tr class="subtotal">
+              <td colspan="2">Subtotal</td>
+              <td class="amount" id="subtotal">£0.00</td>
+            </tr>
+            <tr class="total">
+              <td colspan="2">Total (inc. VAT)</td>
+              <td class="amount" id="totalPrice">£0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      
+      <!-- Terms -->
+      <div class="card" id="termsCard">
+        <div class="card-title">Terms & Conditions</div>
+        <div class="notes" style="margin-top:0;" id="termsContent">
+          <ul>
+            <li>Quote valid for 30 days from date of issue</li>
+            <li>50% deposit required to confirm order</li>
+            <li>Balance due before installation</li>
+            <li>Lead time: 2-3 weeks from template</li>
+            <li>Measurements subject to final template</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Accept Quote Section -->
+      <div class="accept-section" id="acceptSection">
+        <div class="accept-title">Ready to proceed?</div>
+        <div class="accept-subtitle">Click below to accept this quote and we'll be in touch to arrange next steps</div>
+        <button class="btn-accept" onclick="acceptQuote()">
+          ✓ Accept Quote
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // ========== TRADE PARTNER SETTINGS (customisable per partner) ==========
+    const tradePartnerSettings = {
+      logo: '12PZu-OK96_gbZ_b2QY5yd6Qpquzni0a_', // Google Drive ID - cropped logo
+      companyName: 'Prime Worktops',
+      headerColor: '#f5f5f5', // Light background to show logo better
+      headerTextColor: '#333',
+      phone: '0800 123 4567',
+      email: 'info@primeworktops.com',
+      website: 'www.primeworktops.com',
+      terms: [
+        'Quote valid for 30 days from date of issue',
+        '50% deposit required to confirm order',
+        'Balance due before installation',
+        'Lead time: 2-3 weeks from template',
+        'Measurements subject to final template'
+      ],
+      // Partners can add their own terms
+      customTerms: null
+    };
+    
+    // ========== LOAD QUOTE DATA ==========
+    // Try URL parameter first (most reliable), then localStorage, then sample data
+    let quoteData;
+    let dataSource = 'sample';
+    
+    // Check URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlData = urlParams.get('data');
+    
+    if (urlData) {
+      try {
+        quoteData = JSON.parse(decodeURIComponent(urlData));
+        dataSource = 'url';
+        console.log('✓ Loaded quote from URL:', quoteData.quoteNumber);
+      } catch (e) {
+        console.error('Failed to parse URL data:', e);
+      }
+    }
+    
+    // Fallback to localStorage
+    if (!quoteData) {
+      const storedQuote = localStorage.getItem('primeWorktopsQuote');
+      if (storedQuote) {
+        try {
+          quoteData = JSON.parse(storedQuote);
+          dataSource = 'localStorage';
+          console.log('✓ Loaded quote from localStorage:', quoteData.quoteNumber);
+        } catch (e) {
+          console.error('Failed to parse stored quote:', e);
+        }
+      }
+    }
+    
+    // Try to load images from sessionStorage (separate from quote data)
+    if (quoteData) {
+      try {
+        const storedImages = sessionStorage.getItem('primeWorktopsImages');
+        if (storedImages) {
+          const imageData = JSON.parse(storedImages);
+          // Handle both old format (array) and new format (object with render3dViews and render2dView)
+          if (Array.isArray(imageData)) {
+            quoteData.render3dViews = imageData;
+          } else {
+            quoteData.render3dViews = imageData.render3dViews || [];
+            quoteData.render2dView = imageData.render2dView || null;
+          }
+          console.log('✓ Loaded views from sessionStorage - 3D:', quoteData.render3dViews?.length || 0, ', 2D:', quoteData.render2dView ? 'yes' : 'no');
+        }
+      } catch (e) {
+        console.warn('Could not load images from sessionStorage:', e);
+      }
+    }
+    
+    // Final fallback to sample data
+    if (!quoteData) {
+      console.log('⚠ No stored quote found, using sample data');
+      console.log('To see your design: Click "Generate Quote" button in the Designer');
+      quoteData = getSampleQuoteData();
+    }
+    
+    // Log for debugging
+    console.log('Data source:', dataSource);
+    console.log('Worktops:', quoteData.worktops?.length || 0);
+    console.log('Upstands/Splashbacks:', quoteData.upstands?.length || 0);
+    console.log('Window Cills:', quoteData.windowCills?.length || 0);
+    console.log('Cutouts:', quoteData.cutouts?.length || 0);
+    console.log('Edges (dropdowns):', quoteData.edges?.filter(e => e.type === 'dropdown')?.length || 0);
+    console.log('3D Views:', quoteData.render3dViews?.length || 0);
+    console.log('Material:', quoteData.material?.name);
+    
+    // Add customer details if not present
+    if (!quoteData.customer) {
+      quoteData.customer = {
+        name: '-',
+        email: '-',
+        phone: '-',
+        address: '-'
+      };
+    }
+    
+    // Format date
+    if (quoteData.date) {
+      const d = new Date(quoteData.date);
+      quoteData.dateFormatted = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    } else {
+      quoteData.dateFormatted = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    
+    function getSampleQuoteData() {
+      return {
+        quoteNumber: 'PW-2024-001',
+        dateFormatted: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        customer: {
+          name: 'John Smith',
+          email: 'john.smith@email.com',
+          phone: '07700 900123',
+          address: '123 High Street, Manchester, M1 1AA'
+        },
+        material: {
+          key: 'calacattagold',
+          name: 'Calacatta Gold',
+          brand: 'Silestone',
+          type: 'Quartz',
+          tier: 3,
+          thickness: 20,
+          textureId: '1aKMbFb_Qmnfsy9K2zyK1SYbEIyp_XUi_',
+          css: '#f8f5f0',
+          roughness: 0.35
+        },
+        worktops: [
+          { id: 1, name: 'Main Run', length: 3000, depth: 600 },
+          { id: 2, name: 'Island', length: 2400, depth: 900 },
+          { id: 3, name: 'Side Return', length: 1200, depth: 600 }
+        ],
+        upstands: [
+          { name: 'Upstand 1', length: 3000, height: 100 },
+          { name: 'Upstand 2', length: 1200, height: 100 }
+        ],
+        splashbacks: [
+          { name: 'Splashback', length: 800, height: 450 }
+        ],
+        windowCills: [],
+        cutouts: [
+          { type: 'undermount_sink', name: 'Undermount Sink' },
+          { type: 'hob', name: 'Hob Cutout' },
+          { type: 'tap', name: 'Tap Hole' }
+        ],
+        edges: [
+          { type: 'chamfer', name: 'Chamfer', length: 7.2, included: true },
+          { type: 'bullnose', name: 'Bullnose', length: 2.4, price: 66.67, included: false }
+        ],
+        dropdowns: [
+          { length: 900, height: 900 }
+        ],
+        pricing: {
+          firstSlab: 1300,
+          additionalSlab: 500,
+          slabsUsed: 3
+        }
+      };
+    }
+    
+    // ========== POPULATE PAGE ==========
+    function populatePage() {
+      try {
+        // Quote info
+        document.getElementById('quoteNumber').textContent = 'Quote #' + quoteData.quoteNumber;
+        document.getElementById('quoteDate').textContent = quoteData.dateFormatted || quoteData.date;
+        
+        // Customer details
+        document.getElementById('customerName').textContent = quoteData.customer?.name || '-';
+        document.getElementById('customerEmail').textContent = quoteData.customer?.email || '-';
+        document.getElementById('customerPhone').textContent = quoteData.customer?.phone || '-';
+        document.getElementById('customerAddress').textContent = quoteData.customer?.address || '-';
+        
+        // Material
+        document.getElementById('materialName').textContent = quoteData.material?.name || 'Material';
+        document.getElementById('materialBrand').textContent = `${quoteData.material?.brand || ''} • ${quoteData.material?.type || ''}`;
+        document.getElementById('materialThickness').textContent = (quoteData.material?.thickness || 20) + 'mm';
+        
+        const tierEl = document.getElementById('materialTier');
+        tierEl.textContent = '£'.repeat(quoteData.material?.tier || 1);
+        tierEl.className = 'tier-badge tier-' + (quoteData.material?.tier || 1);
+        
+        // Set material swatch - use texture if available, fallback to CSS color
+        const swatchEl = document.getElementById('materialSwatch');
+        if (quoteData.material?.textureId) {
+          swatchEl.style.backgroundImage = 
+            `url('https://lh3.googleusercontent.com/d/${quoteData.material.textureId}=s400')`;
+        }
+        // Always set background color as fallback
+        swatchEl.style.backgroundColor = quoteData.material?.css || '#e8e8e8';
+        
+        // Worktop pieces
+        const piecesGrid = document.getElementById('piecesGrid');
+        if (quoteData.worktops && quoteData.worktops.length > 0) {
+          piecesGrid.innerHTML = quoteData.worktops.map(w => `
+            <div class="piece-card">
+              <div class="piece-drawing">
+                ${createPieceSVG(w.length, w.depth, 'worktop')}
+              </div>
+              <div class="piece-name">${w.name}</div>
+              <div class="piece-dims">${w.length} × ${w.depth} mm</div>
+              <div class="piece-type">Worktop</div>
+            </div>
+          `).join('');
+        }
+        
+        // Additional items (upstands, splashbacks, dropdowns, window cills)
+        const additions = [];
+        
+        (quoteData.upstands || []).forEach(u => {
+          additions.push({
+            name: u.name,
+            dims: `${u.length} × ${u.height} mm`,
+            type: u.isSplash ? 'Splashback' : 'Upstand',
+            svg: createPieceSVG(u.length, u.height, u.isSplash ? 'splashback' : 'upstand')
+          });
+        });
+        
+        (quoteData.splashbacks || []).forEach(s => {
+          additions.push({
+            name: s.name,
+            dims: `${s.length} × ${s.height} mm`,
+            type: 'Splashback',
+            svg: createPieceSVG(s.length, s.height, 'splashback')
+          });
+        });
+        
+        (quoteData.windowCills || []).forEach((c, i) => {
+          additions.push({
+            name: c.name || `Window Cill ${i + 1}`,
+            dims: `${c.length} × ${c.depth || 200} mm`,
+            type: 'Window Cill',
+            svg: createPieceSVG(c.length, c.depth || 200, 'upstand')
+          });
+        });
+        
+        (quoteData.dropdowns || []).forEach((d, i) => {
+          additions.push({
+            name: `Dropdown ${i + 1}`,
+            dims: `${d.length} × ${d.height} mm`,
+            type: 'Dropdown (Mitre)',
+            svg: createPieceSVG(d.length, d.height, 'dropdown')
+          });
+        });
+        
+        if (additions.length > 0) {
+          document.getElementById('additionsCard').style.display = 'block';
+          document.getElementById('additionsGrid').innerHTML = additions.map(a => `
+            <div class="piece-card">
+              <div class="piece-drawing">${a.svg}</div>
+              <div class="piece-name">${a.name}</div>
+              <div class="piece-dims">${a.dims}</div>
+              <div class="piece-type">${a.type}</div>
+            </div>
+          `).join('');
+        }
+        
+        // Cutouts section - compact inline layout with bigger text
+        const cutoutsToShow = (quoteData.cutouts || []).filter(c => c.type !== 'socket');
+        const socketsToShow = (quoteData.cutouts || []).filter(c => c.type === 'socket');
+        
+        // Collect corner radii from worktops
+        const cornerRadiiItems = [];
+        (quoteData.worktops || []).forEach(w => {
+          const radii = w.cornerRadii || {};
+          const corners = [
+            { key: 'tl', label: 'Back-Left', val: radii.tl || 0 },
+            { key: 'tr', label: 'Back-Right', val: radii.tr || 0 },
+            { key: 'br', label: 'Front-Right', val: radii.br || 0 },
+            { key: 'bl', label: 'Front-Left', val: radii.bl || 0 }
+          ];
+          corners.forEach(c => {
+            if (c.val > 0) {
+              cornerRadiiItems.push({
+                name: `Radius Corner`,
+                dims: `R${c.val}mm`,
+                worktop: w.name,
+                corner: c.label,
+                included: false  // Always charged
+              });
+            }
+          });
+        });
+        
+        if (cutoutsToShow.length > 0 || socketsToShow.length > 0 || cornerRadiiItems.length > 0) {
+          let cutoutsHtml = '<div class="card" id="cutoutsCard" style="margin-top:15px;">';
+          cutoutsHtml += '<div class="card-header" style="padding:10px 15px;"><h3 style="font-size:15px;margin:0;">Cutouts & Features</h3></div>';
+          cutoutsHtml += '<div style="padding:12px 15px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">';
+          
+          const allItems = [
+            ...cutoutsToShow.map(c => ({
+              name: c.name || c.type,
+              dims: `${c.width}×${c.height}`,
+              included: c.included
+            })), 
+            ...socketsToShow.map(c => ({
+              name: 'Socket',
+              dims: `${c.width}×${c.height}`,
+              included: true
+            })),
+            ...cornerRadiiItems.map(r => ({
+              name: r.name,
+              dims: r.dims,
+              included: r.included
+            }))
+          ];
+          
+          allItems.forEach((item, i) => {
+            const dot = item.included ? '✓' : '+';
+            const color = item.included ? '#4CAF50' : '#ff9800';
+            cutoutsHtml += `<span style="font-size:14px;"><span style="color:${color};font-weight:600;">${dot}</span> ${item.name} <span style="color:#666;">(${item.dims})</span></span>`;
+            if (i < allItems.length - 1) cutoutsHtml += '<span style="color:#ccc;margin:0 6px;">|</span>';
+          });
+          
+          cutoutsHtml += '</div></div>';
+          
+          const additionsCard = document.getElementById('additionsCard');
+          if (additionsCard) {
+            additionsCard.insertAdjacentHTML('afterend', cutoutsHtml);
+          }
+        }
+        
+        // Pricing
+        populatePricing();
+        
+        // 3D Render - use captured images if available
+        if (quoteData.render3dViews && quoteData.render3dViews.length > 0) {
+          initImageGallery();
+        } else {
+          init3D();  // Fallback to interactive 3D
+        }
+        
+        console.log('Page populated successfully');
+      } catch (e) {
+        console.error('Error populating page:', e);
+        alert('Error loading quote. Please try again.');
+      }
+    }
+    
+    function initImageGallery() {
+      try {
+        const views = quoteData.render3dViews;
+        const mainImage = document.getElementById('mainViewImage');
+        const thumbnails = document.getElementById('viewThumbnails');
+        const canvas = document.getElementById('render3d');
+        const resetBtn = document.getElementById('resetViewBtn');
+        
+        // Display 2D plan view if available
+        const plan2dContainer = document.getElementById('plan2dContainer');
+        const plan2dImage = document.getElementById('plan2dImage');
+        if (quoteData.render2dView && plan2dContainer && plan2dImage) {
+          plan2dImage.src = quoteData.render2dView;
+          plan2dContainer.style.display = 'block';
+          console.log('2D plan view displayed');
+        }
+        
+        if (!views || views.length === 0) {
+          console.warn('No views to display, falling back to 3D');
+          init3D();
+          return;
+        }
+        
+        // Show gallery, hide fallback 3D
+        mainImage.style.display = 'block';
+        if (canvas) canvas.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'none';
+        
+        // Set first image as main view
+        mainImage.src = views[0].image;
+        
+        // Create thumbnails
+        thumbnails.innerHTML = views.map((view, i) => `
+          <div class="view-thumb ${i === 0 ? 'active' : ''}" onclick="selectView(${i})">
+            <img src="${view.image}" alt="${view.name}">
+            <div class="view-thumb-label">${view.name}</div>
+          </div>
+        `).join('');
+        
+        console.log('Image gallery initialized with', views.length, 'views');
+      } catch (e) {
+        console.error('Error initializing image gallery:', e);
+        init3D();  // Fallback
+      }
+    }
+    
+    function selectView(index) {
+      const views = quoteData.render3dViews;
+      if (!views || !views[index]) return;
+      
+      // Update main image
+      document.getElementById('mainViewImage').src = views[index].image;
+      
+      // Update active state
+      document.querySelectorAll('.view-thumb').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
+      });
+    }
+    
+    function createPieceSVG(width, height, type) {
+      // Always show horizontal (longest side as width)
+      let displayW = width;
+      let displayH = height;
+      if (height > width) {
+        displayW = height;
+        displayH = width;
+      }
+      
+      // Scale to fit in box
+      const maxW = 150, maxH = 50;
+      const ratio = Math.min(maxW / displayW, maxH / displayH);
+      const w = displayW * ratio;
+      const h = displayH * ratio;
+      
+      const colors = {
+        worktop: { fill: '#e8f5e9', stroke: '#4CAF50' },
+        upstand: { fill: '#fff3e0', stroke: '#ff9800' },
+        splashback: { fill: '#e0f7fa', stroke: '#00bcd4' },
+        dropdown: { fill: '#f3e5f5', stroke: '#9c27b0' }
+      };
+      
+      const c = colors[type] || colors.worktop;
+      
+      return `
+        <svg width="${w + 20}" height="${h + 20}" viewBox="0 0 ${w + 20} ${h + 20}">
+          <rect x="10" y="10" width="${w}" height="${h}" 
+                fill="${c.fill}" stroke="${c.stroke}" stroke-width="2" rx="2"/>
+          <text x="${10 + w/2}" y="${10 + h/2 + 4}" 
+                text-anchor="middle" font-size="10" fill="#333">
+            ${width} × ${height}
+          </text>
+        </svg>
+      `;
+    }
+    
+    function populatePricing() {
+      const body = document.getElementById('priceBody');
+      let rows = '';
+      let subtotal = 0;
+      
+      // Base worktop price (slabs)
+      const slabs = quoteData.pricing.slabsUsed;
+      const worktopPrice = quoteData.pricing.firstSlab + (slabs - 1) * quoteData.pricing.additionalSlab;
+      subtotal += worktopPrice;
+      
+      rows += `
+        <tr>
+          <td>Worktops (${slabs} slab${slabs > 1 ? 's' : ''})</td>
+          <td>${quoteData.material.name} - ${quoteData.material.thickness}mm</td>
+          <td class="amount">£${worktopPrice.toFixed(2)}</td>
+        </tr>
+      `;
+      
+      // Base package includes (show as one line)
+      const baseIncludes = ['Chamfer/Pencil edge profile'];
+      
+      // Cutouts - show all individually with Included or price
+      const cutouts = quoteData.cutouts || [];
+      
+      // Group by type for display
+      const sinks = cutouts.filter(c => c.type?.includes('sink'));
+      const hobs = cutouts.filter(c => c.type?.includes('hob'));
+      const taps = cutouts.filter(c => c.type === 'tap');
+      const drainers = cutouts.filter(c => c.type?.includes('drainer'));
+      
+      // Sinks
+      sinks.forEach((c, i) => {
+        const isIncluded = c.included !== false && i === 0;
+        if (!isIncluded) subtotal += (c.price || 150);
+        rows += `
+          <tr>
+            <td>${c.name || 'Sink Cutout'}</td>
+            <td>${c.width}mm × ${c.height}mm</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 150).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Hobs
+      hobs.forEach((c, i) => {
+        const isIncluded = c.included !== false && i === 0;
+        if (!isIncluded) subtotal += (c.price || 100);
+        rows += `
+          <tr>
+            <td>${c.name || 'Hob Cutout'}</td>
+            <td>${c.width}mm × ${c.height}mm</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 100).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Taps
+      taps.forEach((c, i) => {
+        const isIncluded = c.included !== false && i === 0;
+        if (!isIncluded) subtotal += (c.price || 35);
+        rows += `
+          <tr>
+            <td>${c.name || 'Tap Hole'}</td>
+            <td>Ø${c.width}mm</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 35).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Drainers
+      drainers.forEach((c, i) => {
+        const isIncluded = c.included !== false && i === 0;
+        if (!isIncluded) subtotal += (c.price || 75);
+        
+        // Get drainer type name and side (uses clickedSide from designer)
+        const typeName = c.type === 'recess_drainer' ? 'Recess Drainer' : 'Drainer Grooves';
+        const sideName = c.side === 'left' ? 'Left' : c.side === 'right' ? 'Right' : c.side === 'both' ? 'Both' : '-';
+        
+        rows += `
+          <tr>
+            <td>${typeName}</td>
+            <td>${sideName}</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 75).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Edge profiles - consolidate by profile type
+      const includedEdges = (quoteData.edges || []).filter(e => e.included);
+      const extraEdges = (quoteData.edges || []).filter(e => !e.included && e.type !== 'dropdown');
+      
+      // Calculate total length of included edges
+      if (includedEdges.length > 0) {
+        const totalIncludedLength = includedEdges.reduce((sum, e) => sum + e.length, 0);
+        rows += `
+          <tr>
+            <td>Edge Profile (Chamfer/Pencil)</td>
+            <td>${totalIncludedLength.toFixed(2)}m total</td>
+            <td class="amount"><span class="included">Included</span></td>
+          </tr>
+        `;
+      }
+      
+      // Group extra edges by profile type and sum lengths
+      const edgesByType = {};
+      extraEdges.forEach(e => {
+        const key = e.name || e.type;
+        if (!edgesByType[key]) {
+          edgesByType[key] = { name: e.name, length: 0, price: e.price };
+        }
+        edgesByType[key].length += e.length;
+      });
+      
+      // Display consolidated extra edges
+      Object.values(edgesByType).forEach(e => {
+        const price = e.length * e.price;
+        subtotal += price;
+        rows += `
+          <tr>
+            <td>${e.name} Edge</td>
+            <td>${e.length.toFixed(2)}m × £${e.price.toFixed(2)}/m</td>
+            <td class="amount">£${price.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Upstands (always included)
+      if (quoteData.upstands && quoteData.upstands.length > 0) {
+        const upstandOnly = quoteData.upstands.filter(u => !u.isSplash);
+        if (upstandOnly.length > 0) {
+          rows += `
+            <tr>
+              <td>Upstands</td>
+              <td>${upstandOnly.length} piece${upstandOnly.length > 1 ? 's' : ''}</td>
+              <td class="amount"><span class="included">Included</span></td>
+            </tr>
+          `;
+        }
+      }
+      
+      // Splashbacks (always included)
+      const splashbacks = (quoteData.upstands || []).filter(u => u.isSplash);
+      if (splashbacks.length > 0) {
+        rows += `
+          <tr>
+            <td>Splashbacks</td>
+            <td>${splashbacks.length} piece${splashbacks.length > 1 ? 's' : ''}</td>
+            <td class="amount"><span class="included">Included</span></td>
+          </tr>
+        `;
+      }
+      
+      // Window Cills (always included)
+      if (quoteData.windowCills && quoteData.windowCills.length > 0) {
+        rows += `
+          <tr>
+            <td>Window Cills</td>
+            <td>${quoteData.windowCills.length} piece${quoteData.windowCills.length > 1 ? 's' : ''}</td>
+            <td class="amount"><span class="included">Included</span></td>
+          </tr>
+        `;
+      }
+      
+      // Dropdowns (always included)
+      if (quoteData.dropdowns && quoteData.dropdowns.length > 0) {
+        rows += `
+          <tr>
+            <td>Dropdown (Mitre Join)</td>
+            <td>${quoteData.dropdowns.length} piece${quoteData.dropdowns.length > 1 ? 's' : ''}</td>
+            <td class="amount"><span class="included">Included</span></td>
+          </tr>
+        `;
+      }
+      
+      body.innerHTML = rows;
+      
+      // VAT calculation
+      const vat = subtotal * 0.2;
+      const total = subtotal + vat;
+      
+      document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
+      document.getElementById('totalPrice').textContent = '£' + total.toFixed(2);
+    }
+    
+    // ========== 3D RENDERING ==========
+    let scene, camera, renderer;
+    let isMouseDown = false;
+    let mouseX = 0, mouseY = 0;
+    let cameraAngleX = 0.5; // Horizontal angle
+    let cameraAngleY = 0.4; // Vertical angle (elevation)
+    let cameraDistance = 1800; // Closer default
+    
+    function init3D() {
+      // Always create interactive 3D for website
+      // PDF will capture this as a static image
+      
+      const container = document.getElementById('render3d');
+      const wrapper = document.getElementById('renderContainer');
+      const mainImage = document.getElementById('mainViewImage');
+      const resetBtn = document.getElementById('resetViewBtn');
+      
+      // Show canvas and controls, hide image gallery
+      container.style.display = 'block';
+      if (mainImage) mainImage.style.display = 'none';
+      if (resetBtn) resetBtn.style.display = 'block';
+      
+      const width = wrapper.clientWidth;
+      const height = wrapper.clientHeight;
+      
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xfafafa);
+      
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
+      updateCameraPosition();
+      
+      renderer = new THREE.WebGLRenderer({ canvas: container, antialias: true });
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      
+      // Better lighting setup
+      const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambient);
+      
+      // Main light from top-front
+      const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      mainLight.position.set(200, 800, 400);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      scene.add(mainLight);
+      
+      // Fill light from opposite side
+      const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+      fillLight.position.set(-300, 400, -200);
+      scene.add(fillLight);
+      
+      // Rim light for edge definition
+      const rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
+      rimLight.position.set(0, 200, -500);
+      scene.add(rimLight);
+      
+      // Load texture - same method as designer
+      let material;
+      const materialColor = parseInt((quoteData.material.css || '#e8e4dc').replace('#', ''), 16) || 0xe8e4dc;
+      
+      // Create realistic stone material
+      material = new THREE.MeshStandardMaterial({
+        color: materialColor,
+        roughness: quoteData.material.roughness || 0.4,
+        metalness: 0.0,
+        flatShading: false
+      });
+      
+      // Try loading texture if available (same method as designer)
+      if (quoteData.material.textureId) {
+        const url = `https://lh3.googleusercontent.com/d/${quoteData.material.textureId}`;
+        console.log('Loading 3D texture from:', url);
+        
+        // Test image first, then create texture (same as designer)
+        const testImg = new Image();
+        testImg.crossOrigin = 'anonymous';
+        testImg.onload = function() {
+          console.log('✓ Texture image loaded, creating Three.js texture');
+          
+          const texture = new THREE.Texture(testImg);
+          texture.needsUpdate = true;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          // Scale texture to look realistic on worktop (adjust based on slab size)
+          texture.repeat.set(0.0003, 0.0003); // Match designer scale
+          
+          material.map = texture;
+          material.needsUpdate = true;
+          
+          // Force re-render to show texture
+          if (renderer && scene && camera) {
+            renderer.render(scene, camera);
+          }
+        };
+        testImg.onerror = function() {
+          console.log('✗ Texture failed to load, using color:', quoteData.material.css);
+        };
+        testImg.src = url;
+      }
+      
+      // Calculate center of all pieces using actual positions
+      let minX = Infinity, maxX = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      
+      quoteData.worktops.forEach((w) => {
+        const wx = w.x || 0;
+        const wy = w.y || 0;
+        minX = Math.min(minX, wx);
+        maxX = Math.max(maxX, wx + w.length);
+        minZ = Math.min(minZ, wy);
+        maxZ = Math.max(maxZ, wy + w.depth);
+      });
+      
+      // Include upstands in bounds (use absoluteX/Y if available)
+      (quoteData.upstands || []).forEach((u) => {
+        const ux = u.absoluteX !== undefined ? u.absoluteX : (u.x || 0);
+        const uy = u.absoluteY !== undefined ? u.absoluteY : (u.y || 0);
+        minX = Math.min(minX, ux);
+        maxX = Math.max(maxX, ux + u.length);
+        minZ = Math.min(minZ, uy);
+        maxZ = Math.max(maxZ, uy + 20);
+      });
+      
+      // Include window cills in bounds
+      (quoteData.windowCills || []).forEach((c) => {
+        minX = Math.min(minX, c.x || 0);
+        maxX = Math.max(maxX, (c.x || 0) + c.length);
+        minZ = Math.min(minZ, c.y || 0);
+        maxZ = Math.max(maxZ, (c.y || 0) + c.depth);
+      });
+      
+      // Splashbacks are included in upstands array
+      
+      const cx = (minX + maxX) / 2;
+      const cz = (minZ + maxZ) / 2;
+      
+      // Adjust camera distance based on design size - closer view
+      const designWidth = maxX - minX;
+      const designDepth = maxZ - minZ;
+      const designSize = Math.max(designWidth, designDepth);
+      cameraDistance = Math.max(1200, Math.min(2500, designSize * 0.5));
+      console.log('Design size:', designSize, 'Camera distance:', cameraDistance);
+      updateCameraPosition();
+      
+      // Add worktop meshes using actual positions
+      quoteData.worktops.forEach((w, i) => {
+        const wx = w.x || 0;
+        const wy = w.y || 0;
+        const geo = new THREE.BoxGeometry(w.length, quoteData.material.thickness, w.depth);
+        const mesh = new THREE.Mesh(geo, material);
+        // Position using actual x, y from designer (y in 2D becomes z in 3D)
+        mesh.position.set(wx + w.length/2 - cx, 0, wy + w.depth/2 - cz);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+      });
+      
+      // Add upstands/splashbacks using designer-style positioning
+      const UPSTAND_DEPTH_3D = quoteData.material.thickness;
+      console.log('Rendering upstands/splashbacks:', quoteData.upstands?.length || 0);
+      
+      (quoteData.upstands || []).forEach((u, i) => {
+        const isVertical = u.vertical || false;
+        const edge = u.parentEdge || 'back';
+        
+        let geo;
+        if (isVertical) {
+          // Vertical = runs along Z in 3D
+          geo = new THREE.BoxGeometry(UPSTAND_DEPTH_3D, u.height, u.length);
+        } else {
+          // Horizontal = runs along X in 3D
+          geo = new THREE.BoxGeometry(u.length, u.height, UPSTAND_DEPTH_3D);
+        }
+        
+        const mesh = new THREE.Mesh(geo, material);
+        
+        // Position based on absolute coordinates and edge type
+        let px, pz;
+        const ax = u.absoluteX !== undefined ? u.absoluteX : u.x;
+        const ay = u.absoluteY !== undefined ? u.absoluteY : u.y;
+        
+        if (edge === 'back') {
+          px = ax + u.length/2 - cx;
+          pz = ay + UPSTAND_DEPTH_3D/2 - cz;
+        } else if (edge === 'front') {
+          px = ax + u.length/2 - cx;
+          pz = ay - UPSTAND_DEPTH_3D/2 - cz;
+        } else if (edge === 'left') {
+          px = ax + UPSTAND_DEPTH_3D/2 - cx;
+          pz = ay + u.length/2 - cz;
+        } else { // right
+          px = ax - UPSTAND_DEPTH_3D/2 - cx;
+          pz = ay + u.length/2 - cz;
+        }
+        
+        const py = u.height/2 + quoteData.material.thickness/2;
+        mesh.position.set(px, py, pz);
+        
+        console.log(`Upstand ${i}: edge=${edge}, vertical=${isVertical}, pos=(${px.toFixed(0)}, ${py.toFixed(0)}, ${pz.toFixed(0)})`);
+        
+        mesh.castShadow = true;
+        scene.add(mesh);
+      });
+      
+      // Splashbacks are now included in upstands array above
+      
+      // Add window cills (horizontal shelves at window height with overhang)
+      if (quoteData.windowCills && quoteData.windowCills.length > 0) {
+        console.log('Rendering window cills:', quoteData.windowCills.length);
+        const CILL_THICKNESS = quoteData.material.thickness;
+        
+        quoteData.windowCills.forEach((c, i) => {
+          const cillDepth = c.depth || 200;
+          const cillHeight = c.height || 300; // Height from worktop to cill
+          const overhang = c.overhang || 20;
+          const edge = c.parentEdge || 'back';
+          const edgeStart = c.edgeStart || 0;
+          
+          console.log(`Cill ${i}: depth=${cillDepth}, height=${cillHeight}, overhang=${overhang}, edge=${edge}`);
+          console.log(`  Parent: x=${c.parentX}, y=${c.parentY}, length=${c.parentLength}, depth=${c.parentDepth}`);
+          
+          let geo, px, pz;
+          let cillRotated = false;
+          
+          const UPSTAND_DEPTH_3D = 20; // Match designer
+          
+          if (edge === 'back') {
+            geo = new THREE.BoxGeometry(c.length, CILL_THICKNESS, cillDepth);
+            px = c.parentX + edgeStart + c.length/2 - cx;
+            // Cill overhangs PAST the upstand/splashback by 'overhang' amount
+            pz = c.parentY + UPSTAND_DEPTH_3D + overhang - cillDepth/2 - cz;
+          } else if (edge === 'front') {
+            geo = new THREE.BoxGeometry(c.length, CILL_THICKNESS, cillDepth);
+            px = c.parentX + edgeStart + c.length/2 - cx;
+            pz = c.parentY + c.parentDepth - UPSTAND_DEPTH_3D - overhang + cillDepth/2 - cz;
+          } else if (edge === 'left') {
+            cillRotated = true;
+            geo = new THREE.BoxGeometry(cillDepth, CILL_THICKNESS, c.length);
+            px = c.parentX + UPSTAND_DEPTH_3D + overhang - cillDepth/2 - cx;
+            pz = c.parentY + edgeStart + c.length/2 - cz;
+          } else { // right
+            cillRotated = true;
+            geo = new THREE.BoxGeometry(cillDepth, CILL_THICKNESS, c.length);
+            px = c.parentX + c.parentLength - UPSTAND_DEPTH_3D - overhang + cillDepth/2 - cx;
+            pz = c.parentY + edgeStart + c.length/2 - cz;
+          }
+          
+          const mesh = new THREE.Mesh(geo, material);
+          
+          // Y position: cill sits at cillHeight above worktop
+          const py = cillHeight + CILL_THICKNESS/2;
+          mesh.position.set(px, py, pz);
+          mesh.castShadow = true;
+          scene.add(mesh);
+          
+          console.log(`  Position: px=${px.toFixed(0)}, py=${py.toFixed(0)}, pz=${pz.toFixed(0)}`);
+        });
+      }
+      
+      // Add dropdowns (panels hanging from worktop edges)
+      const dropdowns = (quoteData.edges || []).filter(e => e.type === 'dropdown');
+      if (dropdowns.length > 0) {
+        console.log('Rendering dropdowns:', dropdowns.length);
+        const WORKTOP_THICKNESS = quoteData.material.thickness;
+        
+        dropdowns.forEach((d, i) => {
+          const segLen = d.length * 1000; // Convert back to mm
+          const dropH = d.height;
+          const edge = d.edge || 'front';
+          
+          let dx, dz;
+          const wx = d.worktopX || 0;
+          const wy = d.worktopY || 0;
+          const wLen = d.worktopLength || 3000;
+          const wDepth = d.worktopDepth || 600;
+          const startMm = d.startMm || 0;
+          
+          // Position dropdown based on edge
+          if (edge === 'back') {
+            dx = wx + startMm + segLen/2 - cx;
+            dz = wy + WORKTOP_THICKNESS/2 - cz;
+          } else if (edge === 'front') {
+            dx = wx + startMm + segLen/2 - cx;
+            dz = wy + wDepth - WORKTOP_THICKNESS/2 - cz;
+          } else if (edge === 'left') {
+            dx = wx + WORKTOP_THICKNESS/2 - cx;
+            dz = wy + startMm + segLen/2 - cz;
+          } else { // right
+            dx = wx + wLen - WORKTOP_THICKNESS/2 - cx;
+            dz = wy + startMm + segLen/2 - cz;
+          }
+          
+          // Create dropdown geometry
+          const dGeo = (edge === 'back' || edge === 'front') 
+            ? new THREE.BoxGeometry(segLen, dropH, WORKTOP_THICKNESS)
+            : new THREE.BoxGeometry(WORKTOP_THICKNESS, dropH, segLen);
+          
+          const dMesh = new THREE.Mesh(dGeo, material);
+          
+          // Position: dropdown hangs from bottom of worktop
+          const dropdownCenterY = -WORKTOP_THICKNESS/2 - dropH/2;
+          dMesh.position.set(dx, dropdownCenterY, dz);
+          dMesh.castShadow = true;
+          scene.add(dMesh);
+          
+          console.log(`Dropdown ${i}: edge=${edge}, size=${segLen}x${dropH}`);
+        });
+      }
+      
+      // Add cutout indicators (visible dark markers on worktop surface)
+      // Note: The designer uses CSG for actual holes - here we show visual markers
+      if (quoteData.cutouts && quoteData.cutouts.length > 0) {
+        console.log('Rendering cutouts:', quoteData.cutouts.length);
+        
+        quoteData.cutouts.forEach((c, i) => {
+          const cw = c.width || 100;
+          const ch = c.height || 100;
+          
+          // Dark semi-transparent marker to show cutout location
+          const markerMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x333333, 
+            transparent: true,
+            opacity: 0.6
+          });
+          
+          const geo = new THREE.BoxGeometry(cw, 4, ch);
+          const mesh = new THREE.Mesh(geo, markerMaterial);
+          
+          // Use absolute position
+          const cutX = c.absoluteX !== undefined ? c.absoluteX : ((c.worktopX || 0) + (c.x || 100));
+          const cutY = c.absoluteY !== undefined ? c.absoluteY : ((c.worktopY || 0) + (c.y || 100));
+          
+          // Position on top of worktop surface
+          const px = cutX + cw/2 - cx;
+          const pz = cutY + ch/2 - cz;
+          mesh.position.set(px, quoteData.material.thickness/2 + 3, pz);
+          scene.add(mesh);
+          
+          console.log(`Cutout ${i}: ${c.name} at (${px.toFixed(0)}, ${pz.toFixed(0)}) size ${cw}x${ch}`);
+        });
+      }
+      
+      // Add subtle floor/background
+      const floorGeo = new THREE.PlaneGeometry(6000, 6000);
+      const floorMat = new THREE.MeshStandardMaterial({ 
+        color: 0xf0f0f0,
+        roughness: 0.9,
+        metalness: 0
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -quoteData.material.thickness / 2 - 5;
+      floor.receiveShadow = true;
+      scene.add(floor);
+      
+      renderer.render(scene, camera);
+      
+      // Mouse controls
+      setupMouseControls(wrapper);
+      
+      // Start render loop
+      animate();
+    }
+    
+    function updateCameraPosition() {
+      if (!camera) return; // Skip if using captured image
+      // Spherical coordinates
+      camera.position.x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+      camera.position.y = Math.sin(cameraAngleY) * cameraDistance;
+      camera.position.z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+      camera.lookAt(0, 0, 0);
+    }
+    
+    function setupMouseControls(element) {
+      element.addEventListener('mousedown', (e) => {
+        isMouseDown = true;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+      
+      document.addEventListener('mouseup', () => {
+        isMouseDown = false;
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (!isMouseDown) return;
+        
+        const deltaX = e.clientX - mouseX;
+        const deltaY = e.clientY - mouseY;
+        
+        cameraAngleX += deltaX * 0.005;
+        cameraAngleY = Math.max(-0.8, Math.min(0.8, cameraAngleY + deltaY * 0.005));
+        
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        updateCameraPosition();
+      });
+      
+      // Scroll to zoom
+      element.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        cameraDistance = Math.max(1000, Math.min(5000, cameraDistance + e.deltaY * 2));
+        updateCameraPosition();
+      });
+      
+      // Touch support
+      element.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isMouseDown = true;
+          mouseX = e.touches[0].clientX;
+          mouseY = e.touches[0].clientY;
+        }
+      });
+      
+      element.addEventListener('touchend', () => {
+        isMouseDown = false;
+      });
+      
+      element.addEventListener('touchmove', (e) => {
+        if (!isMouseDown || e.touches.length !== 1) return;
+        
+        const deltaX = e.touches[0].clientX - mouseX;
+        const deltaY = e.touches[0].clientY - mouseY;
+        
+        cameraAngleX += deltaX * 0.005;
+        cameraAngleY = Math.max(-0.8, Math.min(0.8, cameraAngleY + deltaY * 0.005));
+        
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+        
+        updateCameraPosition();
+      });
+    }
+    
+    function animate() {
+      if (!renderer) return;
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    
+    // ========== PDF EXPORT ==========
+    async function downloadPDF() {
+      const element = document.getElementById('quoteContent');
+      
+      // Hide accept section for PDF
+      const acceptSection = document.getElementById('acceptSection');
+      if (acceptSection) acceptSection.style.display = 'none';
+      
+      // Logo handling for PDF
+      const logoImg = document.getElementById('logoImg');
+      const logoPdfFallback = document.getElementById('logoPdfFallback');
+      const originalLogoDisplay = logoImg?.style.display;
+      const originalLogoHeight = logoImg?.style.height;
+      const logoSvg = document.getElementById('logoSvg');
+      const originalSvgDisplay = logoSvg?.style.display;
+      
+      if (logoBase64 && tradePartnerSettings.logo) {
+        // Trade partner logo - use preloaded base64 image
+        if (logoImg) {
+          logoImg.src = logoBase64;
+          logoImg.style.display = 'block';
+          logoImg.style.height = '80px'; // Compact for PDF
+        }
+        if (logoSvg) logoSvg.style.display = 'none';
+        if (logoPdfFallback) logoPdfFallback.style.display = 'none';
+      } else if (logoSvg) {
+        // Default Prime Worktops SVG - just use the SVG as-is
+        logoSvg.style.height = '80px';
+        if (logoImg) logoImg.style.display = 'none';
+        if (logoPdfFallback) logoPdfFallback.style.display = 'none';
+      } else {
+        // Fall back to text if SVG somehow missing
+        if (logoImg) logoImg.style.display = 'none';
+        if (logoPdfFallback) logoPdfFallback.style.display = 'block';
+      }
+      
+      // Material swatch handling for PDF
+      const swatch = document.getElementById('materialSwatch');
+      const originalSwatchBg = swatch?.style.backgroundImage;
+      const originalSwatchHtml = swatch?.innerHTML;
+      
+      if (swatch) {
+        if (swatchBase64) {
+          // Use preloaded base64 image
+          swatch.style.backgroundImage = `url('${swatchBase64}')`;
+          swatch.innerHTML = '';
+        } else {
+          // Fall back to solid color with material name text
+          swatch.style.backgroundImage = 'none';
+          swatch.style.backgroundColor = quoteData.material?.css || '#888';
+          swatch.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,0.7);font-weight:700;font-size:13px;text-align:center;padding:5px;">${quoteData.material?.name || 'Material'}</div>`;
+        }
+      }
+      
+      // Hide thumbnails for PDF (just show main image)
+      const thumbs = document.getElementById('viewThumbnails');
+      if (thumbs) thumbs.style.display = 'none';
+      
+      // Reduce header padding for PDF
+      const header = document.querySelector('.header');
+      const originalHeaderPadding = header?.style.padding;
+      const originalHeaderMargin = header?.style.marginBottom;
+      if (header) {
+        header.style.padding = '12px 20px';
+        header.style.marginBottom = '10px';
+      }
+      
+      // Adjust render container for PDF - BIG 3D only
+      const renderContainer = document.getElementById('renderContainer');
+      const originalRenderHeight = renderContainer?.style.height;
+      if (renderContainer) {
+        renderContainer.style.height = '380px';
+        renderContainer.style.minHeight = '380px';
+        renderContainer.style.maxHeight = '380px';
+        renderContainer.style.width = '100%';
+        const mainImg = renderContainer.querySelector('img');
+        if (mainImg) {
+          mainImg.style.objectFit = 'contain';
+          mainImg.style.width = '100%';
+          mainImg.style.height = '100%';
+        }
+      }
+      
+      // 2D plan view - hidden in PDF (kept for screen)
+      const plan2dImage = document.getElementById('plan2dImage');
+      const originalPlan2dMaxHeight = plan2dImage?.style.maxHeight;
+      
+      // SHOW material info for PDF - original size
+      const materialInfo = document.querySelector('.material-info');
+      const originalMaterialInfoDisplay = materialInfo?.style.display;
+      if (materialInfo) {
+        materialInfo.style.display = 'flex';
+        materialInfo.style.flexDirection = 'row';
+        materialInfo.style.gap = '15px';
+        materialInfo.style.alignItems = 'flex-start';
+      }
+      
+      // Hide 2D image in PDF - only show 3D
+      const plan2dContainer = document.getElementById('plan2dContainer');
+      const originalPlan2dDisplay = plan2dContainer?.style.display;
+      if (plan2dContainer) {
+        plan2dContainer.style.display = 'none';
+      }
+      
+      // Images row - single column for 3D only
+      const imagesRow = document.getElementById('imagesRow');
+      const originalImagesRowStyle = imagesRow?.style.flexDirection;
+      if (imagesRow) {
+        imagesRow.style.display = 'block';
+      }
+      
+      // Image wrappers - full width for 3D
+      const imageWrappers = document.querySelectorAll('.image-wrapper');
+      imageWrappers.forEach(wrapper => {
+        wrapper.style.flex = '';
+        wrapper.style.minWidth = '';
+        wrapper.style.width = '100%';
+      });
+      
+      // Hide image labels for PDF
+      const imageLabels = document.querySelectorAll('.image-wrapper > div[style*="font-size:12px"]');
+      imageLabels.forEach(label => label.style.display = 'none');
+      
+      // Customer card - keep visible if has data, hide only if empty
+      const customerCard = document.getElementById('customerCard');
+      const customerName = document.getElementById('customerName')?.textContent;
+      const originalCustomerDisplay = customerCard?.style.display;
+      if (customerCard && (!customerName || customerName === '-')) {
+        customerCard.style.display = 'none';
+      }
+      
+      // If using image gallery, ensure isometric (first) view is shown
+      const mainImage = document.getElementById('mainViewImage');
+      if (quoteData.render3dViews && quoteData.render3dViews.length > 0 && mainImage) {
+        // Set to isometric view (index 0) for PDF
+        mainImage.src = quoteData.render3dViews[0].image;
+      }
+      
+      // Hide interactive elements
+      const resetBtn = document.getElementById('resetViewBtn');
+      if (resetBtn) resetBtn.style.display = 'none';
+      
+      // If using image gallery, no need to capture canvas
+      // If using fallback 3D, capture canvas as image
+      let tempImg = null;
+      const canvas = document.getElementById('render3d');
+      
+      // Only process canvas if NOT using image gallery
+      if (canvas && renderer && (!quoteData.render3dViews || quoteData.render3dViews.length === 0)) {
+        // Reset camera to isometric view for PDF
+        cameraAngleX = 0.6;
+        cameraAngleY = 0.4;
+        cameraDistance = 1800;
+        updateCameraPosition();
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        renderer.render(scene, camera);
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Create temp image to replace canvas for PDF capture
+        tempImg = document.createElement('img');
+        tempImg.src = imgData;
+        tempImg.style.width = '100%';
+        tempImg.style.height = '100%';
+        tempImg.style.objectFit = 'contain';
+        tempImg.style.display = 'block';
+        tempImg.style.background = '#f5f5f5';
+        
+        canvas.style.display = 'none';
+        document.getElementById('renderContainer').appendChild(tempImg);
+      }
+      
+      const opt = {
+        margin: 10,
+        filename: `Quote_${quoteData.quoteNumber}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      
+      html2pdf().set(opt).from(element).save().then(() => {
+        // Restore everything
+        if (tempImg) {
+          tempImg.remove();
+          if (canvas) canvas.style.display = 'block';
+        }
+        if (thumbs) thumbs.style.display = 'flex';
+        if (resetBtn) resetBtn.style.display = 'block';
+        if (acceptSection) acceptSection.style.display = 'block';
+        if (renderContainer) {
+          renderContainer.style.height = originalRenderHeight || '400px';
+          renderContainer.style.minHeight = '';
+          renderContainer.style.maxHeight = '';
+          const mainImg = renderContainer.querySelector('img');
+          if (mainImg) {
+            mainImg.style.width = '100%';
+            mainImg.style.height = '100%';
+            mainImg.style.maxHeight = '';
+          }
+        }
+        if (plan2dImage) {
+          plan2dImage.style.maxHeight = originalPlan2dMaxHeight || '300px';
+        }
+        // Restore 2D container visibility
+        if (plan2dContainer) {
+          plan2dContainer.style.display = originalPlan2dDisplay || 'block';
+        }
+        if (materialInfo) {
+          materialInfo.style.display = originalMaterialInfoDisplay || 'grid';
+        }
+        if (imagesRow) {
+          imagesRow.style.flexDirection = originalImagesRowStyle || 'column';
+          imagesRow.style.display = 'flex';
+        }
+        // Restore image wrapper widths
+        imageWrappers.forEach(wrapper => {
+          wrapper.style.flex = '';
+          wrapper.style.minWidth = '';
+          wrapper.style.width = '';
+        });
+        imageLabels.forEach(label => label.style.display = '');
+        if (customerCard) customerCard.style.display = originalCustomerDisplay || 'block';
+        
+        // Restore header
+        if (header) {
+          header.style.padding = originalHeaderPadding || '10px 20px';
+          header.style.marginBottom = originalHeaderMargin || '20px';
+        }
+        
+        // Restore logo
+        const logoSvg = document.getElementById('logoSvg');
+        if (tradePartnerSettings.logo) {
+          // Trade partner logo - keep img visible
+          if (logoImg) {
+            logoImg.style.display = 'block';
+            logoImg.style.height = originalLogoHeight || '120px';
+          }
+          if (logoSvg) logoSvg.style.display = 'none';
+        } else {
+          // Default Prime Worktops SVG - restore SVG
+          if (logoSvg) {
+            logoSvg.style.display = 'block';
+            logoSvg.style.height = '120px';
+          }
+          if (logoImg) logoImg.style.display = 'none';
+        }
+        if (logoPdfFallback) logoPdfFallback.style.display = 'none';
+        
+        // Restore swatch
+        if (swatch) {
+          swatch.style.backgroundImage = originalSwatchBg || '';
+          swatch.innerHTML = originalSwatchHtml || '';
+        }
+      });
+    }
+    
+    // Reset camera to optimal viewing angle for PDF
+    function resetCameraForPDF() {
+      if (!renderer) return;
+      cameraAngleX = 0.5;
+      cameraAngleY = 0.4;
+      cameraDistance = 1800;
+      updateCameraPosition();
+      renderer.render(scene, camera);
+    }
+    
+    // Reset camera view (button on screen)
+    function resetCameraView() {
+      if (!renderer) return;
+      cameraAngleX = 0.5;
+      cameraAngleY = 0.4;
+      cameraDistance = 1800;
+      updateCameraPosition();
+    }
+    
+    function saveQuote() {
+      // Would send to database
+      alert('Quote saved!\n\nQuote #' + quoteData.quoteNumber + ' has been saved.');
+    }
+    
+    function saveAndNewQuote() {
+      // Save current quote then go back to designer to change material
+      const confirmed = confirm('Save this quote and create another with a different material?\n\nThis lets you offer multiple material options to the same customer.');
+      
+      if (confirmed) {
+        // Save current quote
+        console.log('Saving quote:', quoteData.quoteNumber);
+        
+        // Generate new quote number
+        const newQuoteNum = 'PW-2024-' + String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+        
+        alert('Quote saved!\n\nReturning to designer to select a different material.\nNew quote will be: ' + newQuoteNum);
+        
+        // Would go back to designer with same layout but material selector open
+        // window.location.href = 'draw_v3.html?keepLayout=true&openMaterials=true&customer=' + encodeURIComponent(JSON.stringify(quoteData.customer));
+        goBack();
+      }
+    }
+    
+    function acceptQuote() {
+      // Would update quote status in database and notify trade partner
+      const confirmed = confirm(`By accepting this quote, you agree to the terms and conditions.\n\nTotal: ${document.getElementById('totalPrice').textContent}\n\nProceed?`);
+      
+      if (confirmed) {
+        // Update UI
+        document.getElementById('acceptSection').innerHTML = `
+          <div style="color:#2e7d32;font-size:18px;font-weight:600;">
+            ✓ Quote Accepted
+          </div>
+          <div style="color:#666;font-size:13px;margin-top:8px;">
+            Thank you! We'll be in touch within 24 hours to arrange your template visit.
+          </div>
+        `;
+        
+        // Would send to database
+        console.log('Quote accepted:', quoteData.quoteNumber);
+        // API call would go here
+      }
+    }
+    
+    function goBack() {
+      window.location.href = 'draw_v3.html';
+    }
+    
+    // Store base64 versions of images for PDF (avoids CORS issues)
+    let logoBase64 = null;
+    let swatchBase64 = null;
+    
+    // Convert image URL to base64
+    function imageToBase64(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          try {
+            resolve(canvas.toDataURL('image/png'));
+          } catch(e) {
+            console.warn('Could not convert image to base64:', e);
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
+    
+    // Pre-load images as base64 for PDF
+    async function preloadImagesForPDF() {
+      // Logo - use lh3.googleusercontent.com (most reliable)
+      if (tradePartnerSettings.logo) {
+        const logoUrl = `https://lh3.googleusercontent.com/d/${tradePartnerSettings.logo}=s800`;
+        logoBase64 = await imageToBase64(logoUrl);
+        console.log('Logo preloaded:', logoBase64 ? 'success' : 'failed');
+      }
+      
+      // Material swatch - use lh3.googleusercontent.com
+      if (quoteData.material?.textureId) {
+        const swatchUrl = `https://lh3.googleusercontent.com/d/${quoteData.material.textureId}=s400`;
+        swatchBase64 = await imageToBase64(swatchUrl);
+        console.log('Swatch preloaded:', swatchBase64 ? 'success' : 'failed');
+      }
+    }
+    
+    // Apply trade partner branding
+    function applyBranding() {
+      // Logo - use lh3.googleusercontent.com (most reliable)
+      const logoImg = document.getElementById('logoImg');
+      const logoSvg = document.getElementById('logoSvg');
+      
+      if (tradePartnerSettings.logo) {
+        // Custom logo - hide SVG, show img
+        if (logoSvg) logoSvg.style.display = 'none';
+        if (logoImg) {
+          logoImg.src = `https://lh3.googleusercontent.com/d/${tradePartnerSettings.logo}=s800`;
+          logoImg.style.display = 'block';
+        }
+      }
+      
+      // Header color and text
+      const header = document.querySelector('.header');
+      if (header) {
+        if (tradePartnerSettings.headerColor) {
+          header.style.background = tradePartnerSettings.headerColor;
+        }
+        if (tradePartnerSettings.headerTextColor) {
+          header.style.color = tradePartnerSettings.headerTextColor;
+        }
+      }
+      
+      // Terms
+      const termsEl = document.getElementById('termsContent');
+      if (termsEl) {
+        const terms = tradePartnerSettings.customTerms || tradePartnerSettings.terms;
+        termsEl.innerHTML = '<ul>' + terms.map(t => `<li>${t}</li>`).join('') + '</ul>';
+      }
+    }
+    
+    // Initialize
+    applyBranding();
+    populatePage();
+    preloadImagesForPDF(); // Pre-load images as base64 for PDF export
+  </script>
+</body>
+</html>

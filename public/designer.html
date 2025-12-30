@@ -93,6 +93,25 @@
     .modal-btn.primary:hover { background: #2d6b52; }
     .modal-btn.cancel { border-color: #999; color: #666; }
     .modal-btn.cancel:hover { background: #f5f5f5; color: #333; }
+    
+    /* Tier display styles */
+    .tier-classic { font-weight: 700; font-size: 14px; letter-spacing: 1px; }
+    .tier-classic.t1 { color: #4CAF50; }
+    .tier-classic.t2 { color: #8BC34A; }
+    .tier-classic.t3 { color: #FFC107; }
+    .tier-classic.t4 { color: #FF9800; }
+    .tier-classic.t5 { color: #f44336; }
+    
+    .tier-pill { font-weight: 600; font-size: 11px; padding: 4px 10px; border-radius: 12px; letter-spacing: 1px; display: inline-block; }
+    .tier-pill.t1 { background: rgba(76,175,80,0.15); color: #4CAF50; }
+    .tier-pill.t2 { background: rgba(139,195,74,0.15); color: #8BC34A; }
+    .tier-pill.t3 { background: rgba(255,193,7,0.15); color: #FFC107; }
+    .tier-pill.t4 { background: rgba(255,152,0,0.15); color: #FF9800; }
+    .tier-pill.t5 { background: rgba(244,67,54,0.15); color: #f44336; }
+    
+    .tier-style-btn { padding: 4px 8px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer; font-size: 10px; transition: all 0.2s; }
+    .tier-style-btn:hover { border-color: #1e4d3a; }
+    .tier-style-btn.active { background: #1e4d3a; color: white; border-color: #1e4d3a; }
   </style>
 </head>
 <body>
@@ -160,6 +179,10 @@
       <button class="tool-btn" onclick="zoom3D(0.8)" title="Zoom In" style="padding:4px 8px;">+</button>
       <button class="tool-btn" onclick="zoom3D(1.25)" title="Zoom Out" style="padding:4px 8px;">−</button>
       <button class="tool-btn" onclick="reset3DView()" title="Reset View" style="padding:4px 8px;">⊙</button>
+      <span style="margin:0 6px;color:#ddd;">|</span>
+      <button class="tool-btn" onclick="captureCurrentView()" title="Capture this view for quote" style="padding:4px 10px;background:#fff3e0;border-color:#ff9800;">📸 Capture</button>
+      <span id="captureCount" style="display:none;background:#ff9800;color:white;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:600;margin-left:4px;">0</span>
+      <button class="tool-btn" onclick="clearCaptures()" id="clearCapturesBtn" title="Clear all captured views" style="display:none;padding:4px 8px;background:#ffebee;border-color:#f44336;color:#c62828;">✕</button>
     </div>
   </div>
   
@@ -171,6 +194,14 @@
       <div id="disclaimer3d" style="display:none;position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.7);color:white;padding:8px 12px;border-radius:6px;font-size:11px;max-width:300px;z-index:50;">
         ⚠️ <strong>Illustration Only</strong> - This 3D render is for visualisation purposes only. Actual colours, textures and finishes may vary. Please request a sample before ordering.
       </div>
+      <!-- Generate Quote Button (2D view only) -->
+      <button id="generateQuoteBtn" onclick="generateQuote()" style="position:absolute;bottom:20px;right:20px;padding:14px 28px;background:linear-gradient(135deg,#4CAF50,#2e7d32);color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(76,175,80,0.4);z-index:100;display:flex;align-items:center;gap:8px;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-3px) scale(1.02)';this.style.boxShadow='0 6px 20px rgba(76,175,80,0.5)';" onmouseout="this.style.transform='translateY(0) scale(1)';this.style.boxShadow='0 4px 15px rgba(76,175,80,0.4)';">
+        📄 Generate Quote
+      </button>
+      <!-- Clear Design Button - bottom left corner -->
+      <button id="clearDesignBtn" onclick="clearDesignState()" style="position:absolute;bottom:20px;left:20px;padding:12px 20px;background:#fff;color:#666;border:1px solid #ddd;border-radius:8px;font-size:14px;cursor:pointer;z-index:100;transition:all 0.2s;" onmouseover="this.style.background='#ffebee';this.style.color='#c62828';this.style.borderColor='#ef9a9a';" onmouseout="this.style.background='#fff';this.style.color='#666';this.style.borderColor='#ddd';">
+        🗑️ New Design
+      </button>
       <canvas id="canvasSlab" style="display:none;"></canvas>
       <!-- Slab Size Configuration (Admin/Fabricator only) -->
       <div id="slabConfig" style="display:none;position:absolute;top:10px;right:10px;background:#fff;padding:12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:100;max-width:300px;max-height:90vh;overflow-y:auto;">
@@ -249,11 +280,24 @@
         <div id="slabPriceEstimate" style="background:#e8f5e9;padding:8px;border-radius:4px;font-size:11px;color:#1e4d3a;">
           <strong>Estimated Profit:</strong> £0.00
         </div>
+        
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
+          <div style="font-size:10px;font-weight:600;color:#666;margin-bottom:6px;">PRICE TIER STYLE</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="setTierStyle('classic')" id="tierStyleClassic" class="tier-style-btn">£££ Classic</button>
+            <button onclick="setTierStyle('pill')" id="tierStylePill" class="tier-style-btn active">Soft Pill</button>
+          </div>
+          <div style="margin-top:8px;padding:6px;background:#f5f5f5;border-radius:4px;">
+            <div style="font-size:9px;color:#666;margin-bottom:4px;">Preview:</div>
+            <div id="tierStylePreview" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"></div>
+          </div>
+        </div>
       </div>
       <div class="legend" id="legend2d">
         <div class="legend-item"><div class="legend-color" style="background:#999;"></div> Joined</div>
         <div class="legend-item"><div class="legend-color" style="background:#4CAF50;"></div> Free (click)</div>
-        <div class="legend-item"><div class="legend-color" style="background:#9c27b0;"></div> Dropdown (Mitre)</div>
+        <div class="legend-item"><div class="legend-color" style="background:#9c27b0;"></div> Dropdown (Full)</div>
+        <div class="legend-item"><div class="legend-color" style="background:#795548;"></div> Mitred Edge</div>
         <div class="legend-item"><div class="legend-color" style="background:#a5d6a7;"></div> Upstand</div>
         <div class="legend-item"><div class="legend-color" style="background:#80cbc4;"></div> Splashback</div>
         <div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:9px;font-weight:600;color:#666;">Edge Profiles:</div>
@@ -314,20 +358,29 @@
     <div class="edge-menu-item" onclick="setEdgeType('splashback')"><div class="dot" style="background:#80cbc4;"></div> Add Splashback</div>
     <div class="edge-menu-item" onclick="addPositionedSplashback()"><div class="dot" style="background:#26a69a;"></div> Splashback at position...</div>
     <div class="edge-menu-item" onclick="addWindowCill()"><div class="dot" style="background:#ffb74d;"></div> Window Cill at position...</div>
-    <div class="edge-menu-item" onclick="addSocketCutout()"><div class="dot" style="background:#ff7043;"></div> Socket Cutout (Splashback)</div>
+    <div class="edge-menu-item" onclick="addSocketCutout()"><div class="dot" style="background:#ff7043;"></div> Socket Cutout (on this edge)</div>
     
     <div style="font-size:10px;font-weight:600;color:#666;padding:6px 12px;border-bottom:1px solid #eee;border-top:1px solid #eee;margin-top:4px;">SINKS & CUTOUTS</div>
-    <div class="edge-menu-item" onclick="addCutout('undermount_sink')"><img src="https://drive.google.com/thumbnail?id=1vKV4RkYHmwsVzlnEtXvH0woSjQ5FYcZ6&sz=w40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Undermount Sink</div>
-    <div class="edge-menu-item" onclick="addCutout('sink_with_drainers')"><img src="https://drive.google.com/thumbnail?id=1OkNW1HvAOABRG2XpeC6W379L4H0WZxIP&sz=w40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Sink + Drainers</div>
-    <div class="edge-menu-item" onclick="addCutout('overmount_sink')"><img src="https://drive.google.com/thumbnail?id=1vKV4RkYHmwsVzlnEtXvH0woSjQ5FYcZ6&sz=w40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Overmount Sink</div>
-    <div class="edge-menu-item" onclick="addCutout('hob')"><img src="https://drive.google.com/thumbnail?id=17sdiphAm7KDwJRH664cZcD-UWDSyHmxX&sz=w40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Hob Cutout</div>
-    <div class="edge-menu-item" onclick="addCutout('recess_hob')"><img src="https://drive.google.com/thumbnail?id=1V99gR1cZdTa2wvSU8vEEc_0GZ5ISaQaW&sz=w40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Recess Hob</div>
-    <div class="edge-menu-item" onclick="addCutout('tap')"><img src="https://drive.google.com/thumbnail?id=17-G19NoJACgypg3TUtDrUFb6pKdRDhF9&sz=w40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Tap / Pop Up Socket</div>
+    <div class="edge-menu-item" onclick="addCutout('undermount_sink')"><img src="https://lh3.googleusercontent.com/d/1vKV4RkYHmwsVzlnEtXvH0woSjQ5FYcZ6=s40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Undermount Sink</div>
+    <div class="edge-menu-item" onclick="addCutout('sink_with_drainers')"><img src="https://lh3.googleusercontent.com/d/1OkNW1HvAOABRG2XpeC6W379L4H0WZxIP=s40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Sink + Drainers</div>
+    <div class="edge-menu-item" onclick="addCutout('overmount_sink')"><img src="https://lh3.googleusercontent.com/d/1vKV4RkYHmwsVzlnEtXvH0woSjQ5FYcZ6=s40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Overmount Sink</div>
+    <div class="edge-menu-item" onclick="addCutout('hob')"><img src="https://lh3.googleusercontent.com/d/17sdiphAm7KDwJRH664cZcD-UWDSyHmxX=s40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Hob Cutout</div>
+    <div class="edge-menu-item" onclick="addCutout('recess_hob')"><img src="https://lh3.googleusercontent.com/d/1V99gR1cZdTa2wvSU8vEEc_0GZ5ISaQaW=s40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Recess Hob</div>
+    <div class="edge-menu-item" onclick="addCutout('tap')"><img src="https://lh3.googleusercontent.com/d/17-G19NoJACgypg3TUtDrUFb6pKdRDhF9=s40" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"> Tap / Pop Up Socket</div>
     
     <div style="font-size:10px;font-weight:600;color:#666;padding:6px 12px;border-bottom:1px solid #eee;border-top:1px solid #eee;margin-top:4px;">EDGE TREATMENTS</div>
     <div class="edge-menu-item" onclick="setEdgeType('profile')"><div class="dot" style="background:#ff5722;"></div> Profile Edge</div>
-    <div class="edge-menu-item" onclick="setEdgeType('dropdown')"><div class="dot" style="background:#9c27b0;"></div> Dropdown (Mitre)</div>
+    <div class="edge-menu-item" onclick="setEdgeType('dropdown')"><div class="dot" style="background:#9c27b0;"></div> Dropdown (Full)</div>
     <div class="edge-menu-item" onclick="setEdgeType('none')"><div class="dot" style="background:#ccc;"></div> Clear Edge</div>
+  </div>
+  
+  <!-- Corner Menu for radius -->
+  <div class="edge-menu" id="cornerMenu" style="display:none;" onclick="event.stopPropagation();" onmousedown="event.stopPropagation();">
+    <div style="font-size:10px;font-weight:600;color:#666;padding:6px 12px;border-bottom:1px solid #eee;">CORNER OPTIONS</div>
+    <div id="cornerMenuTitle" style="font-size:11px;padding:6px 12px;color:#333;background:#f5f5f5;"></div>
+    <div class="edge-menu-item" id="cornerAddRadius" onclick="addCornerRadius()"><div class="dot" style="background:#2196F3;"></div> Add Radius...</div>
+    <div class="edge-menu-item" id="cornerEditRadius" style="display:none;" onclick="editCornerRadius()"><div class="dot" style="background:#ff9800;"></div> Edit Radius...</div>
+    <div class="edge-menu-item" id="cornerRemoveRadius" style="display:none;" onclick="removeCornerRadius()"><div class="dot" style="background:#f44336;"></div> Remove Radius</div>
   </div>
   
   <!-- Modal Dialog for Drainer Selection -->
@@ -500,35 +553,35 @@
         <div id="brandLogos" style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;">
           <div onclick="setBrandFilter('all')" class="brand-logo-btn" id="brandAll" data-brand="all" style="width:80px;height:80px;border:2px solid #1e4d3a;border-radius:8px;cursor:pointer;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;text-align:center;">All<br>Brands</div>
           <div onclick="setBrandFilter('MOD')" class="brand-logo-btn" data-brand="MOD" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Modern Quartz">
-            <img src="https://drive.google.com/thumbnail?id=1XwYv2zR9YlAXFLaPe22Cz2WsX62sBjA0&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1XwYv2zR9YlAXFLaPe22Cz2WsX62sBjA0=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
             <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
           </div>
           <div onclick="setBrandFilter('SIL')" class="brand-logo-btn" data-brand="SIL" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Silestone">
-            <img src="https://drive.google.com/thumbnail?id=127k2DZSGjdqXDF4W5KAyNgFAlB6NKj6M&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/127k2DZSGjdqXDF4W5KAyNgFAlB6NKj6M=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
             <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
           </div>
           <div onclick="setBrandFilter('DEK')" class="brand-logo-btn" data-brand="DEK" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Dekton">
-            <img src="https://drive.google.com/thumbnail?id=1EK1_qmmYeEAGPNFIKmXilJ99bTNrAhDl&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1EK1_qmmYeEAGPNFIKmXilJ99bTNrAhDl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
             <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
           </div>
           <div onclick="setBrandFilter('COS')" class="brand-logo-btn" data-brand="COS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Cosy Stone">
-            <img src="https://drive.google.com/thumbnail?id=1MjVKkcFaOPM5VvBNJyiOv2mbNj3-rmfl&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1MjVKkcFaOPM5VvBNJyiOv2mbNj3-rmfl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
             <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
           </div>
           <div onclick="setBrandFilter('GLO')" class="brand-logo-btn" data-brand="GLO" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Global Granite">
-            <img src="https://drive.google.com/thumbnail?id=1hZuVaZoVR4fcPIlZNoDQCgXBc5r-Oh17&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1hZuVaZoVR4fcPIlZNoDQCgXBc5r-Oh17=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
           <div onclick="setBrandFilter('CQS')" class="brand-logo-btn" data-brand="CQS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Classic Quartz">
-            <img src="https://drive.google.com/thumbnail?id=1q_3OAIMDWym_zBMhqwFtdaBhFKpihsKl&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1q_3OAIMDWym_zBMhqwFtdaBhFKpihsKl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
           <div onclick="setBrandFilter('ART')" class="brand-logo-btn" data-brand="ART" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Artemis Stone">
-            <img src="https://drive.google.com/thumbnail?id=1C9xFaHbZk5n0hcSxqFOk8SBxxCeTP1i_&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1C9xFaHbZk5n0hcSxqFOk8SBxxCeTP1i_=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
           <div onclick="setBrandFilter('NLQ')" class="brand-logo-btn" data-brand="NLQ" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Nile Quartz">
-            <img src="https://drive.google.com/thumbnail?id=1IrrKv95yNFfcdymhXryhlzj1DKJzK5fG&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1IrrKv95yNFfcdymhXryhlzj1DKJzK5fG=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
           <div onclick="setBrandFilter('NAT')" class="brand-logo-btn" data-brand="NAT" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Natural Stone">
-            <img src="https://drive.google.com/thumbnail?id=1Hy1wmCi8xfhp5QDmMEDDDEaDdmDjiumw&sz=w200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1Hy1wmCi8xfhp5QDmMEDDDEaDdmDjiumw=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
         </div>
       </div>
@@ -547,13 +600,8 @@
         <!-- Tier Filter - Color coded pills -->
         <div>
           <label style="font-size:10px;color:#666;display:block;margin-bottom:4px;">Filter by Price Tier</label>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            <button onclick="setTierFilter('all')" id="tierAll" class="tier-btn" style="padding:6px 12px;border:2px solid #1e4d3a;border-radius:20px;background:#e8f5e9;cursor:pointer;font-size:12px;font-weight:600;">All</button>
-            <button onclick="setTierFilter('£')" id="tier1" class="tier-btn" style="padding:6px 12px;border:2px solid #4CAF50;border-radius:20px;background:white;cursor:pointer;font-size:12px;color:#4CAF50;font-weight:600;">£ Budget</button>
-            <button onclick="setTierFilter('££')" id="tier2" class="tier-btn" style="padding:6px 12px;border:2px solid #8BC34A;border-radius:20px;background:white;cursor:pointer;font-size:12px;color:#8BC34A;font-weight:600;">££</button>
-            <button onclick="setTierFilter('£££')" id="tier3" class="tier-btn" style="padding:6px 12px;border:2px solid #FFC107;border-radius:20px;background:white;cursor:pointer;font-size:12px;color:#FFC107;font-weight:600;">£££ Mid</button>
-            <button onclick="setTierFilter('££££')" id="tier4" class="tier-btn" style="padding:6px 12px;border:2px solid #FF9800;border-radius:20px;background:white;cursor:pointer;font-size:12px;color:#FF9800;font-weight:600;">££££</button>
-            <button onclick="setTierFilter('£££££')" id="tier5" class="tier-btn" style="padding:6px 12px;border:2px solid #f44336;border-radius:20px;background:white;cursor:pointer;font-size:12px;color:#f44336;font-weight:600;">£££££ Premium</button>
+          <div id="tierFilterButtons" style="display:flex;gap:4px;flex-wrap:wrap;">
+            <!-- Populated by updateTierFilterButtons() -->
           </div>
         </div>
       </div>
@@ -625,7 +673,8 @@ const EDGE_PROFILES = {
   shark_nose: { name: 'Shark Nose', price: 55.83, thickness: [20], image: '1pzHGu-61-7fEgdu0DHrqctomL-Lh_Br5', color: '#673ab7' },
   demi_bullnose: { name: 'Demi Bullnose', price: 66.67, thickness: [30], image: '1pOX3py3Qd70E5vKZI_MvbXivYMP5hKii', color: '#2196f3' },
   bullnose: { name: 'Bullnose', price: 66.67, thickness: [30], image: '1OWkH3EO0kFuDlPnRRcK3hSOcGzfaPMmo', color: '#00bcd4' },
-  ogee: { name: 'Ogee', price: 66.67, thickness: [30], image: '1AGE-4kN1wCRBQM97wiaf5val2sfqKlIq', color: '#ff9800' }
+  ogee: { name: 'Ogee', price: 66.67, thickness: [30], image: '1AGE-4kN1wCRBQM97wiaf5val2sfqKlIq', color: '#ff9800' },
+  mitred_edge: { name: 'Mitred Edge', price: 66.67, thickness: [20, 30], image: null, color: '#795548' }
 };
 
 // ========== CUTOUT PRICING (from Excel) ==========
@@ -774,6 +823,7 @@ let adminUnlocked = false;
 const ADMIN_PIN = '1414';
 let currentTierFilter = 'all';
 let currentThicknessFilter = '20';
+let tierStyle = 'pill'; // 'classic' or 'pill'
 
 // ========== PRESET LAYOUTS ==========
 const PRESETS = {
@@ -818,6 +868,7 @@ const PRESETS = {
 let worktops = [];
 let upstands = [];
 let cutouts = [];
+let customCaptures = [];  // Custom 3D view captures for quote
 let selectedId = null;
 let selectedType = null;
 let tool = 'select';
@@ -928,6 +979,18 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
+// Re-center canvas when returning from summary page (browser back button)
+window.addEventListener('pageshow', function(event) {
+  // event.persisted is true when page is loaded from bfcache (back/forward navigation)
+  if (event.persisted) {
+    resizeCanvas();
+    // Small delay to ensure canvas is ready
+    setTimeout(() => {
+      zoomFit();
+    }, 100);
+  }
+});
 
 function mmToScreen(x, y) { return { x: x * scale + offset.x, y: y * scale + offset.y }; }
 function screenToMm(x, y) { return { x: (x - offset.x) / scale, y: (y - offset.y) / scale }; }
@@ -1275,6 +1338,30 @@ function pointToLineDist(px, py, x1, y1, x2, y2) {
   return Math.sqrt((px - (x1 + t * C)) ** 2 + (py - (y1 + t * D)) ** 2);
 }
 
+// Detect if click is near a worktop corner
+const CORNER_CLICK_DIST = 80; // mm tolerance for corner click
+let cornerMenuTarget = null; // { wId, corner }
+
+function findClickedCorner(mx, my) {
+  for (const w of worktops) {
+    // Define the four corners: tl=back-left, tr=back-right, br=front-right, bl=front-left
+    const corners = [
+      { name: 'tl', x: w.x, y: w.y, label: 'Back-Left' },
+      { name: 'tr', x: w.x + w.length, y: w.y, label: 'Back-Right' },
+      { name: 'br', x: w.x + w.length, y: w.y + w.depth, label: 'Front-Right' },
+      { name: 'bl', x: w.x, y: w.y + w.depth, label: 'Front-Left' }
+    ];
+    
+    for (const corner of corners) {
+      const dist = Math.sqrt((mx - corner.x) ** 2 + (my - corner.y) ** 2);
+      if (dist < CORNER_CLICK_DIST) {
+        return { worktop: w, corner: corner.name, label: corner.label, x: corner.x, y: corner.y };
+      }
+    }
+  }
+  return null;
+}
+
 // ========== EDGE MENU ==========
 let edgeMenuJustOpened = false;
 let edgeMenuOpenTime = 0;
@@ -1338,6 +1425,115 @@ function hideEdgeMenu() {
   if (edgeMenuJustOpened || (Date.now() - edgeMenuOpenTime < 300)) return;
   document.getElementById('edgeMenu').style.display = 'none';
   edgeMenuTarget = null;
+}
+
+// ========== CORNER MENU ==========
+let cornerMenuJustOpened = false;
+let cornerMenuOpenTime = 0;
+
+function showCornerMenu(sx, sy, wId, corner, label) {
+  cornerMenuTarget = { wId, corner, label };
+  const menu = document.getElementById('cornerMenu');
+  const w = worktops.find(wt => wt.id === wId);
+  
+  // Update menu title
+  document.getElementById('cornerMenuTitle').textContent = `${w ? w.name : 'Worktop'} - ${label} Corner`;
+  
+  // Check if this corner already has a radius
+  const radii = w?.cornerRadii || {};
+  const hasRadius = radii[corner] > 0;
+  
+  // Show/hide appropriate menu items
+  document.getElementById('cornerAddRadius').style.display = hasRadius ? 'none' : 'flex';
+  document.getElementById('cornerEditRadius').style.display = hasRadius ? 'flex' : 'none';
+  document.getElementById('cornerRemoveRadius').style.display = hasRadius ? 'flex' : 'none';
+  
+  // Update edit text with current value
+  if (hasRadius) {
+    document.getElementById('cornerEditRadius').innerHTML = `<div class="dot" style="background:#ff9800;"></div> Edit Radius (${radii[corner]}mm)`;
+  }
+  
+  // Position menu
+  menu.style.left = sx + 'px';
+  menu.style.top = sy + 'px';
+  menu.style.display = 'block';
+  
+  cornerMenuOpenTime = Date.now();
+  cornerMenuJustOpened = true;
+  
+  // Reposition after rendering if needed
+  requestAnimationFrame(() => {
+    const menuRect = menu.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    let finalY = sy;
+    if (sy + menuRect.height > viewportHeight - 10) {
+      finalY = Math.max(10, viewportHeight - menuRect.height - 10);
+    }
+    
+    let finalX = sx;
+    if (sx + menuRect.width > viewportWidth - 10) {
+      finalX = Math.max(10, viewportWidth - menuRect.width - 10);
+    }
+    
+    menu.style.left = finalX + 'px';
+    menu.style.top = finalY + 'px';
+  });
+  
+  setTimeout(() => { cornerMenuJustOpened = false; }, 500);
+}
+
+function hideCornerMenu() {
+  if (cornerMenuJustOpened || (Date.now() - cornerMenuOpenTime < 300)) return;
+  document.getElementById('cornerMenu').style.display = 'none';
+  cornerMenuTarget = null;
+}
+
+function addCornerRadius() {
+  if (!cornerMenuTarget) return;
+  
+  const radiusStr = prompt('Enter corner radius (mm):\n\nCommon sizes: 50, 100, 150', '100');
+  if (!radiusStr) {
+    hideCornerMenu();
+    return;
+  }
+  
+  const radius = parseInt(radiusStr) || 0;
+  if (radius > 0) {
+    updateCornerRadius(cornerMenuTarget.wId, cornerMenuTarget.corner, radius);
+  }
+  
+  document.getElementById('cornerMenu').style.display = 'none';
+  cornerMenuTarget = null;
+}
+
+function editCornerRadius() {
+  if (!cornerMenuTarget) return;
+  
+  const w = worktops.find(wt => wt.id === cornerMenuTarget.wId);
+  const currentRadius = w?.cornerRadii?.[cornerMenuTarget.corner] || 0;
+  
+  const radiusStr = prompt('Edit corner radius (mm):', currentRadius.toString());
+  if (radiusStr === null) {
+    hideCornerMenu();
+    return;
+  }
+  
+  const radius = parseInt(radiusStr) || 0;
+  updateCornerRadius(cornerMenuTarget.wId, cornerMenuTarget.corner, radius);
+  
+  document.getElementById('cornerMenu').style.display = 'none';
+  cornerMenuTarget = null;
+}
+
+function removeCornerRadius() {
+  if (!cornerMenuTarget) return;
+  
+  updateCornerRadius(cornerMenuTarget.wId, cornerMenuTarget.corner, 0);
+  
+  document.getElementById('cornerMenu').style.display = 'none';
+  cornerMenuTarget = null;
 }
 
 function addUpstandToAllBackEdges() {
@@ -1663,8 +1859,8 @@ function addWindowCill() {
   const cillHeight = prompt(heightPrompt, finalHeight.toString());
   if (!cillHeight) return;
   
-  const len = Math.min(parseInt(length) || 1000, edgeLen);
-  const center = Math.max(len/2, Math.min(parseInt(centerPos) || edgeLen/2, edgeLen - len/2));
+  const len = parseInt(length) || 1000;  // Don't limit cill length by worktop edge - cills can span joints
+  const center = parseInt(centerPos) || edgeLen/2;
   const start = Math.round(center - len/2);
   const d = parseInt(depth) || 200;
   const h = parseInt(cillHeight) || 300;
@@ -1717,29 +1913,33 @@ function addWindowCill() {
 let pendingSocketData = null;
 
 function addSocketCutout() {
-  // Find splashbacks to add socket to
-  const splashbacks = upstands.filter(u => u.isSplash);
-  
-  if (splashbacks.length === 0) {
-    alert('Please add a splashback first before adding socket cutouts.');
+  if (!edgeMenuTarget) {
+    alert('Please click on an edge first.');
     hideEdgeMenu();
     return;
   }
   
-  // If only one splashback, use it. Otherwise ask user to select
-  let targetSplash;
-  if (splashbacks.length === 1) {
-    targetSplash = splashbacks[0];
-  } else {
-    const options = splashbacks.map((s, i) => `${i + 1}: ${s.length}mm × ${s.height}mm splashback`).join('\n');
-    const choice = prompt(`Select splashback:\n${options}\n\nEnter number:`, '1');
-    if (!choice) { hideEdgeMenu(); return; }
-    const idx = parseInt(choice) - 1;
-    if (idx < 0 || idx >= splashbacks.length) { hideEdgeMenu(); return; }
-    targetSplash = splashbacks[idx];
+  const { wId, edge } = edgeMenuTarget;
+  const w = worktops.find(wt => wt.id === wId);
+  if (!w) { hideEdgeMenu(); return; }
+  
+  // Find splashback on THIS edge
+  const splashback = upstands.find(u => 
+    u.isSplash && 
+    u.parentId === wId && 
+    u.parentEdge === edge
+  );
+  
+  if (!splashback) {
+    alert(`No splashback on the ${edge} edge of ${w.name || 'this worktop'}.\n\nPlease add a splashback first, then add socket cutouts to it.`);
+    hideEdgeMenu();
+    return;
   }
   
-  pendingSocketData = { targetSplash };
+  console.log('Adding socket to splashback:', splashback.id, 'on', edge, 'edge');
+  
+  // Store target splashback for the modal
+  pendingSocketData = { targetSplash: splashback };
   hideEdgeMenu();
   document.getElementById('socketModal').style.display = 'flex';
 }
@@ -1766,12 +1966,12 @@ function selectSocketSize(size) {
   }
   
   // Default position: center of splashback
-  const fl = targetSplash.length / 2;
-  const fb = targetSplash.height / 2;
+  const centerX = targetSplash.length / 2;
+  const centerY = targetSplash.height / 2;
   
   saveHistory();
   
-  // Add socket cutout to cutouts array - positioned by center
+  // Add socket cutout to cutouts array - positioned at center, user can drag
   cutouts.push({
     id: nextId++,
     type: 'socket',
@@ -1779,15 +1979,20 @@ function selectSocketSize(size) {
     parentType: 'splashback',
     width: sw,
     height: sh,
-    centerX: fl,    // Center position from left of splashback
-    centerY: fb,    // Center position from bottom of splashback
+    centerX: centerX,    // Center position from left of splashback
+    centerY: centerY,    // Center position from bottom of splashback
     draggable: true
   });
+  
+  console.log(`Socket added to splashback ${targetSplash.id} at center (${centerX}, ${centerY}) - drag to reposition`);
   
   pendingSocketData = null;
   renderLists();
   render();
   updateSummary();
+  
+  // Show hint about dragging
+  document.getElementById('statusHint').textContent = 'Socket added at center. Select it and drag to reposition.';
 }
 
 function cancelSocketModal() {
@@ -1910,16 +2115,17 @@ function showProfileModal() {
     const lastProfile = EDGE_PROFILES[lastSelectedProfile];
     if (lastProfile.thickness.includes(worktopThickness)) {
       const priceText = lastProfile.price === 0 ? 'Included' : `£${lastProfile.price.toFixed(2)}/m`;
+      const lastExtraInfo = lastSelectedProfile === 'mitred_edge' ? `<div style="font-size:10px;color:#795548;">${lastMitredEdgeHeight}mm drop</div>` : `<div style="font-size:10px;color:#666;">Click to use same profile</div>`;
       html += `
         <div style="margin-bottom:12px;padding:10px;background:#e8f5e9;border-radius:8px;border:2px solid #4CAF50;">
           <div style="font-size:11px;color:#2e7d32;margin-bottom:6px;font-weight:600;">✓ Previously Selected</div>
           <div onclick="selectEdgeProfile('${lastSelectedProfile}')" style="display:flex;align-items:center;gap:12px;padding:10px;background:white;border:2px solid #4CAF50;border-radius:6px;cursor:pointer;">
             <div style="width:50px;height:30px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">
-              ${lastProfile.image ? `<img src="https://drive.google.com/thumbnail?id=${lastProfile.image}&sz=w100" style="max-width:100%;max-height:100%;border-radius:4px;">` : '📐'}
+              ${lastProfile.image ? `<img src="https://lh3.googleusercontent.com/d/${lastProfile.image}=s100" style="max-width:100%;max-height:100%;border-radius:4px;">` : '📐'}
             </div>
             <div style="flex:1;">
               <div style="font-weight:600;font-size:13px;">${lastProfile.name}</div>
-              <div style="font-size:10px;color:#666;">Click to use same profile</div>
+              ${lastExtraInfo}
             </div>
             <div style="text-align:right;">
               <div style="font-weight:600;color:${lastProfile.price === 0 ? '#4CAF50' : '#1e4d3a'};">${priceText}</div>
@@ -1940,13 +2146,17 @@ function showProfileModal() {
     
     const priceText = profile.price === 0 ? 'Included' : `£${profile.price.toFixed(2)}/m`;
     
+    // Extra info for mitred edge
+    const extraInfo = key === 'mitred_edge' ? `<div style="font-size:10px;color:#795548;">${lastMitredEdgeHeight}mm drop (click to change)</div>` : '';
+    
     html += `
       <div onclick="selectEdgeProfile('${key}')" style="display:flex;align-items:center;gap:12px;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;margin-bottom:6px;" onmouseover="this.style.borderColor='#1e4d3a';this.style.background='#f0f7f4';" onmouseout="this.style.borderColor='#ddd';this.style.background='white';">
         <div style="width:50px;height:30px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">
-          ${profile.image ? `<img src="https://drive.google.com/thumbnail?id=${profile.image}&sz=w100" style="max-width:100%;max-height:100%;border-radius:4px;">` : '📐'}
+          ${profile.image ? `<img src="https://lh3.googleusercontent.com/d/${profile.image}=s100" style="max-width:100%;max-height:100%;border-radius:4px;">` : '📐'}
         </div>
         <div style="flex:1;">
           <div style="font-weight:600;font-size:13px;">${profile.name}</div>
+          ${extraInfo}
         </div>
         <div style="text-align:right;">
           <div style="font-weight:600;color:${profile.price === 0 ? '#4CAF50' : '#1e4d3a'};">${priceText}</div>
@@ -1961,6 +2171,7 @@ function showProfileModal() {
 
 // Track last selected profile
 let lastSelectedProfile = null;
+let lastMitredEdgeHeight = 50; // Remember mitred edge height
 
 function selectEdgeProfile(profileKey) {
   const profile = EDGE_PROFILES[profileKey];
@@ -1969,6 +2180,48 @@ function selectEdgeProfile(profileKey) {
   // Check thickness compatibility
   if (!profile.thickness.includes(worktopThickness)) {
     alert(`${profile.name} is not available for ${worktopThickness}mm thickness`);
+    return;
+  }
+  
+  // Special handling for mitred edge - prompt for height
+  if (profileKey === 'mitred_edge') {
+    const h = prompt(`Mitred Edge drop (10-100mm):`, lastMitredEdgeHeight.toString());
+    if (h === null) return; // Cancelled
+    const height = parseInt(h);
+    
+    if (isNaN(height) || height < 10 || height > 100) {
+      alert('Please enter a size between 10mm and 100mm');
+      return;
+    }
+    
+    lastMitredEdgeHeight = height; // Remember for next time
+    
+    if (!edgeMenuTarget) {
+      cancelProfileSelection();
+      return;
+    }
+    
+    saveHistory();
+    
+    const w = worktops.find(w => w.id === edgeMenuTarget.wId);
+    if (!w) {
+      cancelProfileSelection();
+      return;
+    }
+    
+    const { edge, seg } = edgeMenuTarget;
+    if (!w.edgeTypes) w.edgeTypes = {};
+    w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { 
+      type: 'mitred_edge', 
+      height: height,
+      pricePerMeter: profile.price
+    };
+    
+    lastSelectedProfile = profileKey;
+    document.getElementById('profileModal').style.display = 'none';
+    hideEdgeMenu();
+    render();
+    updateSummary();
     return;
   }
   
@@ -2086,26 +2339,74 @@ function updateThicknessButtons() {
   }
 }
 
+// Get tier HTML based on current style
+function getTierHTML(tier) {
+  const t = tier || 1;
+  const symbol = '£'.repeat(t);
+  
+  if (tierStyle === 'pill') {
+    return `<span class="tier-pill t${t}">${symbol}</span>`;
+  } else {
+    return `<span class="tier-classic t${t}">${symbol}</span>`;
+  }
+}
+
+// Set tier display style
+function setTierStyle(style) {
+  tierStyle = style;
+  
+  // Update toggle buttons
+  document.getElementById('tierStyleClassic').classList.toggle('active', style === 'classic');
+  document.getElementById('tierStylePill').classList.toggle('active', style === 'pill');
+  
+  // Update preview
+  updateTierStylePreview();
+  
+  // Update tier filter buttons
+  updateTierFilterButtons();
+  
+  // Re-render materials grid
+  renderMaterialsGrid();
+}
+
+function updateTierStylePreview() {
+  const preview = document.getElementById('tierStylePreview');
+  if (!preview) return;
+  
+  let html = '';
+  for (let t = 1; t <= 5; t++) {
+    html += getTierHTML(t) + ' ';
+  }
+  preview.innerHTML = html;
+}
+
+function updateTierFilterButtons() {
+  const container = document.getElementById('tierFilterButtons');
+  if (!container) return;
+  
+  const tierColors = { 1: '#4CAF50', 2: '#8BC34A', 3: '#FFC107', 4: '#FF9800', 5: '#f44336' };
+  const tierLabels = { 1: ' Budget', 2: '', 3: ' Mid', 4: '', 5: ' Premium' };
+  
+  let html = `<button onclick="setTierFilter('all')" id="tierAll" class="tier-btn" style="padding:6px 12px;border:none;border-radius:20px;background:${currentTierFilter === 'all' ? '#e8f5e9' : 'transparent'};cursor:pointer;font-size:12px;font-weight:600;">All</button>`;
+  
+  for (let t = 1; t <= 5; t++) {
+    const symbol = '£'.repeat(t);
+    const isActive = currentTierFilter === symbol;
+    const color = tierColors[t];
+    const label = tierLabels[t];
+    const bg = isActive ? color.replace('#', 'rgba(') + ',0.15)' : 'transparent';
+    
+    html += `<button onclick="setTierFilter('${symbol}')" id="tier${t}" class="tier-btn" style="padding:6px 12px;border:none;border-radius:20px;background:${bg};cursor:pointer;font-size:12px;font-weight:${isActive ? '600' : 'normal'};">${getTierHTML(t)}${label}</button>`;
+  }
+  
+  container.innerHTML = html;
+}
+
 function setTierFilter(tier) {
   currentTierFilter = tier;
   
-  // Update button styles
-  document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.style.background = 'white';
-    btn.style.fontWeight = 'normal';
-  });
-  
-  const activeBtn = tier === 'all' ? document.getElementById('tierAll') :
-                    tier === '£' ? document.getElementById('tier1') :
-                    tier === '££' ? document.getElementById('tier2') :
-                    tier === '£££' ? document.getElementById('tier3') :
-                    tier === '££££' ? document.getElementById('tier4') :
-                    document.getElementById('tier5');
-  
-  if (activeBtn) {
-    activeBtn.style.background = tier === 'all' ? '#e8f5e9' : activeBtn.style.borderColor.replace('rgb', 'rgba').replace(')', ', 0.15)');
-    activeBtn.style.fontWeight = '600';
-  }
+  // Update button styles using the same function
+  updateTierFilterButtons();
   
   filterMaterialsNew();
 }
@@ -2148,6 +2449,20 @@ function filterMaterialsNew() {
   const brandFilter = currentBrandFilter;
   const tierFilter = currentTierFilter;
   
+  // Material type mapping by brand
+  const materialTypes = {
+    'SIL': 'Quartz',
+    'DEK': 'Sintered Stone',
+    'GLO': 'Quartz',
+    'MOD': 'Quartz',
+    'COS': 'Quartz',
+    'CQS': 'Quartz',
+    'ART': 'Quartz',
+    'NLQ': 'Quartz',
+    'NAT': 'Natural Stone',
+    'HOR': 'Quartz'
+  };
+  
   let html = '';
   let count = 0;
   
@@ -2178,23 +2493,25 @@ function filterMaterialsNew() {
     const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD';
     const bgSize = needsCrop ? '300%' : 'cover';
     const thumbnailUrl = mat.textureId ? 
-      `https://drive.google.com/thumbnail?id=${mat.textureId}&sz=w200` : '';
+      `https://lh3.googleusercontent.com/d/${mat.textureId}=s200` : '';
     
     const colorStyle = thumbnailUrl ? 
       `background-image:url('${thumbnailUrl}');background-size:${bgSize};background-position:center;` :
       `background:${mat.css};`;
     
-    // Price tier with color
-    const tierColors = { 1: '#4CAF50', 2: '#8BC34A', 3: '#FFC107', 4: '#FF9800', 5: '#f44336' };
+    // Price tier display
     const tier = mat.tier || 1;
-    const tierSymbol = '£'.repeat(tier);
-    const tierColor = tierColors[tier] || '#666';
+    const tierHTML = getTierHTML(tier);
+    
+    // Material type
+    const matType = materialTypes[mat.brand] || 'Stone';
     
     html += `
       <div class="material-option" onclick="previewMaterial('${key}')" style="cursor:pointer;padding:10px;border:2px solid ${borderColor};border-radius:8px;text-align:center;background:${bgColor};transition:all 0.2s;">
         <div style="width:100px;height:100px;margin:0 auto 8px;border-radius:6px;${colorStyle}border:1px solid #ccc;overflow:hidden;"></div>
         <div style="font-size:11px;font-weight:500;line-height:1.2;max-height:2.4em;overflow:hidden;">${mat.name}</div>
-        <div style="display:inline-block;margin-top:6px;padding:5px 12px;border:2px solid ${tierColor};border-radius:16px;font-size:14px;font-weight:700;color:${tierColor};background:white;">${tierSymbol}</div>
+        <div style="font-size:9px;color:#888;margin-top:2px;">${matType}</div>
+        <div style="display:inline-block;margin-top:4px;">${tierHTML}</div>
       </div>
     `;
   });
@@ -2213,6 +2530,20 @@ function previewMaterial(key) {
   pendingMaterial = key;
   const mat = MATERIAL_COLORS[key];
   
+  // Material type mapping
+  const materialTypes = {
+    'SIL': 'Quartz',
+    'DEK': 'Sintered Stone',
+    'GLO': 'Quartz',
+    'MOD': 'Quartz',
+    'COS': 'Quartz',
+    'CQS': 'Quartz',
+    'ART': 'Quartz',
+    'NLQ': 'Quartz',
+    'NAT': 'Natural Stone',
+    'HOR': 'Quartz'
+  };
+  
   // Update selected preview bar
   const bar = document.getElementById('selectedMaterialBar');
   const thumb = document.getElementById('selectedMatThumb');
@@ -2228,21 +2559,20 @@ function previewMaterial(key) {
     const brandNames = {
       'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global Granite',
       'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
-      'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone'
+      'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
     };
-    brandEl.textContent = brandNames[mat.brand] || mat.brand || '';
+    const matType = materialTypes[mat.brand] || 'Stone';
+    brandEl.textContent = `${brandNames[mat.brand] || mat.brand || ''} • ${matType}`;
     
     // Show thickness
     if (thickEl) thickEl.textContent = worktopThickness + 'mm';
     
-    const tierColors = { 1: '#4CAF50', 2: '#8BC34A', 3: '#FFC107', 4: '#FF9800', 5: '#f44336' };
     const tier = mat.tier || 1;
-    tierEl.textContent = '£'.repeat(tier);
-    tierEl.style.color = tierColors[tier] || '#666';
+    tierEl.innerHTML = getTierHTML(tier);
     
     if (mat.textureId) {
       const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD';
-      thumb.style.backgroundImage = `url('https://drive.google.com/thumbnail?id=${mat.textureId}&sz=w200')`;
+      thumb.style.backgroundImage = `url('https://lh3.googleusercontent.com/d/${mat.textureId}=s200')`;
       thumb.style.backgroundSize = needsCrop ? '300%' : 'cover';
       thumb.style.backgroundPosition = 'center';
     } else {
@@ -2576,6 +2906,7 @@ function finishSinkWithDrainers(drainerSide) {
         grooveCount: 5,
         setback: sb,
         side: 'left',
+        clickedSide: actualSide,  // What user clicked (left/right/both)
         radius: 15,
         vertical: true
       });
@@ -2593,6 +2924,7 @@ function finishSinkWithDrainers(drainerSide) {
         grooveCount: 5,
         setback: sb,
         side: 'left',
+        clickedSide: actualSide,  // What user clicked (left/right/both)
         radius: 15
       });
     }
@@ -2613,6 +2945,7 @@ function finishSinkWithDrainers(drainerSide) {
         grooveCount: 5,
         setback: sb,
         side: 'right',
+        clickedSide: actualSide,  // What user clicked (left/right/both)
         radius: 15,
         vertical: true
       });
@@ -2630,6 +2963,7 @@ function finishSinkWithDrainers(drainerSide) {
         grooveCount: 5,
         setback: sb,
         side: 'right',
+        clickedSide: actualSide,  // What user clicked (left/right/both)
         radius: 15
       });
     }
@@ -3343,10 +3677,15 @@ function setEdgeType(type) {
     return; // Don't hide menu yet - modal will handle it
   } else if (type === 'dropdown') {
     const seg = edgeMenuTarget.seg;
-    const h = prompt('Dropdown height (mm):', '900');
+    const h = prompt('Dropdown height (800-1000mm):', '900');
     if (h) {
+      const height = parseInt(h);
+      if (isNaN(height) || height < 800 || height > 1000) {
+        alert('Please enter a size between 800mm and 1000mm');
+        return;
+      }
       if (!w.edgeTypes) w.edgeTypes = {};
-      w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { type: 'dropdown', height: parseInt(h) || 900 };
+      w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { type: 'dropdown', height: height };
     }
   } else if (type === 'none') {
     const seg = edgeMenuTarget.seg;
@@ -3383,34 +3722,75 @@ function findItemAt(mx, my) {
     const c = cutouts[i];
     
     if (c.type === 'socket') {
-      // Socket on splashback - calculate hit area
+      // Socket on splashback - calculate hit area for all edge types
       const parent = upstands.find(u => u.id === c.parentId);
       if (parent) {
+        const pw = worktops.find(w => w.id === parent.parentId);
+        const edge = parent.parentEdge || 'back';
+        const edgeStart = parent.edgeStart || 0;
         const splashHeight = parent.height;
-        let spX, spY;
+        const isVertical = (edge === 'left' || edge === 'right');
         
-        if (parent.absoluteX !== undefined) {
-          spX = parent.absoluteX;
-          spY = parent.absoluteY - splashHeight;
-        } else if (parent.isContinuous) {
-          spX = parent.absoluteX || parent.x;
-          spY = (parent.absoluteY || parent.y) - splashHeight;
-        } else {
-          const pw = worktops.find(w => w.id === parent.parentId);
-          if (pw && parent.parentEdge === 'back') {
-            spX = pw.x + (parent.edgeStart || 0);
-            spY = pw.y - splashHeight;
+        // Calculate splashback position - handle continuous splashbacks
+        let ux, uy, socketX, socketY, socketW, socketH;
+        
+        if (parent.isContinuous && parent.absoluteX !== undefined) {
+          // Continuous splashback
+          if (edge === 'back') {
+            ux = parent.absoluteX;
+            uy = parent.absoluteY - splashHeight;
+          } else if (edge === 'front') {
+            ux = parent.absoluteX;
+            uy = parent.absoluteY;
+          } else if (edge === 'left') {
+            ux = parent.absoluteX - splashHeight;
+            uy = parent.absoluteY;
           } else {
-            spX = parent.x || 0;
-            spY = (parent.y || 0) - splashHeight;
+            ux = parent.absoluteX;
+            uy = parent.absoluteY;
+          }
+        } else if (pw) {
+          if (edge === 'back') {
+            ux = pw.x + edgeStart;
+            uy = pw.y - splashHeight;
+          } else if (edge === 'front') {
+            ux = pw.x + edgeStart;
+            uy = pw.y + pw.depth;
+          } else if (edge === 'left') {
+            ux = pw.x - splashHeight;
+            uy = pw.y + edgeStart;
+          } else { // right
+            ux = pw.x + pw.length;
+            uy = pw.y + edgeStart;
+          }
+        } else {
+          ux = parent.absoluteX || parent.x || 0;
+          uy = (parent.absoluteY || parent.y || 0) - splashHeight;
+        }
+        
+        // Calculate socket hit area based on edge
+        if (isVertical) {
+          socketW = c.height;
+          socketH = c.width;
+          if (edge === 'left') {
+            socketX = ux + (splashHeight - c.centerY - c.height/2);
+            socketY = uy + (c.centerX - c.width/2);
+          } else {
+            socketX = ux + (c.centerY - c.height/2);
+            socketY = uy + (c.centerX - c.width/2);
+          }
+        } else {
+          socketW = c.width;
+          socketH = c.height;
+          socketX = ux + (c.centerX - c.width/2);
+          if (edge === 'back') {
+            socketY = uy + (splashHeight - c.centerY - c.height/2);
+          } else {
+            socketY = uy + (c.centerY - c.height/2);
           }
         }
         
-        // Socket mm position
-        const socketX = spX + c.centerX - c.width/2;
-        const socketY = spY + splashHeight - c.centerY - c.height/2;
-        
-        if (mx >= socketX && mx <= socketX + c.width && my >= socketY && my <= socketY + c.height) {
+        if (mx >= socketX && mx <= socketX + socketW && my >= socketY && my <= socketY + socketH) {
           return { type: 'cutout', item: c };
         }
       }
@@ -4131,32 +4511,119 @@ function drawCutout2D(c) {
     const parent = upstands.find(u => u.id === c.parentId);
     if (!parent) return;
     
-    // Splashbacks now show at actual height in 2D
+    const pw = worktops.find(w => w.id === parent.parentId);
+    const edge = parent.parentEdge || 'back';
+    const edgeStart = parent.edgeStart || 0;
     const splashHeight = parent.height;
+    const isVertical = (edge === 'left' || edge === 'right');
     
-    // Get splashback screen position
-    let sp;
-    if (parent.absoluteX !== undefined) {
-      sp = mmToScreen(parent.absoluteX, parent.absoluteY - splashHeight);
-    } else if (parent.isContinuous) {
-      sp = mmToScreen(parent.absoluteX || parent.x, (parent.absoluteY || parent.y) - splashHeight);
+    // Calculate splashback rectangle in mm coordinates
+    // For continuous splashbacks, use absoluteX/Y; otherwise use parent worktop position
+    let ux, uy, uw, uh;
+    
+    if (parent.isContinuous && parent.absoluteX !== undefined) {
+      // Continuous splashback - use absolute position
+      if (edge === 'back') {
+        ux = parent.absoluteX;
+        uy = parent.absoluteY - splashHeight;
+        uw = parent.length;
+        uh = splashHeight;
+      } else if (edge === 'front') {
+        ux = parent.absoluteX;
+        uy = parent.absoluteY;
+        uw = parent.length;
+        uh = splashHeight;
+      } else if (edge === 'left') {
+        ux = parent.absoluteX - splashHeight;
+        uy = parent.absoluteY;
+        uw = splashHeight;
+        uh = parent.length;
+      } else { // right
+        ux = parent.absoluteX;
+        uy = parent.absoluteY;
+        uw = splashHeight;
+        uh = parent.length;
+      }
+    } else if (pw) {
+      // Non-continuous splashback - use parent worktop position
+      if (edge === 'back') {
+        ux = pw.x + edgeStart;
+        uy = pw.y - splashHeight;
+        uw = parent.length;
+        uh = splashHeight;
+      } else if (edge === 'front') {
+        ux = pw.x + edgeStart;
+        uy = pw.y + pw.depth;
+        uw = parent.length;
+        uh = splashHeight;
+      } else if (edge === 'left') {
+        ux = pw.x - splashHeight;
+        uy = pw.y + edgeStart;
+        uw = splashHeight;
+        uh = parent.length;
+      } else { // right
+        ux = pw.x + pw.length;
+        uy = pw.y + edgeStart;
+        uw = splashHeight;
+        uh = parent.length;
+      }
     } else {
-      const pw = worktops.find(w => w.id === parent.parentId);
-      if (pw && parent.parentEdge === 'back') {
-        sp = mmToScreen(pw.x + (parent.edgeStart || 0), pw.y - splashHeight);
+      // Fallback for splashbacks without parent
+      ux = parent.absoluteX || parent.x || 0;
+      uy = (parent.absoluteY || parent.y || 0) - splashHeight;
+      uw = parent.length;
+      uh = splashHeight;
+    }
+    
+    // Convert to screen coordinates
+    const sp = mmToScreen(ux, uy);
+    const splashW = uw * scale;
+    const splashH = uh * scale;
+    
+    // Socket position in mm relative to splashback
+    // centerX = distance along the LENGTH of splashback (from the START of the splashback)
+    // centerY = distance from the worktop surface (height up from bottom)
+    let socketMmX, socketMmY, socketMmW, socketMmH;
+    
+    if (isVertical) {
+      // For left/right edges: splashback length runs vertically in 2D
+      socketMmW = c.height;  // Socket rotated
+      socketMmH = c.width;
+      
+      if (edge === 'left') {
+        socketMmX = ux + (splashHeight - c.centerY - c.height/2);
+        socketMmY = uy + (c.centerX - c.width/2);
       } else {
-        sp = mmToScreen(parent.x, parent.y - splashHeight);
+        socketMmX = ux + (c.centerY - c.height/2);
+        socketMmY = uy + (c.centerX - c.width/2);
+      }
+    } else {
+      // For back/front edges: splashback length runs horizontally in 2D
+      socketMmW = c.width;
+      socketMmH = c.height;
+      socketMmX = ux + (c.centerX - c.width/2);
+      
+      if (edge === 'back') {
+        socketMmY = uy + (splashHeight - c.centerY - c.height/2);
+      } else {
+        socketMmY = uy + (c.centerY - c.height/2);
       }
     }
     
-    const splashW = parent.length * scale;
-    const splashH = splashHeight * scale;
+    // Debug: log socket rendering calculations (disable in production)
+    // console.log('Socket 2D render:', c.id, 'parent:', parent.id, 
+    //   'isContinuous:', parent.isContinuous, 
+    //   'absoluteX:', parent.absoluteX, 
+    //   'ux:', ux, 'uy:', uy,
+    //   'centerX:', c.centerX, 'centerY:', c.centerY,
+    //   'socketMmX:', socketMmX, 'socketMmY:', socketMmY);
     
-    // Socket position - centerX/centerY are from left and bottom of splashback
-    const socketX = sp.x + (c.centerX - c.width/2) * scale;
-    const socketY = sp.y + splashH - (c.centerY + c.height/2) * scale;
-    const socketW = c.width * scale;
-    const socketH = c.height * scale;
+    // Convert socket position to screen
+    const socketScreen = mmToScreen(socketMmX, socketMmY);
+    const socketX = socketScreen.x;
+    const socketY = socketScreen.y;
+    const socketW = socketMmW * scale;
+    const socketH = socketMmH * scale;
     
     // Store screen position for hit testing
     c._screenX = socketX;
@@ -4166,6 +4633,7 @@ function drawCutout2D(c) {
     c._parentSp = sp;
     c._splashW = splashW;
     c._splashH = splashH;
+    c._isVertical = isVertical;
     
     // If selected, show measurement rulers
     if (sel) {
@@ -4178,30 +4646,98 @@ function drawCutout2D(c) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      // Horizontal ruler (from left edge of splashback)
-      ctx.beginPath();
-      ctx.moveTo(sp.x, socketY + socketH/2);
-      ctx.lineTo(socketX, socketY + socketH/2);
-      ctx.stroke();
-      // Dimension text
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(sp.x + (socketX - sp.x)/2 - 22, socketY + socketH/2 - 9, 44, 18);
-      ctx.fillStyle = '#e91e63';
-      ctx.fillText(`${Math.round(c.centerX)}`, sp.x + (socketX - sp.x)/2, socketY + socketH/2);
-      
-      // Vertical ruler (from bottom edge of splashback)
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(socketX + socketW/2, sp.y + splashH);
-      ctx.lineTo(socketX + socketW/2, socketY + socketH);
-      ctx.stroke();
-      // Dimension text
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(socketX + socketW/2 - 22, sp.y + splashH - (sp.y + splashH - socketY - socketH)/2 - 9, 44, 18);
-      ctx.fillStyle = '#e91e63';
-      ctx.fillText(`${Math.round(c.centerY)}`, socketX + socketW/2, sp.y + splashH - (sp.y + splashH - socketY - socketH)/2);
+      if (isVertical) {
+        // VERTICAL splashback (left/right edge)
+        // centerX runs along the LENGTH (vertical on screen)
+        // centerY is horizontal distance from worktop edge
+        
+        // Distance from top of splashback (screen) to top of socket
+        const distFromTop = Math.round(c.centerX - c.width/2);
+        
+        // Vertical ruler - from top of splashback to top of socket
+        ctx.beginPath();
+        ctx.moveTo(socketX + socketW/2, sp.y);
+        ctx.lineTo(socketX + socketW/2, socketY);
+        ctx.stroke();
+        // Dimension text
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(socketX + socketW/2 - 22, sp.y + (socketY - sp.y)/2 - 9, 44, 18);
+        ctx.fillStyle = '#e91e63';
+        ctx.fillText(`${distFromTop}`, socketX + socketW/2, sp.y + (socketY - sp.y)/2);
+        
+        // Horizontal ruler - from worktop edge to socket
+        // For left edge: worktop is on RIGHT, so measure from right side of splashback
+        // For right edge: worktop is on LEFT, so measure from left side of splashback
+        const distFromWorktop = Math.round(c.centerY - c.height/2);
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        if (edge === 'left') {
+          // Measure from right edge of splashback (worktop side)
+          ctx.moveTo(sp.x + splashW, socketY + socketH/2);
+          ctx.lineTo(socketX + socketW, socketY + socketH/2);
+        } else {
+          // Measure from left edge of splashback (worktop side)
+          ctx.moveTo(sp.x, socketY + socketH/2);
+          ctx.lineTo(socketX, socketY + socketH/2);
+        }
+        ctx.stroke();
+        // Dimension text
+        ctx.setLineDash([]);
+        const hRulerMid = edge === 'left' 
+          ? socketX + socketW + (sp.x + splashW - socketX - socketW)/2
+          : sp.x + (socketX - sp.x)/2;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(hRulerMid - 22, socketY + socketH/2 - 9, 44, 18);
+        ctx.fillStyle = '#e91e63';
+        ctx.fillText(`${distFromWorktop}`, hRulerMid, socketY + socketH/2);
+        
+      } else {
+        // HORIZONTAL splashback (back/front edge)
+        // centerX is from left edge of splashback
+        // centerY is from bottom (worktop surface)
+        
+        // Distance from left edge of splashback to left edge of socket
+        const distFromLeft = Math.round(c.centerX - c.width/2);
+        
+        // Horizontal ruler (from left edge of splashback)
+        ctx.beginPath();
+        ctx.moveTo(sp.x, socketY + socketH/2);
+        ctx.lineTo(socketX, socketY + socketH/2);
+        ctx.stroke();
+        // Dimension text
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(sp.x + (socketX - sp.x)/2 - 22, socketY + socketH/2 - 9, 44, 18);
+        ctx.fillStyle = '#e91e63';
+        ctx.fillText(`${distFromLeft}`, sp.x + (socketX - sp.x)/2, socketY + socketH/2);
+        
+        // Vertical ruler (from worktop surface / bottom of splashback)
+        // For back edge: bottom of splashback is at sp.y + splashH
+        // For front edge: bottom is at sp.y
+        const distFromWorktop = Math.round(c.centerY - c.height/2);
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        if (edge === 'back') {
+          // Worktop is below, measure from bottom of splashback
+          ctx.moveTo(socketX + socketW/2, sp.y + splashH);
+          ctx.lineTo(socketX + socketW/2, socketY + socketH);
+        } else {
+          // Front edge - worktop is above, measure from top of splashback
+          ctx.moveTo(socketX + socketW/2, sp.y);
+          ctx.lineTo(socketX + socketW/2, socketY);
+        }
+        ctx.stroke();
+        // Dimension text
+        ctx.setLineDash([]);
+        const vRulerMid = edge === 'back'
+          ? socketY + socketH + (sp.y + splashH - socketY - socketH)/2
+          : sp.y + (socketY - sp.y)/2;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(socketX + socketW/2 - 22, vRulerMid - 9, 44, 18);
+        ctx.fillStyle = '#e91e63';
+        ctx.fillText(`${distFromWorktop}`, socketX + socketW/2, vRulerMid);
+      }
       
       ctx.restore();
     }
@@ -4249,11 +4785,27 @@ function drawWorktop2D(w) {
   const height = w.depth * scale;
   const sel = selectedType === 'worktop' && selectedId === w.id;
   
-  // Original colors for 2D - helps distinguish elements
-  ctx.fillStyle = sel ? '#c8e6c9' : '#f5f5f5';
-  ctx.fillRect(p.x, p.y, width, height);
+  // Get corner radii (scaled to screen)
+  const radii = w.cornerRadii || { tl: 0, tr: 0, br: 0, bl: 0 };
+  const rTL = (radii.tl || 0) * scale;  // Top-left (back-left)
+  const rTR = (radii.tr || 0) * scale;  // Top-right (back-right)
+  const rBR = (radii.br || 0) * scale;  // Bottom-right (front-right)
+  const rBL = (radii.bl || 0) * scale;  // Bottom-left (front-left)
   
-  // Draw edges
+  // Draw worktop fill with rounded corners
+  ctx.fillStyle = sel ? '#c8e6c9' : '#f5f5f5';
+  ctx.beginPath();
+  drawRoundedRectPath(ctx, p.x, p.y, width, height, rTL, rTR, rBR, rBL);
+  ctx.fill();
+  
+  // Draw edges with radius awareness
+  const screenRadii = {
+    tl: rTL,
+    tr: rTR,
+    br: rBR,
+    bl: rBL
+  };
+  
   ['back', 'front', 'left', 'right'].forEach(edge => {
     const free = getFreeSegments(w, edge);
     const joints = w.joints[edge] || [];
@@ -4264,7 +4816,7 @@ function drawWorktop2D(w) {
     ctx.lineWidth = 4;
     joints.forEach(j => drawEdgeSeg(edge, p, width, height, j.start / len, j.end / len));
     
-    // Free segments
+    // Free segments - use radius-aware drawing
     free.forEach(seg => {
       const key = `${edge}_${seg.start}_${seg.end}`;
       const t = w.edgeTypes?.[key];
@@ -4277,17 +4829,43 @@ function drawWorktop2D(w) {
         ctx.setLineDash([8, 4]);
       } else if (t?.type === 'dropdown') {
         ctx.strokeStyle = '#9c27b0'; ctx.lineWidth = 6; ctx.setLineDash([]);
+      } else if (t?.type === 'mitred_edge') {
+        ctx.strokeStyle = '#795548'; ctx.lineWidth = 5; ctx.setLineDash([]);
       } else {
         ctx.strokeStyle = '#4CAF50'; ctx.lineWidth = 4; ctx.setLineDash([]);
       }
-      drawEdgeSeg(edge, p, width, height, seg.start / len, seg.end / len);
+      drawEdgeSegWithRadius(edge, p, width, height, seg.start / len, seg.end / len, screenRadii);
       ctx.setLineDash([]);
     });
   });
   
+  // Draw outline with rounded corners
   ctx.strokeStyle = sel ? '#1e4d3a' : '#999';
   ctx.lineWidth = sel ? 2 : 1;
-  ctx.strokeRect(p.x, p.y, width, height);
+  ctx.beginPath();
+  drawRoundedRectPath(ctx, p.x, p.y, width, height, rTL, rTR, rBR, rBL);
+  ctx.stroke();
+  
+  // Draw corner radius indicators when selected
+  if (sel) {
+    ctx.fillStyle = '#1e4d3a';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    if (radii.tl > 0) {
+      ctx.fillText(`R${radii.tl}`, p.x + rTL/2 + 10, p.y + rTL/2 + 10);
+    }
+    if (radii.tr > 0) {
+      ctx.fillText(`R${radii.tr}`, p.x + width - rTR/2 - 10, p.y + rTR/2 + 10);
+    }
+    if (radii.br > 0) {
+      ctx.fillText(`R${radii.br}`, p.x + width - rBR/2 - 10, p.y + height - rBR/2 - 10);
+    }
+    if (radii.bl > 0) {
+      ctx.fillText(`R${radii.bl}`, p.x + rBL/2 + 10, p.y + height - rBL/2 - 10);
+    }
+  }
   
   ctx.fillStyle = '#333';
   ctx.font = 'bold 11px sans-serif';
@@ -4296,6 +4874,94 @@ function drawWorktop2D(w) {
   ctx.fillText(w.name || 'Worktop', p.x + width/2, p.y + height/2 - 7);
   ctx.font = '10px sans-serif';
   ctx.fillText(`${w.length} × ${w.depth}`, p.x + width/2, p.y + height/2 + 7);
+}
+
+// Draw a rectangle path with individual corner radii
+function drawRoundedRectPath(ctx, x, y, w, h, rTL, rTR, rBR, rBL) {
+  ctx.moveTo(x + rTL, y);
+  ctx.lineTo(x + w - rTR, y);
+  if (rTR > 0) ctx.quadraticCurveTo(x + w, y, x + w, y + rTR);
+  else ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y + h - rBR);
+  if (rBR > 0) ctx.quadraticCurveTo(x + w, y + h, x + w - rBR, y + h);
+  else ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x + rBL, y + h);
+  if (rBL > 0) ctx.quadraticCurveTo(x, y + h, x, y + h - rBL);
+  else ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + rTL);
+  if (rTL > 0) ctx.quadraticCurveTo(x, y, x + rTL, y);
+  else ctx.lineTo(x, y);
+  ctx.closePath();
+}
+
+function drawEdgeSegWithRadius(edge, p, w, h, s, e, radii) {
+  // Get corner radii in screen units
+  const rTL = radii?.tl || 0;
+  const rTR = radii?.tr || 0;
+  const rBR = radii?.br || 0;
+  const rBL = radii?.bl || 0;
+  
+  ctx.beginPath();
+  
+  if (edge === 'back') {
+    // Back edge: from left to right at y=0
+    const edgeLen = w;
+    const startX = p.x + w * s;
+    const endX = p.x + w * e;
+    
+    // Adjust for corner radii
+    const effectiveStartX = s === 0 ? p.x + rTL : startX;
+    const effectiveEndX = e === 1 ? p.x + w - rTR : endX;
+    
+    ctx.moveTo(effectiveStartX, p.y);
+    ctx.lineTo(effectiveEndX, p.y);
+    
+    // Draw corner curves if at full edges
+    if (s === 0 && rTL > 0) {
+      ctx.moveTo(p.x, p.y + rTL);
+      ctx.quadraticCurveTo(p.x, p.y, p.x + rTL, p.y);
+    }
+    if (e === 1 && rTR > 0) {
+      ctx.moveTo(p.x + w - rTR, p.y);
+      ctx.quadraticCurveTo(p.x + w, p.y, p.x + w, p.y + rTR);
+    }
+  } else if (edge === 'front') {
+    // Front edge: from left to right at y=h
+    const effectiveStartX = s === 0 ? p.x + rBL : p.x + w * s;
+    const effectiveEndX = e === 1 ? p.x + w - rBR : p.x + w * e;
+    
+    ctx.moveTo(effectiveStartX, p.y + h);
+    ctx.lineTo(effectiveEndX, p.y + h);
+    
+    // Draw corner curves if at full edges
+    if (s === 0 && rBL > 0) {
+      ctx.moveTo(p.x, p.y + h - rBL);
+      ctx.quadraticCurveTo(p.x, p.y + h, p.x + rBL, p.y + h);
+    }
+    if (e === 1 && rBR > 0) {
+      ctx.moveTo(p.x + w - rBR, p.y + h);
+      ctx.quadraticCurveTo(p.x + w, p.y + h, p.x + w, p.y + h - rBR);
+    }
+  } else if (edge === 'left') {
+    // Left edge: from top to bottom at x=0
+    const effectiveStartY = s === 0 ? p.y + rTL : p.y + h * s;
+    const effectiveEndY = e === 1 ? p.y + h - rBL : p.y + h * e;
+    
+    ctx.moveTo(p.x, effectiveStartY);
+    ctx.lineTo(p.x, effectiveEndY);
+    
+    // Corner curves already drawn by back/front edges
+  } else {
+    // Right edge: from top to bottom at x=w
+    const effectiveStartY = s === 0 ? p.y + rTR : p.y + h * s;
+    const effectiveEndY = e === 1 ? p.y + h - rBR : p.y + h * e;
+    
+    ctx.moveTo(p.x + w, effectiveStartY);
+    ctx.lineTo(p.x + w, effectiveEndY);
+    
+    // Corner curves already drawn by back/front edges
+  }
+  ctx.stroke();
 }
 
 function drawEdgeSeg(edge, p, w, h, s, e) {
@@ -4956,6 +5622,7 @@ function renderProps() {
     const w = worktops.find(w => w.id === selectedId);
     if (!w) { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
+    
     form.innerHTML = `
       <div class="form-group full"><label class="form-label">Name</label><input class="form-input" value="${w.name}" onchange="updateWorktop(${w.id},'name',this.value)"></div>
       <div class="form-row">
@@ -5258,6 +5925,24 @@ function updateWorktop(id, prop, val) {
   renderProps();
   render(); 
   updateSummary(); 
+}
+
+// Update corner radius for worktop
+function updateCornerRadius(id, corner, val) {
+  saveHistory();
+  const w = worktops.find(w => w.id === id);
+  if (!w) return;
+  
+  // Ensure cornerRadii object exists
+  if (!w.cornerRadii) w.cornerRadii = { tl: 0, tr: 0, br: 0, bl: 0 };
+  
+  // Clamp value between 0 and half the smaller dimension
+  const maxRadius = Math.min(w.length / 2, w.depth / 2);
+  w.cornerRadii[corner] = Math.max(0, Math.min(val, maxRadius));
+  
+  render();
+  if (currentView === '3d') render3D();
+  updateSummary();
 }
 
 // Update dropdown edge positions when worktop resizes
@@ -5749,6 +6434,13 @@ function updateSummary() {
           profilePrice += len * pricePerMeter;
         }
         else if (v.type === 'dropdown') da += len * (v.height / 1000);
+        else if (v.type === 'mitred_edge') {
+          da += len * (v.height / 1000); // Add to dropdown area
+          profilePrice += len * (v.pricePerMeter || 66.67); // Add mitred edge price
+          pl += len; // Add to profile length
+          profileTypes.add(`Mitred Edge (${v.height}mm)`);
+          profileKeys.add('mitred_edge');
+        }
       });
     }
   });
@@ -6157,7 +6849,7 @@ function init3D() {
   camera.position.set(2000, 2500, 3000);
   camera.lookAt(0, 0, 0);
   
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setSize(container3d.clientWidth, container3d.clientHeight);
   renderer.shadowMap.enabled = true;
   container3d.appendChild(renderer.domElement);
@@ -6238,12 +6930,54 @@ function render3D() {
     const wCutouts = cutouts.filter(c => c.parentId === w.id && 
       (c.type === 'undermount_sink' || c.type === 'overmount_sink' || c.type === 'tap'));
     
-    // Create worktop shape
+    // Get corner radii
+    // In 2D: tl=back-left, tr=back-right, br=front-right, bl=front-left
+    const radii = w.cornerRadii || { tl: 0, tr: 0, br: 0, bl: 0 };
+    
+    // Check if this is a vertical worktop (taller than wide in 2D view)
+    const isVerticalWorktop = w.depth > w.length;
+    
+    // Shape coords: X = length, Y = depth
+    // After mesh rotation (-PI/2) and flipYtoZ positioning:
+    // - Shape's high Y (top) becomes 3D BACK (far from camera)
+    // - Shape's low Y (bottom) becomes 3D FRONT (close to camera)
+    // So we need to SWAP front/back:
+    // - 2D back corners → Shape TOP (becomes 3D front)
+    // - 2D front corners → Shape BOTTOM (becomes 3D back)
+    let rShapeBL, rShapeBR, rShapeTR, rShapeTL;
+    
+    // Correct mapping with Y-flip compensation:
+    rShapeTL = radii.tl || 0;  // 2D back-left → Shape top-left → 3D front-left
+    rShapeTR = radii.tr || 0;  // 2D back-right → Shape top-right → 3D front-right
+    rShapeBR = radii.br || 0;  // 2D front-right → Shape bottom-right → 3D back-right
+    rShapeBL = radii.bl || 0;  // 2D front-left → Shape bottom-left → 3D back-left
+    
+    // Create worktop shape with rounded corners
+    // Shape coords: X = length, Y = depth
     const shape = new THREE.Shape();
-    shape.moveTo(0, 0);
-    shape.lineTo(w.length, 0);
-    shape.lineTo(w.length, w.depth);
-    shape.lineTo(0, w.depth);
+    
+    // Start at bottom-left corner
+    shape.moveTo(rShapeBL, 0);
+    // Bottom edge to bottom-right
+    shape.lineTo(w.length - rShapeBR, 0);
+    // Bottom-right corner
+    if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, -Math.PI/2, 0, false);
+    else shape.lineTo(w.length, 0);
+    // Right edge to top-right
+    shape.lineTo(w.length, w.depth - rShapeTR);
+    // Top-right corner
+    if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, 0, Math.PI/2, false);
+    else shape.lineTo(w.length, w.depth);
+    // Top edge to top-left
+    shape.lineTo(rShapeTL, w.depth);
+    // Top-left corner
+    if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI/2, Math.PI, false);
+    else shape.lineTo(0, w.depth);
+    // Left edge to bottom-left
+    shape.lineTo(0, rShapeBL);
+    // Bottom-left corner
+    if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, Math.PI, Math.PI * 1.5, false);
+    else shape.lineTo(0, 0);
     shape.closePath();
     
     // Add cutout holes to the shape
@@ -6251,7 +6985,7 @@ function render3D() {
     // After rotation.x = -PI/2: Shape X → World X, Shape Y → World Z
     // For vertical worktops, the cutout position (c.x, c.y) was already placed correctly
     // We need to use the DRAWN dimensions (which may be swapped from stored width/length)
-    const isVerticalWorktop = w.depth > w.length;
+    // isVerticalWorktop already defined above
     
     wCutouts.forEach(c => {
       const hole = new THREE.Path();
@@ -6322,11 +7056,11 @@ function render3D() {
     mesh.receiveShadow = true;
     scene.add(mesh);
     
-    // Check which edges have dropdowns (mitre)
+    // Check which edges have dropdowns (mitre) or mitred edges
     const hasDropdown = { back: false, front: false, left: false, right: false };
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([k, v]) => {
-        if (v.type === 'dropdown') {
+        if (v.type === 'dropdown' || v.type === 'mitred_edge') {
           const edge = k.split('_')[0];
           hasDropdown[edge] = true;
         }
@@ -6395,7 +7129,7 @@ function render3D() {
     // Dropdowns - sit directly under worktop edge with mitre
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([k, v]) => {
-        if (v.type === 'dropdown') {
+        if (v.type === 'dropdown' || v.type === 'mitred_edge') {
           const [edge, s, e] = k.split('_');
           const segLen = parseInt(e) - parseInt(s);
           const dropH = v.height;
@@ -6472,26 +7206,28 @@ function render3D() {
       if (parent) {
         if (edge === 'back') {
           px = parent.x + edgeStart + u.length/2 - cx;
-          // Cill sits behind worktop, projecting forward with overhang
-          pz = parent.y - cillDepth/2 + overhang - cz;
+          // Cill overhangs PAST the upstand/splashback by 'overhang' amount
+          // Upstand front face is at parent.y + UPSTAND_DEPTH_3D
+          // Cill front face should be at parent.y + UPSTAND_DEPTH_3D + overhang
+          pz = parent.y + UPSTAND_DEPTH_3D + overhang - cillDepth/2 - cz;
         } else if (edge === 'front') {
           px = parent.x + edgeStart + u.length/2 - cx;
-          pz = parent.y + parent.depth + cillDepth/2 - overhang - cz;
+          pz = parent.y + parent.depth - UPSTAND_DEPTH_3D - overhang + cillDepth/2 - cz;
         } else if (edge === 'left') {
           // For left/right, swap dimensions
           cillRotated = true;
           geo = new THREE.BoxGeometry(cillDepth, CILL_THICKNESS, u.length);
-          px = parent.x - cillDepth/2 + overhang - cx;
+          px = parent.x + UPSTAND_DEPTH_3D + overhang - cillDepth/2 - cx;
           pz = parent.y + edgeStart + u.length/2 - cz;
         } else { // right
           cillRotated = true;
           geo = new THREE.BoxGeometry(cillDepth, CILL_THICKNESS, u.length);
-          px = parent.x + parent.length + cillDepth/2 - overhang - cx;
+          px = parent.x + parent.length - UPSTAND_DEPTH_3D - overhang + cillDepth/2 - cx;
           pz = parent.y + edgeStart + u.length/2 - cz;
         }
       } else {
         px = u.absoluteX + u.length/2 - cx;
-        pz = u.absoluteY - cillDepth/2 + overhang - cz;
+        pz = u.absoluteY + UPSTAND_DEPTH_3D + overhang - cillDepth/2 - cz;
       }
       
       // Y position: cill sits at splashback height (on top of splashback)
@@ -6833,79 +7569,92 @@ function render3D() {
   });
   
   // Socket cutouts on splashbacks (rendered as rectangular openings)
-  cutouts.filter(c => c.type === 'socket').forEach(c => {
+  const socketCutouts = cutouts.filter(c => c.type === 'socket');
+  console.log('Socket cutouts found:', socketCutouts.length);
+  
+  socketCutouts.forEach(c => {
     const parent = upstands.find(u => u.id === c.parentId);
+    console.log('Socket parent:', c.parentId, 'found:', !!parent, 'isSplash:', parent?.isSplash);
     if (!parent || !parent.isSplash) return;
     
-    // Find parent splashback position in 3D
-    let px, pz;
+    // Get splashback 3D position (must match upstand positioning exactly)
     const UPSTAND_DEPTH_3D = 20;
+    const pw = worktops.find(w => w.id === parent.parentId);
+    const edge = parent.parentEdge || 'back';
+    
+    // Calculate splashback position exactly as upstands do
+    let splashPx, splashPz;
+    let isVertical = (edge === 'left' || edge === 'right');
     
     if (parent.isContinuous && parent.absoluteX !== undefined) {
-      const edge = parent.parentEdge || 'back';
       if (edge === 'back') {
-        px = parent.absoluteX + c.centerX - cx;
-        pz = parent.absoluteY - UPSTAND_DEPTH_3D/2 - cz;
+        splashPx = parent.absoluteX + parent.length/2 - cx;
+        splashPz = parent.absoluteY + UPSTAND_DEPTH_3D/2 - cz;
       } else if (edge === 'front') {
-        px = parent.absoluteX + c.centerX - cx;
-        pz = parent.absoluteY + UPSTAND_DEPTH_3D/2 - cz;
-      } else {
-        px = parent.absoluteX + c.centerX - cx;
-        pz = parent.absoluteY - cz;
+        splashPx = parent.absoluteX + parent.length/2 - cx;
+        splashPz = parent.absoluteY - UPSTAND_DEPTH_3D/2 - cz;
+      } else if (edge === 'left') {
+        splashPx = parent.absoluteX + UPSTAND_DEPTH_3D/2 - cx;
+        splashPz = parent.absoluteY + parent.length/2 - cz;
+      } else { // right
+        splashPx = parent.absoluteX - UPSTAND_DEPTH_3D/2 - cx;
+        splashPz = parent.absoluteY + parent.length/2 - cz;
+      }
+    } else if (pw) {
+      const edgeStart = parent.edgeStart || 0;
+      if (edge === 'back') {
+        splashPx = pw.x + edgeStart + parent.length/2 - cx;
+        splashPz = pw.y + UPSTAND_DEPTH_3D/2 - cz;
+      } else if (edge === 'front') {
+        splashPx = pw.x + edgeStart + parent.length/2 - cx;
+        splashPz = pw.y + pw.depth - UPSTAND_DEPTH_3D/2 - cz;
+      } else if (edge === 'left') {
+        splashPx = pw.x + UPSTAND_DEPTH_3D/2 - cx;
+        splashPz = pw.y + edgeStart + parent.length/2 - cz;
+      } else { // right
+        splashPx = pw.x + pw.length - UPSTAND_DEPTH_3D/2 - cx;
+        splashPz = pw.y + edgeStart + parent.length/2 - cz;
       }
     } else {
-      const pw = worktops.find(w => w.id === parent.parentId);
-      if (pw && parent.parentEdge === 'back') {
-        px = pw.x + (parent.edgeStart || 0) + c.centerX - cx;
-        pz = pw.y - UPSTAND_DEPTH_3D/2 - cz;
-      } else {
-        px = (parent.absoluteX || 0) + c.centerX - cx;
-        pz = (parent.absoluteY || 0) - UPSTAND_DEPTH_3D/2 - cz;
-      }
+      console.warn('Cannot position socket - no parent worktop found');
+      return;
     }
     
-    // Y position: centerY from bottom of splashback
+    // Position socket on the splashback
+    // c.centerX is position along the splashback length (from start)
+    // c.centerY is height from bottom of splashback
+    let px, pz;
+    
+    if (edge === 'back' || edge === 'front') {
+      // Horizontal splashback - socket moves along X, splashPz stays same
+      px = splashPx - parent.length/2 + c.centerX;
+      pz = splashPz;
+    } else {
+      // Vertical splashback (left/right) - socket moves along Z
+      px = splashPx;
+      pz = splashPz - parent.length/2 + c.centerX;
+    }
+    
+    // Y position: centerY from bottom of splashback (above worktop surface)
     const py = WORKTOP_Y + c.centerY;
     
-    // Create socket frame (outer border - orange)
-    const frameThickness = 4;
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0xff7043, roughness: 0.5 });
+    console.log(`Socket on ${edge} edge: px=${px.toFixed(0)}, py=${py.toFixed(0)}, pz=${pz.toFixed(0)}, centerX=${c.centerX}`);
     
-    // Top frame
-    const topGeo = new THREE.BoxGeometry(c.width + frameThickness*2, frameThickness, UPSTAND_DEPTH_3D + 2);
-    const topMesh = new THREE.Mesh(topGeo, frameMat);
-    topMesh.position.set(px, py + c.height/2 + frameThickness/2, pz);
-    scene.add(topMesh);
+    // Create socket cutout visualization - dark hole through the splashback
+    // Geometry orientation depends on splashback orientation
+    let holeGeo;
+    if (isVertical) {
+      // Left/right edge - splashback runs along Z, socket punches through X
+      holeGeo = new THREE.BoxGeometry(UPSTAND_DEPTH_3D + 4, c.height, c.width);
+    } else {
+      // Back/front edge - splashback runs along X, socket punches through Z
+      holeGeo = new THREE.BoxGeometry(c.width, c.height, UPSTAND_DEPTH_3D + 4);
+    }
     
-    // Bottom frame
-    const bottomMesh = new THREE.Mesh(topGeo, frameMat);
-    bottomMesh.position.set(px, py - c.height/2 - frameThickness/2, pz);
-    scene.add(bottomMesh);
-    
-    // Left frame
-    const sideGeo = new THREE.BoxGeometry(frameThickness, c.height, UPSTAND_DEPTH_3D + 2);
-    const leftMesh = new THREE.Mesh(sideGeo, frameMat);
-    leftMesh.position.set(px - c.width/2 - frameThickness/2, py, pz);
-    scene.add(leftMesh);
-    
-    // Right frame
-    const rightMesh = new THREE.Mesh(sideGeo, frameMat);
-    rightMesh.position.set(px + c.width/2 + frameThickness/2, py, pz);
-    scene.add(rightMesh);
-    
-    // Inner dark area (the actual socket opening)
-    const innerGeo = new THREE.BoxGeometry(c.width - 8, c.height - 8, 5);
-    const innerMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-    const innerMesh = new THREE.Mesh(innerGeo, innerMat);
-    innerMesh.position.set(px, py, pz + UPSTAND_DEPTH_3D/2 - 2);
-    scene.add(innerMesh);
-    
-    // Socket face plate (white/cream)
-    const faceGeo = new THREE.BoxGeometry(c.width - 4, c.height - 4, 2);
-    const faceMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.3 });
-    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
-    faceMesh.position.set(px, py, pz + UPSTAND_DEPTH_3D/2 + 1);
-    scene.add(faceMesh);
+    const holeMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 1.0 });
+    const holeMesh = new THREE.Mesh(holeGeo, holeMat);
+    holeMesh.position.set(px, py, pz);
+    scene.add(holeMesh);
   });
   
   renderer.render(scene, camera);
@@ -6969,6 +7718,10 @@ function switchView(view) {
   }
   document.getElementById('disclaimer3d').style.display = view === '3d' ? 'block' : 'none';
   
+  // Show Generate Quote button only in 2D view
+  document.getElementById('generateQuoteBtn').style.display = view === '2d' ? 'flex' : 'none';
+  document.getElementById('clearDesignBtn').style.display = view === '2d' ? 'block' : 'none';
+  
   // Handle scrolling for slab view
   container.style.overflowY = view === 'slab' ? 'auto' : 'hidden';
   
@@ -7026,6 +7779,67 @@ function zoom3D(factor) {
   const dist = camera.position.length();
   if (dist < 1000) camera.position.setLength(1000);
   if (dist > 10000) camera.position.setLength(10000);
+}
+
+// Capture current 3D view for quote gallery
+function captureCurrentView() {
+  if (!renderer || !scene || !camera) {
+    alert('Please wait for 3D view to load');
+    return;
+  }
+  
+  try {
+    renderer.render(scene, camera);
+    const dataUrl = renderer.domElement.toDataURL('image/jpeg', 0.7);
+    const captureNum = customCaptures.length + 1;
+    customCaptures.push({ 
+      name: `Custom ${captureNum}`, 
+      image: dataUrl 
+    });
+    
+    // Update UI
+    updateCaptureCount();
+    
+    // Brief visual feedback
+    const btn = document.querySelector('[onclick="captureCurrentView()"]');
+    if (btn) {
+      const originalBg = btn.style.background;
+      btn.style.background = '#4CAF50';
+      btn.style.color = 'white';
+      setTimeout(() => {
+        btn.style.background = originalBg;
+        btn.style.color = '';
+      }, 300);
+    }
+    
+    console.log('Captured view:', captureNum, 'Total:', customCaptures.length);
+  } catch (e) {
+    console.error('Failed to capture view:', e);
+    alert('Failed to capture view');
+  }
+}
+
+function clearCaptures() {
+  if (customCaptures.length === 0) return;
+  if (confirm('Clear all ' + customCaptures.length + ' captured views?')) {
+    customCaptures = [];
+    updateCaptureCount();
+    console.log('Cleared all captures');
+  }
+}
+
+function updateCaptureCount() {
+  const countEl = document.getElementById('captureCount');
+  const clearBtn = document.getElementById('clearCapturesBtn');
+  
+  if (customCaptures.length > 0) {
+    countEl.textContent = customCaptures.length;
+    countEl.style.display = 'inline';
+    clearBtn.style.display = 'inline';
+  } else {
+    countEl.style.display = 'none';
+    clearBtn.style.display = 'none';
+  }
 }
 
 function animate3D() {
@@ -7107,6 +7921,13 @@ function renderSlabLayout() {
           const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
           pieces.push({ name: 'Dropdown (Mitre)', width: pw, height: ph, type: 'dropdown', color: '#f3e5f5', error: !fits });
           if (!fits) oversizedPieces.push(`Dropdown (${pw}×${ph}mm)`);
+        } else if (v.type === 'mitred_edge') {
+          const [edge, s, e] = k.split('_');
+          const pw = parseInt(e) - parseInt(s);
+          const ph = v.height;
+          const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
+          pieces.push({ name: 'Mitred Edge', width: pw, height: ph, type: 'mitred_edge', color: '#d7ccc8', error: !fits });
+          if (!fits) oversizedPieces.push(`Mitred Edge (${pw}×${ph}mm)`);
         }
       });
     }
@@ -7125,8 +7946,8 @@ function renderSlabLayout() {
     return { ...p, preRotated: false };
   });
   
-  const bulkPieces = normalizedPieces.filter(p => p.type === 'worktop' || p.type === 'dropdown');
-  const thinPieces = normalizedPieces.filter(p => p.type !== 'worktop' && p.type !== 'dropdown');
+  const bulkPieces = normalizedPieces.filter(p => p.type === 'worktop' || p.type === 'dropdown' || p.type === 'mitred_edge');
+  const thinPieces = normalizedPieces.filter(p => p.type !== 'worktop' && p.type !== 'dropdown' && p.type !== 'mitred_edge');
   
   // Sort bulk pieces by area (largest first)
   bulkPieces.sort((a, b) => {
@@ -7498,24 +8319,37 @@ canvas.addEventListener('mousedown', e => {
   
   if (spaceHeld || e.button === 1 || e.button === 2) {
     hideEdgeMenu();
+    hideCornerMenu();
     isPanning = true;
     panStart = { x: mx, y: my, ox: offset.x, oy: offset.y };
     canvas.style.cursor = 'grabbing';
     return;
   }
   
-  // Check edge click first (for any tool when not drawing)
+  // Check CORNER click first (takes priority over edge clicks)
+  if (!isDrawing) {
+    const cornerHit = findClickedCorner(mm.x, mm.y);
+    if (cornerHit) {
+      hideEdgeMenu();
+      showCornerMenu(e.clientX, e.clientY, cornerHit.worktop.id, cornerHit.corner, cornerHit.label);
+      return;
+    }
+  }
+  
+  // Check edge click (for any tool when not drawing)
   if (!isDrawing) {
     const edgeHit = findClickedEdge(mm.x, mm.y);
     if (edgeHit) {
+      hideCornerMenu();
       // Don't hide - show new menu
       showEdgeMenu(e.clientX, e.clientY, edgeHit.worktop.id, edgeHit.edge, edgeHit.segment);
       return;
     }
   }
   
-  // Hide menu when clicking elsewhere on canvas
+  // Hide menus when clicking elsewhere on canvas
   hideEdgeMenu();
+  hideCornerMenu();
   
   const hit = findItemAt(mm.x, mm.y);
   
@@ -7631,39 +8465,77 @@ canvas.addEventListener('mousemove', e => {
         // Sockets on splashbacks are draggable
         const parent = upstands.find(u => u.id === c.parentId);
         if (parent) {
+          const pw = worktops.find(w => w.id === parent.parentId);
+          const edge = parent.parentEdge || 'back';
+          const edgeStart = parent.edgeStart || 0;
           const splashHeight = parent.height;
+          const isVertical = (edge === 'left' || edge === 'right');
+          
           let spX, spY;
           
-          // Get splashback position
-          if (parent.absoluteX !== undefined) {
-            spX = parent.absoluteX;
-            spY = parent.absoluteY - splashHeight;
-          } else if (parent.isContinuous) {
-            spX = parent.absoluteX || parent.x;
-            spY = (parent.absoluteY || parent.y) - splashHeight;
-          } else {
-            const pw = worktops.find(w => w.id === parent.parentId);
-            if (pw && parent.parentEdge === 'back') {
-              spX = pw.x + (parent.edgeStart || 0);
-              spY = pw.y - splashHeight;
-            } else {
-              spX = parent.x || 0;
-              spY = (parent.y || 0) - splashHeight;
+          // Get splashback position - use same logic as 2D rendering
+          if (parent.isContinuous && parent.absoluteX !== undefined) {
+            // Continuous splashback - use absolute position
+            if (edge === 'back') {
+              spX = parent.absoluteX;
+              spY = parent.absoluteY - splashHeight;
+            } else if (edge === 'front') {
+              spX = parent.absoluteX;
+              spY = parent.absoluteY;
+            } else if (edge === 'left') {
+              spX = parent.absoluteX - splashHeight;
+              spY = parent.absoluteY;
+            } else { // right
+              spX = parent.absoluteX;
+              spY = parent.absoluteY;
             }
+          } else if (pw) {
+            // Non-continuous with parent worktop
+            if (edge === 'back') {
+              spX = pw.x + edgeStart;
+              spY = pw.y - splashHeight;
+            } else if (edge === 'front') {
+              spX = pw.x + edgeStart;
+              spY = pw.y + pw.depth;
+            } else if (edge === 'left') {
+              spX = pw.x - splashHeight;
+              spY = pw.y + edgeStart;
+            } else { // right
+              spX = pw.x + pw.length;
+              spY = pw.y + edgeStart;
+            }
+          } else {
+            // Fallback
+            spX = parent.absoluteX || parent.x || 0;
+            spY = parent.absoluteY || parent.y || (edge === 'back' ? -splashHeight : 0);
           }
           
-          // Convert mouse mm position to splashback coordinates
-          // centerX is from left edge of splashback
-          // centerY is from BOTTOM edge of splashback
-          let centerX = mm.x - spX;
-          let centerY = splashHeight - (mm.y - spY);
+          // Calculate centerX/centerY based on orientation
+          let centerX, centerY;
           
-          // Constrain to splashback bounds
+          if (isVertical) {
+            // For vertical splashbacks (left/right):
+            // centerX runs along the LENGTH (vertical in screen coords)
+            // centerY is horizontal distance from worktop edge
+            centerX = mm.y - spY;
+            centerY = (edge === 'left') 
+              ? (splashHeight - (mm.x - spX))
+              : (mm.x - spX);
+          } else {
+            // For horizontal splashbacks (back/front):
+            // centerX is from left edge of splashback
+            // centerY is from BOTTOM edge of splashback
+            centerX = mm.x - spX;
+            centerY = splashHeight - (mm.y - spY);
+          }
+          
+          // Constrain to splashback bounds only (NOT worktop joins)
           centerX = Math.max(c.width/2, Math.min(parent.length - c.width/2, centerX));
           centerY = Math.max(c.height/2, Math.min(splashHeight - c.height/2, centerY));
           
           c.centerX = centerX;
           c.centerY = centerY;
+          
           activeSnap = null;
           renderProps();
         }
@@ -7784,7 +8656,8 @@ function finishDrawing() {
         id: nextId++, name: `Worktop ${worktopNum}`,
         x: minX, y: minY,
         length: worktopLen, depth: worktopDepth,
-        joints: { back: [], front: [], left: [], right: [] }, edgeTypes: {}
+        joints: { back: [], front: [], left: [], right: [] }, edgeTypes: {},
+        cornerRadii: { tl: 0, tr: 0, br: 0, bl: 0 }  // Top-left, top-right, bottom-right, bottom-left
       });
       detectAllJoints();
     } else if (tool === 'upstand') {
@@ -7884,7 +8757,7 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
   if (e.key === 'r' || e.key === 'R') rotateSelected();
   if ((e.key === 'Delete' || e.key === 'Backspace') && !e.target.matches('input')) deleteSelected();
-  if (e.key === 'Escape') { if (isDrawing) { isDrawing = false; drawStart = null; render(); } else { hideEdgeMenu(); clearSelection(); } }
+  if (e.key === 'Escape') { if (isDrawing) { isDrawing = false; drawStart = null; render(); } else { hideEdgeMenu(); hideCornerMenu(); clearSelection(); } }
   
   // Arrow keys for panning (2D view) or rotating (3D view)
   if (currentView === '2d') {
@@ -7913,14 +8786,580 @@ document.addEventListener('click', e => {
   // Don't hide if clicking on menu or canvas, or if menu was just opened
   if (e.target.closest('.edge-menu')) return;
   if (e.target.closest('#canvasContainer')) return;
-  if (edgeMenuJustOpened) return;
+  if (edgeMenuJustOpened || cornerMenuJustOpened) return;
   hideEdgeMenu();
+  hideCornerMenu();
 });
 
+// ========== GENERATE QUOTE ==========
+// Capture 3D views from multiple camera angles
+// Capture 2D view as image
+function capture2DView() {
+  try {
+    // Switch to 2D if not already
+    const wasIn2D = currentView === '2d';
+    if (!wasIn2D) {
+      switchView('2d');
+    }
+    
+    // Save current selection state
+    const savedSelectedId = selectedId;
+    const savedSelectedType = selectedType;
+    
+    // Deselect everything for clean capture
+    selectedId = null;
+    selectedType = null;
+    
+    // Fit and render
+    zoomFit();
+    render();
+    
+    // Capture the canvas
+    const dataUrl = canvas.toDataURL('image/png');
+    
+    // Restore selection
+    selectedId = savedSelectedId;
+    selectedType = savedSelectedType;
+    
+    // Restore view
+    if (!wasIn2D) {
+      switchView('3d');
+    } else {
+      render(); // Re-render with selection
+    }
+    
+    return dataUrl;
+  } catch (e) {
+    console.error('Error capturing 2D view:', e);
+    return null;
+  }
+}
+
+async function capture3DViews() {
+  return new Promise((resolve) => {
+    try {
+      const wasIn3D = currentView === '3d';
+      const originalPosition = camera ? camera.position.clone() : null;
+      
+      // Switch to 3D view if needed
+      if (!wasIn3D) {
+        switchView('3d');
+      }
+      
+      // Wait for 3D to fully render (including textures)
+      setTimeout(() => {
+        try {
+          if (!renderer || !scene || !camera) {
+            console.warn('3D not initialized, resolving with empty array');
+            resolve([]);
+            return;
+          }
+          
+          // Ensure scene is fully rendered with textures
+          render3D();
+          
+          // Wait a bit more for textures to load
+          setTimeout(() => {
+            try {
+              const views = [];
+              
+              // Define camera angles: [name, x, y, z]
+              const cameraAngles = [
+                ['Isometric', 2500, 2000, 2500],
+                ['Front', 0, 1500, 4000],
+                ['Top', 0, 3000, 50],  // Closer top view
+                ['Left Side', -4000, 1500, 0],
+                ['Right Side', 4000, 1500, 0]
+              ];
+              
+              // Capture each angle (use JPEG for smaller file size)
+              cameraAngles.forEach(([name, x, y, z]) => {
+                camera.position.set(x, y, z);
+                camera.lookAt(0, 0, 0);
+                renderer.render(scene, camera);
+                
+                try {
+                  const dataUrl = renderer.domElement.toDataURL('image/jpeg', 0.7);
+                  views.push({ name, image: dataUrl });
+                  console.log('Captured:', name);
+                } catch (e) {
+                  console.error('Failed to capture', name, e);
+                }
+              });
+              
+              // Restore original camera position
+              if (originalPosition) {
+                camera.position.copy(originalPosition);
+                camera.lookAt(0, 0, 0);
+                renderer.render(scene, camera);
+              }
+              
+              // Switch back to 2D if we were there
+              if (!wasIn3D) {
+                switchView('2d');
+              }
+              
+              // Add any custom captures the user made
+              if (customCaptures.length > 0) {
+                console.log('Adding', customCaptures.length, 'custom captures');
+                views.push(...customCaptures);
+              }
+              
+              console.log('Total captured views:', views.length);
+              resolve(views);
+            } catch (e) {
+              console.error('Error in capture loop:', e);
+              resolve([]);
+            }
+          }, 300);
+        } catch (e) {
+          console.error('Error after 3D init:', e);
+          resolve([]);
+        }
+      }, 600);
+    } catch (e) {
+      console.error('Error in capture3DViews:', e);
+      resolve([]);
+    }
+  });
+}
+
+async function generateQuote() {
+  // Check if there are any worktops
+  if (worktops.length === 0) {
+    alert('Please add at least one worktop before generating a quote.');
+    return;
+  }
+  
+  // Check if material is selected
+  if (!selectedMaterial || !MATERIAL_COLORS[selectedMaterial]) {
+    alert('Please select a material before generating a quote.');
+    return;
+  }
+  
+  // IMPORTANT: Save design state immediately before navigating away
+  // This ensures all positions (including taps) are preserved
+  saveDesignState();
+  console.log('Design saved before generating quote');
+  
+  // Debug: log tap positions
+  cutouts.filter(c => c.type === 'tap').forEach(t => {
+    console.log('Tap before quote:', t.id, 'x:', t.x, 'y:', t.y);
+  });
+  
+  // Show loading indicator
+  const btn = document.getElementById('generateQuoteBtn');
+  const originalText = btn?.innerHTML;
+  if (btn) btn.innerHTML = '⏳ Capturing views...';
+  
+  // Capture 2D view first (cleaner without selection)
+  const render2dView = capture2DView();
+  console.log('Captured 2D view:', render2dView ? 'success' : 'failed');
+  
+  // Capture 3D views from multiple angles
+  const render3dViews = await capture3DViews();
+  console.log('Captured', render3dViews.length, '3D views');
+  
+  if (btn) btn.innerHTML = originalText;
+  
+  const mat = MATERIAL_COLORS[selectedMaterial];
+  
+  // Material type mapping
+  const materialTypes = {
+    'SIL': 'Quartz', 'DEK': 'Sintered Stone', 'GLO': 'Quartz',
+    'MOD': 'Quartz', 'COS': 'Quartz', 'CQS': 'Quartz',
+    'ART': 'Quartz', 'NLQ': 'Quartz', 'NAT': 'Natural Stone', 'HOR': 'Quartz'
+  };
+  
+  const brandNames = {
+    'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global Granite',
+    'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
+    'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
+  };
+  
+  // Collect worktop data WITH positions
+  const worktopData = worktops.map((w, i) => ({
+    id: w.id,
+    name: w.name || `Piece ${i + 1}`,
+    length: w.length,
+    depth: w.depth,
+    x: w.x,
+    y: w.y,
+    edgeTypes: w.edgeTypes || {},
+    joints: w.joints || {},
+    cornerRadii: w.cornerRadii || { tl: 0, tr: 0, br: 0, bl: 0 }
+  }));
+  
+  // Collect ALL upstands/splashbacks together (they render the same in 3D)
+  const upstandData = upstands.filter(u => !u.isWindowCill).map(u => ({
+    name: u.name || (u.isSplash ? 'Splashback' : 'Upstand'),
+    length: u.length,
+    height: u.height || 100,
+    x: u.x || 0,
+    y: u.y || 0,
+    absoluteX: u.absoluteX,
+    absoluteY: u.absoluteY,
+    vertical: u.vertical || false,
+    parentEdge: u.parentEdge || 'back',
+    isContinuous: u.isContinuous || false,
+    isSplash: u.isSplash || false
+  }));
+  
+  // Empty - we combined them above
+  const splashbackData = [];
+  
+  const windowCillData = upstands.filter(u => u.isWindowCill).map(c => {
+    const parent = worktops.find(w => w.id === c.parentId);
+    return {
+      name: c.name || 'Window Cill',
+      length: c.length,
+      depth: c.depth || 200,
+      height: c.height || 300,
+      overhang: c.overhang || 20,
+      x: c.x || 0,
+      y: c.y || 0,
+      absoluteX: c.absoluteX,
+      absoluteY: c.absoluteY,
+      parentEdge: c.parentEdge || 'back',
+      edgeStart: c.edgeStart || 0,
+      // Parent worktop info for positioning
+      parentX: parent?.x || 0,
+      parentY: parent?.y || 0,
+      parentLength: parent?.length || 3000,
+      parentDepth: parent?.depth || 600
+    };
+  });
+  
+  // Collect cutouts from global cutouts array (not w.cutouts)
+  const cutoutsList = [];
+  
+  // Track counts for included items
+  let sinkCount = 0, drainerCount = 0, hobCount = 0, tapCount = 0, socketCount = 0;
+  
+  cutouts.forEach(c => {
+    if (c.type === 'socket') {
+      // Socket cutouts - on splashbacks
+      socketCount++;
+      const parentSplash = upstands.find(u => u.id === c.parentId);
+      cutoutsList.push({
+        type: 'socket',
+        name: `Socket Cutout (${c.width}×${c.height}mm)`,
+        width: c.width,
+        height: c.height,
+        centerX: c.centerX,
+        centerY: c.centerY,
+        parentId: c.parentId,
+        included: true,  // Sockets are included
+        price: 0
+      });
+    } else {
+      // Find parent worktop
+      const parent = worktops.find(w => w.id === c.parentId);
+      if (parent) {
+        // Determine if included or extra
+        let included = false;
+        let price = 0;
+        
+        if (c.type === 'undermount_sink' || c.type === 'overmount_sink' || c.type === 'sink_with_drainers') {
+          sinkCount++;
+          included = sinkCount <= 1;  // First sink included
+          price = included ? 0 : 150;
+        } else if (c.type === 'drainer' || c.type === 'recess_drainer') {
+          drainerCount++;
+          included = drainerCount <= 1;  // First drainer included
+          price = included ? 0 : 75;
+        } else if (c.type === 'hob' || c.type === 'recess_hob') {
+          hobCount++;
+          included = hobCount <= 1;  // First hob included
+          price = included ? 0 : 100;
+        } else if (c.type === 'tap') {
+          tapCount++;
+          included = tapCount <= 1;  // First tap included
+          price = included ? 0 : 35;
+        }
+        
+        // Determine display name - 80mm+ taps are "Pop-up Socket"
+        let displayName = CUTOUT_PRICES[c.type]?.name || c.type;
+        if (c.type === 'tap' && c.diameter >= 80) {
+          displayName = 'Pop-up Socket';
+        }
+        
+        // For drainers, add side info to name - use clickedSide (what user selected)
+        if ((c.type === 'drainer' || c.type === 'recess_drainer') && c.clickedSide) {
+          const sideLabel = c.clickedSide === 'left' ? 'Left' : c.clickedSide === 'right' ? 'Right' : 'Both';
+          displayName = `${displayName} (${sideLabel})`;
+        }
+        
+        cutoutsList.push({
+          type: c.type,
+          name: displayName,
+          absoluteX: c.x || 0,
+          absoluteY: c.y || 0,
+          width: c.width || c.diameter || 35,
+          height: c.length || c.height || c.diameter || 35,
+          worktopX: parent.x || 0,
+          worktopY: parent.y || 0,
+          included: included,
+          price: price,
+          side: c.clickedSide || c.side || null  // Use clickedSide for display
+        });
+      }
+    }
+  });
+  
+  // Collect edge profiles
+  const edgesList = [];
+  worktops.forEach(w => {
+    if (w.edgeTypes) {
+      Object.entries(w.edgeTypes).forEach(([key, val]) => {
+        const [edge, start, end] = key.split('_');
+        const length = (parseInt(end) - parseInt(start)) / 1000;
+        
+        if (val.type === 'profile') {
+          edgesList.push({
+            type: val.profileKey,
+            name: val.profileName,
+            length: length,
+            price: val.pricePerMeter || 0,
+            included: val.pricePerMeter === 0
+          });
+        } else if (val.type === 'mitred_edge') {
+          edgesList.push({
+            type: 'mitred_edge',
+            name: `Mitred Edge (${val.height}mm)`,
+            length: length,
+            height: val.height,
+            price: val.pricePerMeter || 66.67,
+            included: false
+          });
+        } else if (val.type === 'dropdown') {
+          const [edgeName, start, end] = key.split('_');
+          edgesList.push({
+            type: 'dropdown',
+            name: 'Dropdown',
+            length: length,
+            height: val.height,
+            price: 0,
+            included: true,
+            // Position data for 3D
+            edge: edgeName,
+            startMm: parseInt(start),
+            endMm: parseInt(end),
+            worktopX: w.x,
+            worktopY: w.y,
+            worktopLength: w.length,
+            worktopDepth: w.depth
+          });
+        }
+      });
+    }
+  });
+  
+  // Calculate slabs required
+  const slabsRequired = parseInt(document.getElementById('sumSlabs')?.textContent) || 1;
+  
+  // Build quote data object (images stored separately to avoid localStorage limits)
+  const quoteData = {
+    quoteNumber: 'PW-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000),
+    date: new Date().toISOString(),
+    material: {
+      key: selectedMaterial,
+      name: mat.name,
+      brand: brandNames[mat.brand] || mat.brand,
+      type: materialTypes[mat.brand] || 'Stone',
+      tier: mat.tier || 1,
+      thickness: worktopThickness,
+      textureId: mat.textureId || null,
+      css: mat.css || '#e8e8e8',
+      roughness: mat.roughness || 0.3
+    },
+    worktops: worktopData,
+    upstands: upstandData,
+    splashbacks: splashbackData,
+    windowCills: windowCillData,
+    cutouts: cutoutsList,
+    edges: edgesList,
+    dropdowns: edgesList.filter(e => e.type === 'dropdown').map(e => ({ length: e.length * 1000, height: e.height })),
+    pricing: {
+      firstSlab: 1300,
+      additionalSlab: 500,
+      slabsUsed: slabsRequired
+    },
+    customer: {
+      name: 'John Smith',
+      email: 'john.smith@example.com',
+      phone: '07700 900123',
+      address: '123 Test Street, Manchester, M1 2AB'
+    }
+    // Note: render3dViews removed - images too large for localStorage
+    // Quote summary will use interactive 3D instead
+  };
+  
+  // Store quote data in localStorage
+  try {
+    const jsonData = JSON.stringify(quoteData);
+    console.log('Quote data size:', (jsonData.length / 1024).toFixed(1), 'KB');
+    localStorage.setItem('primeWorktopsQuote', jsonData);
+    console.log('Quote data saved to localStorage');
+  } catch (e) {
+    console.error('Failed to save quote data:', e);
+    alert('Error saving quote data.');
+    return;
+  }
+  
+  // Store images separately in sessionStorage (clears when tab closes)
+  const imageData = {
+    render3dViews: render3dViews || [],
+    render2dView: render2dView || null
+  };
+  
+  try {
+    sessionStorage.setItem('primeWorktopsImages', JSON.stringify(imageData));
+    console.log('Images saved to sessionStorage: 3D views:', render3dViews?.length || 0, ', 2D:', render2dView ? 'yes' : 'no');
+  } catch (e) {
+    console.warn('Could not save images to sessionStorage:', e);
+  }
+  
+  // Open quote summary page
+  console.log('Opening quote summary page...');
+  
+  // Use direct navigation to avoid popup blockers
+  // Store a flag that quote was generated
+  localStorage.setItem('primeWorktopsQuoteReady', 'true');
+  
+  // Open in same tab - user can use back button to return
+  window.location.href = 'quote_summary.html';
+}
+
+// ========== AUTO-SAVE DESIGN ==========
+function saveDesignState() {
+  try {
+    // Debug: log socket positions before saving
+    cutouts.filter(c => c.type === 'socket').forEach(s => {
+      console.log('Saving socket:', s.id, 'centerX:', s.centerX, 'centerY:', s.centerY);
+    });
+    
+    // Debug: log tap positions before saving
+    cutouts.filter(c => c.type === 'tap').forEach(t => {
+      console.log('Saving tap:', t.id, 'x:', t.x, 'y:', t.y, 'diameter:', t.diameter);
+    });
+    
+    const state = {
+      worktops: worktops,
+      upstands: upstands,
+      cutouts: cutouts,
+      selectedMaterial: selectedMaterial,
+      worktopThickness: worktopThickness,
+      nextId: nextId,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem('primeWorktopsDesign', JSON.stringify(state));
+    console.log('Design auto-saved');
+  } catch (e) {
+    console.warn('Could not auto-save design:', e);
+  }
+}
+
+function loadDesignState() {
+  try {
+    const saved = localStorage.getItem('primeWorktopsDesign');
+    if (saved) {
+      const state = JSON.parse(saved);
+      worktops = state.worktops || [];
+      upstands = state.upstands || [];
+      cutouts = state.cutouts || [];
+      selectedMaterial = state.selectedMaterial || null;
+      worktopThickness = state.worktopThickness || 20;
+      nextId = state.nextId || 1;
+      
+      // Debug: log socket positions
+      cutouts.filter(c => c.type === 'socket').forEach(s => {
+        console.log('Loaded socket:', s.id, 'parentId:', s.parentId, 'centerX:', s.centerX, 'centerY:', s.centerY);
+      });
+      
+      // Debug: log tap positions
+      cutouts.filter(c => c.type === 'tap').forEach(t => {
+        console.log('Loaded tap:', t.id, 'x:', t.x, 'y:', t.y, 'diameter:', t.diameter);
+      });
+      
+      console.log('Design loaded from auto-save:', state.savedAt);
+      console.log('  Worktops:', worktops.length, 'Upstands:', upstands.length, 'Cutouts:', cutouts.length);
+      console.log('  Material:', selectedMaterial);
+      
+      // Update UI
+      if (selectedMaterial && MATERIAL_COLORS[selectedMaterial]) {
+        const mat = MATERIAL_COLORS[selectedMaterial];
+        document.getElementById('materialSearch').value = mat.name || '';
+        
+        // Update material preview swatch
+        const previewEl = document.getElementById('materialPreview');
+        if (previewEl) {
+          if (mat.textureId) {
+            previewEl.style.backgroundImage = `url('https://lh3.googleusercontent.com/d/${mat.textureId}=s200')`;
+          }
+          previewEl.style.backgroundColor = mat.css || '#e8e8e8';
+        }
+        
+        // Reload the texture for 3D view
+        loadMaterialTexture(selectedMaterial, () => {
+          console.log('Material texture reloaded for:', selectedMaterial);
+        });
+      }
+      document.getElementById('thicknessSelect').value = worktopThickness;
+      
+      // Center the view after a short delay to let canvas initialize
+      setTimeout(() => {
+        zoomFit();
+        render();
+        renderLists();
+        updateSummary();
+      }, 100);
+      
+      return true;
+    }
+  } catch (e) {
+    console.warn('Could not load saved design:', e);
+  }
+  return false;
+}
+
+function clearDesignState() {
+  if (confirm('Clear saved design? This will start fresh.')) {
+    localStorage.removeItem('primeWorktopsDesign');
+    worktops = [];
+    upstands = [];
+    cutouts = [];
+    selectedId = null;
+    selectedType = null;
+    nextId = 1;
+    renderLists();
+    render();
+    updateSummary();
+    alert('Design cleared.');
+  }
+}
+
+// Auto-save on changes (debounced)
+let saveTimeout = null;
+function triggerAutoSave() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveDesignState, 1000); // Save 1 second after last change
+}
+
+// Hook into existing functions that modify the design
+const originalSaveHistory = saveHistory;
+saveHistory = function() {
+  originalSaveHistory();
+  triggerAutoSave();
+};
+
 // Init
+loadDesignState(); // Try to load saved design first
 updateZoom();
 renderLists();
 render();
+updateTierStylePreview();
+updateTierFilterButtons();
 </script>
 </body>
 </html>
