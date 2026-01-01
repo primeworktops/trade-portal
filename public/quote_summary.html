@@ -738,6 +738,27 @@
       .accept-section {
         display: none !important;
       }
+      
+      /* Notes card - convert textarea to display text */
+      #notesCard textarea {
+        display: none !important;
+      }
+      
+      #notesCard .notes-print-text {
+        display: block !important;
+        white-space: pre-wrap;
+        padding: 12px;
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        min-height: 40px;
+        font-size: 13px;
+      }
+    }
+    
+    /* Hide print text version by default */
+    .notes-print-text {
+      display: none;
     }
   </style>
 </head>
@@ -916,6 +937,15 @@
             </tr>
           </tfoot>
         </table>
+      </div>
+      
+      <!-- Additional Notes -->
+      <div class="card" id="notesCard">
+        <div class="card-title">Additional Notes</div>
+        <div style="padding:0;">
+          <textarea id="additionalNotes" placeholder="Enter any additional notes, special requirements, or instructions here..." style="width:100%;min-height:100px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+          <div id="notesPrintText" class="notes-print-text"></div>
+        </div>
       </div>
       
       <!-- Terms -->
@@ -1398,8 +1428,8 @@
         </tr>
       `;
       
-      // Base package includes (show as one line)
-      const baseIncludes = ['Chamfer/Pencil edge profile'];
+      // Base package includes (edge profiles are shown separately now)
+      const baseIncludes = [];
       
       // Cutouts - show all individually with Included or price
       const cutouts = quoteData.cutouts || [];
@@ -1471,16 +1501,26 @@
       const includedEdges = (quoteData.edges || []).filter(e => e.included);
       const extraEdges = (quoteData.edges || []).filter(e => !e.included && e.type !== 'dropdown');
       
-      // Calculate total length of included edges
+      // Calculate total length of included edges, grouped by profile name
       if (includedEdges.length > 0) {
-        const totalIncludedLength = includedEdges.reduce((sum, e) => sum + e.length, 0);
-        rows += `
-          <tr>
-            <td>Edge Profile (Chamfer/Pencil)</td>
-            <td>${totalIncludedLength.toFixed(2)}m total</td>
-            <td class="amount"><span class="included">Included</span></td>
-          </tr>
-        `;
+        const includedByType = {};
+        includedEdges.forEach(e => {
+          const name = e.name || 'Edge Profile';
+          if (!includedByType[name]) {
+            includedByType[name] = 0;
+          }
+          includedByType[name] += e.length;
+        });
+        
+        Object.entries(includedByType).forEach(([name, length]) => {
+          rows += `
+            <tr>
+              <td>Edge Profile (${name})</td>
+              <td>${length.toFixed(2)}m total</td>
+              <td class="amount"><span class="included">Included</span></td>
+            </tr>
+          `;
+        });
       }
       
       // Group extra edges by profile type and sum lengths
@@ -2012,6 +2052,21 @@
     async function downloadPDF() {
       const element = document.getElementById('quoteContent');
       
+      // Copy notes to print text div
+      const notesTextarea = document.getElementById('additionalNotes');
+      const notesPrintText = document.getElementById('notesPrintText');
+      if (notesTextarea && notesPrintText) {
+        const notesValue = notesTextarea.value.trim();
+        notesPrintText.textContent = notesValue || 'No additional notes';
+      }
+      
+      // Hide notes card if empty
+      const notesCard = document.getElementById('notesCard');
+      const notesEmpty = !notesTextarea?.value.trim();
+      if (notesCard && notesEmpty) {
+        notesCard.style.display = 'none';
+      }
+      
       // Hide accept section for PDF
       const acceptSection = document.getElementById('acceptSection');
       if (acceptSection) acceptSection.style.display = 'none';
@@ -2267,6 +2322,12 @@
           swatch.style.backgroundImage = originalSwatchBg || '';
           swatch.innerHTML = originalSwatchHtml || '';
         }
+        
+        // Restore notes card
+        const notesCard = document.getElementById('notesCard');
+        if (notesCard) {
+          notesCard.style.display = 'block';
+        }
       });
     }
     
@@ -2308,7 +2369,7 @@
         alert('Quote saved!\n\nReturning to designer to select a different material.\nNew quote will be: ' + newQuoteNum);
         
         // Would go back to designer with same layout but material selector open
-        // window.location.href = 'draw_v3.html?keepLayout=true&openMaterials=true&customer=' + encodeURIComponent(JSON.stringify(quoteData.customer));
+        // window.location.href = 'designer.html?keepLayout=true&openMaterials=true&customer=' + encodeURIComponent(JSON.stringify(quoteData.customer));
         goBack();
       }
     }
@@ -2335,7 +2396,7 @@
     }
     
     function goBack() {
-      window.location.href = 'draw_v3.html';
+      window.location.href = 'designer.html';
     }
     
     // Store base64 versions of images for PDF (avoids CORS issues)

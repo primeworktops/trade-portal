@@ -486,9 +486,16 @@
             <div style="color:#1565c0;font-weight:bold;" id="splitRightSize">Right: 0mm</div>
           </div>
         </div>
+        
+        <!-- Move Join buttons (shown when adjacent upstands exist) -->
+        <div id="moveJoinButtonsContainer" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #eee;">
+          <div style="font-size:11px;color:#1976d2;margin-bottom:8px;font-weight:600;">🔗 Or move existing join:</div>
+          <div id="moveJoinButtons"></div>
+        </div>
       </div>
       <div class="modal-buttons" style="flex-wrap:wrap;">
         <button class="modal-btn" onclick="deleteUpstandFromModal()" style="background:#ffebee;border-color:#c62828;color:#c62828;">🗑️ Delete</button>
+        <button class="modal-btn" id="addSocketFromModalBtn" onclick="addSocketFromModal()" style="background:#fff3e0;border-color:#ff7043;color:#e64a19;display:none;">🔌 Add Socket</button>
         <button class="modal-btn" onclick="cancelUpstandSplit()" style="border-color:#999;color:#666;">Cancel</button>
         <button class="modal-btn primary" onclick="applyUpstandSplit()" style="background:#ff9800;color:white;border-color:#ff9800;">✂️ Split</button>
       </div>
@@ -565,7 +572,7 @@
             <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
           </div>
           <div onclick="setBrandFilter('COS')" class="brand-logo-btn" data-brand="COS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Cosy Stone">
-            <img src="https://lh3.googleusercontent.com/d/1MjVKkcFaOPM5VvBNJyiOv2mbNj3-rmfl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1aFIsbX9EujOD8hiHql6DlIBNXKFl0cmy=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
             <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
           </div>
           <div onclick="setBrandFilter('GLO')" class="brand-logo-btn" data-brand="GLO" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Global Granite">
@@ -581,7 +588,7 @@
             <img src="https://lh3.googleusercontent.com/d/1IrrKv95yNFfcdymhXryhlzj1DKJzK5fG=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
           <div onclick="setBrandFilter('NAT')" class="brand-logo-btn" data-brand="NAT" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Natural Stone">
-            <img src="https://lh3.googleusercontent.com/d/1Hy1wmCi8xfhp5QDmMEDDDEaDdmDjiumw=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/1mdHLk0qRIDBt4EGneLpPLi3iA8vpk_Fw=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
         </div>
       </div>
@@ -828,37 +835,37 @@ let tierStyle = 'pill'; // 'classic' or 'pill'
 // ========== PRESET LAYOUTS ==========
 const PRESETS = {
   single: {
-    worktops: [{ name: 'Worktop 1', x: 0, y: 0, length: 3000, depth: 600 }],
+    worktops: [{ name: 'Worktop 1', x: 0, y: 0, length: 3000, depth: 620 }],
     connections: []
   },
   galley: {
     worktops: [
-      { name: 'Run 1', x: 0, y: 0, length: 3000, depth: 600 },
-      { name: 'Run 2', x: 0, y: 1500, length: 3000, depth: 600 }
+      { name: 'Run 1', x: 0, y: 0, length: 3000, depth: 620 },
+      { name: 'Run 2', x: 0, y: 1500, length: 3000, depth: 620 }
     ],
     connections: []
   },
   lshape: {
     worktops: [
-      { name: 'Long Run', x: 0, y: 0, length: 3000, depth: 600 },
-      { name: 'Return', x: 0, y: 600, length: 600, depth: 1500 }
+      { name: 'Long Run', x: 0, y: 0, length: 3000, depth: 620 },
+      { name: 'Return', x: 0, y: 620, length: 620, depth: 1500 }
     ],
     connections: []
   },
   ushape: {
     worktops: [
-      { name: 'Left', x: 0, y: 0, length: 600, depth: 2000 },
-      { name: 'Back', x: 600, y: 0, length: 2000, depth: 600 },
-      { name: 'Right', x: 2600, y: 0, length: 600, depth: 2000 }
+      { name: 'Left', x: 0, y: 0, length: 620, depth: 2000 },
+      { name: 'Back', x: 620, y: 0, length: 2000, depth: 620 },
+      { name: 'Right', x: 2620, y: 0, length: 620, depth: 2000 }
     ],
     connections: []
   },
   gshape: {
     worktops: [
-      { name: 'Left', x: 0, y: 0, length: 600, depth: 2400 },
-      { name: 'Back', x: 600, y: 0, length: 2000, depth: 600 },
-      { name: 'Right', x: 2600, y: 0, length: 600, depth: 1800 },
-      { name: 'Peninsula', x: 1500, y: 1800, length: 1700, depth: 600 }
+      { name: 'Left', x: 0, y: 0, length: 620, depth: 2400 },
+      { name: 'Back', x: 620, y: 0, length: 2000, depth: 620 },
+      { name: 'Right', x: 2620, y: 0, length: 620, depth: 1800 },
+      { name: 'Peninsula', x: 1520, y: 1800, length: 1720, depth: 620 }
     ],
     connections: []
   }
@@ -1913,8 +1920,21 @@ function addWindowCill() {
 let pendingSocketData = null;
 
 function addSocketCutout() {
+  // First check if a splashback is selected - use that one
+  if (selectedType === 'upstand' && selectedId) {
+    const selectedSplash = upstands.find(u => u.id === selectedId);
+    if (selectedSplash && selectedSplash.isSplash) {
+      console.log('Adding socket to SELECTED splashback:', selectedSplash.id);
+      pendingSocketData = { targetSplash: selectedSplash };
+      hideEdgeMenu();
+      document.getElementById('socketModal').style.display = 'flex';
+      return;
+    }
+  }
+  
+  // Fallback: use edge menu target
   if (!edgeMenuTarget) {
-    alert('Please click on an edge first.');
+    alert('Please select a splashback or click on an edge first.');
     hideEdgeMenu();
     return;
   }
@@ -1923,19 +1943,26 @@ function addSocketCutout() {
   const w = worktops.find(wt => wt.id === wId);
   if (!w) { hideEdgeMenu(); return; }
   
-  // Find splashback on THIS edge
-  const splashback = upstands.find(u => 
+  // Find splashback on THIS edge - if multiple, warn user to select one
+  const splashbacks = upstands.filter(u => 
     u.isSplash && 
     u.parentId === wId && 
     u.parentEdge === edge
   );
   
-  if (!splashback) {
+  if (splashbacks.length === 0) {
     alert(`No splashback on the ${edge} edge of ${w.name || 'this worktop'}.\n\nPlease add a splashback first, then add socket cutouts to it.`);
     hideEdgeMenu();
     return;
   }
   
+  if (splashbacks.length > 1) {
+    alert(`Multiple splashbacks on this edge.\n\nPlease double-click the specific splashback you want to add the socket to, then use the "Add Socket" button.`);
+    hideEdgeMenu();
+    return;
+  }
+  
+  const splashback = splashbacks[0];
   console.log('Adding socket to splashback:', splashback.id, 'on', edge, 'edge');
   
   // Store target splashback for the modal
@@ -2030,18 +2057,156 @@ function applyWorktopEdit() {
   const w = worktops.find(wt => wt.id === editingWorktopId);
   if (!w) return;
   
-  saveHistory();
-  
-  const oldLength = w.length;
-  const oldDepth = w.depth;
-  
   const newLength = parseInt(document.getElementById('editWorktopLength').value) || w.length;
   const newDepth = parseInt(document.getElementById('editWorktopDepth').value) || w.depth;
   const newName = document.getElementById('editWorktopName').value || w.name;
   
-  // Update worktop
-  w.length = newLength;
-  w.depth = newDepth;
+  // Get slab dimensions
+  const slabWInput = document.getElementById('slabWidthInput');
+  const slabHInput = document.getElementById('slabHeightInput');
+  const SLAB_W = slabWInput ? parseInt(slabWInput.value) || 3200 : 3200;
+  const SLAB_H = slabHInput ? parseInt(slabHInput.value) || 1600 : 1600;
+  
+  // Check if new size would exceed slab dimensions
+  const canFitNormal = newLength <= SLAB_W && newDepth <= SLAB_H;
+  const canFitRotated = newLength <= SLAB_H && newDepth <= SLAB_W;
+  
+  if (!canFitNormal && !canFitRotated) {
+    alert(`⚠️ Worktop too large!\n\nRequested size: ${newLength}mm × ${newDepth}mm\nMax slab size: ${SLAB_W}mm × ${SLAB_H}mm\n\nPlease use a smaller size or split into multiple pieces with joints.`);
+    return;
+  }
+  
+  saveHistory();
+  
+  const oldLength = w.length;
+  const oldDepth = w.depth;
+  const oldX = w.x;
+  const oldY = w.y;
+  const tol = 30;
+  
+  // Check which sides have joints BEFORE making changes
+  const hasJointRight = w.joints.right && w.joints.right.length > 0;
+  const hasJointLeft = w.joints.left && w.joints.left.length > 0;
+  const hasJointFront = w.joints.front && w.joints.front.length > 0;
+  const hasJointBack = w.joints.back && w.joints.back.length > 0;
+  
+  // Handle length change
+  if (newLength !== oldLength) {
+    const diff = newLength - oldLength;
+    
+    if (hasJointRight && !hasJointLeft) {
+      // Joint on RIGHT - keep right edge fixed, resize from left
+      w.length = newLength;
+      w.x = oldX + oldLength - newLength;
+    } else if (hasJointLeft && !hasJointRight) {
+      // Joint on LEFT - keep left edge fixed, resize from right, move connected
+      w.length = newLength;
+      const rightEdge = oldX + oldLength;
+      const rightConnected = [];
+      worktops.forEach(other => {
+        if (other.id === w.id) return;
+        if (Math.abs(other.x - rightEdge) <= tol) {
+          if (Math.max(w.y, other.y) < Math.min(w.y + w.depth, other.y + other.depth)) {
+            rightConnected.push(other);
+          }
+        }
+      });
+      if (rightConnected.length > 0) {
+        const moved = [w.id];
+        rightConnected.forEach(p => moveWithCascade(p, 'x', diff, moved, tol));
+      }
+    } else if (hasJointLeft && hasJointRight) {
+      // Joints on BOTH - resize from right, move connected
+      w.length = newLength;
+      const rightEdge = oldX + oldLength;
+      const rightConnected = [];
+      worktops.forEach(other => {
+        if (other.id === w.id) return;
+        if (Math.abs(other.x - rightEdge) <= tol) {
+          if (Math.max(w.y, other.y) < Math.min(w.y + w.depth, other.y + other.depth)) {
+            rightConnected.push(other);
+          }
+        }
+      });
+      if (rightConnected.length > 0) {
+        const moved = [w.id];
+        rightConnected.forEach(p => moveWithCascade(p, 'x', diff, moved, tol));
+      }
+    } else {
+      // No joints - check for back/front connections on right side (for G-shape W4)
+      let backFrontConnectionOnRight = false;
+      const frontEdge = w.y + w.depth;
+      const backEdge = w.y;
+      
+      worktops.forEach(other => {
+        if (other.id === w.id) return;
+        if (Math.abs((other.y + other.depth) - backEdge) <= tol) {
+          const overlapStart = Math.max(w.x, other.x);
+          const overlapEnd = Math.min(w.x + w.length, other.x + other.length);
+          if (overlapEnd > overlapStart) {
+            const overlapCenter = (overlapStart + overlapEnd) / 2;
+            const myCenter = w.x + w.length / 2;
+            if (overlapCenter > myCenter) backFrontConnectionOnRight = true;
+          }
+        }
+        if (Math.abs(other.y - frontEdge) <= tol) {
+          const overlapStart = Math.max(w.x, other.x);
+          const overlapEnd = Math.min(w.x + w.length, other.x + other.length);
+          if (overlapEnd > overlapStart) {
+            const overlapCenter = (overlapStart + overlapEnd) / 2;
+            const myCenter = w.x + w.length / 2;
+            if (overlapCenter > myCenter) backFrontConnectionOnRight = true;
+          }
+        }
+      });
+      
+      if (backFrontConnectionOnRight) {
+        w.length = newLength;
+        w.x = oldX + oldLength - newLength;
+      } else {
+        w.length = newLength;
+      }
+    }
+  }
+  
+  // Handle depth change
+  if (newDepth !== oldDepth) {
+    const diff = newDepth - oldDepth;
+    const frontEdge = oldY + oldDepth;
+    
+    // For depth changes, ALWAYS keep back edge fixed (against wall)
+    // and move any pieces connected to our front edge
+    
+    // Find pieces connected to our front edge BEFORE changing depth
+    const frontConnected = [];
+    worktops.forEach(other => {
+      if (other.id === w.id) return;
+      if (Math.abs(other.y - frontEdge) <= tol) {
+        if (Math.max(w.x, other.x) < Math.min(w.x + w.length, other.x + other.length)) {
+          frontConnected.push(other);
+        }
+      }
+    });
+    
+    // Update depth (back edge stays at y, front edge moves)
+    w.depth = newDepth;
+    
+    // Move front-connected pieces
+    if (frontConnected.length > 0) {
+      const moved = [w.id];
+      frontConnected.forEach(p => moveWithCascade(p, 'y', diff, moved, tol));
+    }
+  }
+  
+  // Update edge profiles to match new dimensions
+  if (newLength !== oldLength) {
+    updateDropdownsForResize(w, 'length', oldLength, newLength);
+  }
+  if (newDepth !== oldDepth) {
+    updateDropdownsForResize(w, 'depth', oldDepth, newDepth);
+  }
+  
+  // Update name
   w.name = newName;
   
   // Auto-resize attached upstands
@@ -2051,6 +2216,11 @@ function applyWorktopEdit() {
   
   // Recalculate joints
   detectAllJoints();
+  
+  // Realign edge profiles to match current free segments
+  if (newLength !== oldLength || newDepth !== oldDepth) {
+    realignEdgeProfiles(w);
+  }
   
   document.getElementById('worktopEditModal').style.display = 'none';
   editingWorktopId = null;
@@ -4818,8 +4988,29 @@ function drawWorktop2D(w) {
     
     // Free segments - use radius-aware drawing
     free.forEach(seg => {
-      const key = `${edge}_${seg.start}_${seg.end}`;
-      const t = w.edgeTypes?.[key];
+      // First try exact match
+      let key = `${edge}_${seg.start}_${seg.end}`;
+      let t = w.edgeTypes?.[key];
+      
+      // If no exact match, find any edge profile that covers this segment
+      if (!t && w.edgeTypes) {
+        Object.entries(w.edgeTypes).forEach(([k, v]) => {
+          const parts = k.split('_');
+          if (parts[0] === edge) {
+            const pStart = parseInt(parts[1]);
+            const pEnd = parseInt(parts[2]);
+            // Check if profile covers most of this segment (80% overlap)
+            const overlapStart = Math.max(seg.start, pStart);
+            const overlapEnd = Math.min(seg.end, pEnd);
+            const overlapLen = Math.max(0, overlapEnd - overlapStart);
+            const segLen = seg.end - seg.start;
+            if (overlapLen >= segLen * 0.8 || (pStart <= seg.start + 5 && pEnd >= seg.end - 5)) {
+              t = v;
+            }
+          }
+        });
+      }
+      
       if (t?.type === 'profile') {
         // Use profile-specific color
         const profileKey = t.profileKey || 'chamfer';
@@ -5655,6 +5846,7 @@ function renderProps() {
           <option value="splash" ${u.isSplash ? 'selected' : ''}>Splashback</option>
         </select>
       </div>
+      ${getAdjacentUpstandButtons(u)}
       <div style="border-top:1px solid #eee;margin:8px 0;padding-top:8px;">
         <div style="font-size:10px;color:#1e4d3a;margin-bottom:6px;font-weight:600;">✂️ Add Join (for material optimization)</div>
         <button onclick="addUpstandJoin(${u.id})" class="tool-btn" style="width:100%;padding:8px;background:#fff3e0;border-color:#ff9800;color:#e65100;">
@@ -5847,14 +6039,34 @@ function updateCutoutPosition(id, edge, val) {
 }
 
 function updateWorktop(id, prop, val) {
-  saveHistory();
   const w = worktops.find(w => w.id === id);
   if (!w) return;
+  
+  // Get slab dimensions
+  const slabWInput = document.getElementById('slabWidthInput');
+  const slabHInput = document.getElementById('slabHeightInput');
+  const SLAB_W = slabWInput ? parseInt(slabWInput.value) || 3200 : 3200;
+  const SLAB_H = slabHInput ? parseInt(slabHInput.value) || 1600 : 1600;
+  
+  // Check if new size would exceed slab dimensions
+  const newLength = prop === 'length' ? val : w.length;
+  const newDepth = prop === 'depth' ? val : w.depth;
+  
+  const canFitNormal = newLength <= SLAB_W && newDepth <= SLAB_H;
+  const canFitRotated = newLength <= SLAB_H && newDepth <= SLAB_W;
+  
+  if (!canFitNormal && !canFitRotated) {
+    alert(`⚠️ Worktop too large!\n\nRequested size: ${newLength}mm × ${newDepth}mm\nMax slab size: ${SLAB_W}mm × ${SLAB_H}mm\n\nPlease use a smaller size or split into multiple pieces with joints.`);
+    return;
+  }
+  
+  saveHistory();
   
   const oldLength = w.length;
   const oldDepth = w.depth;
   const oldX = w.x;
   const oldY = w.y;
+  const tol = 30;
   
   // Check which sides have joints BEFORE making changes
   const hasJointRight = w.joints.right && w.joints.right.length > 0;
@@ -5867,20 +6079,81 @@ function updateWorktop(id, prop, val) {
     
     if (hasJointRight && !hasJointLeft) {
       // Joint on RIGHT - keep right edge fixed, resize from left
-      // Right edge is at oldX + oldLength, keep it there
-      // New x = (oldX + oldLength) - val
       w.length = val;
       w.x = oldX + oldLength - val;
     } else if (hasJointLeft && !hasJointRight) {
       // Joint on LEFT - keep left edge fixed, resize from right
       w.length = val;
-      // x stays the same
+      // Move pieces connected to our right edge
+      const rightEdge = oldX + oldLength;
+      const rightConnected = [];
+      worktops.forEach(other => {
+        if (other.id === w.id) return;
+        if (Math.abs(other.x - rightEdge) <= tol) {
+          if (Math.max(w.y, other.y) < Math.min(w.y + w.depth, other.y + other.depth)) {
+            rightConnected.push(other);
+          }
+        }
+      });
+      if (rightConnected.length > 0) {
+        const moved = [w.id];
+        rightConnected.forEach(p => moveWithCascade(p, 'x', diff, moved, tol));
+      }
     } else if (hasJointLeft && hasJointRight) {
-      // Joints on BOTH sides - resize from right, may break right joint
+      // Joints on BOTH sides - resize from right, move right-connected pieces
       w.length = val;
+      const rightEdge = oldX + oldLength;
+      const rightConnected = [];
+      worktops.forEach(other => {
+        if (other.id === w.id) return;
+        if (Math.abs(other.x - rightEdge) <= tol) {
+          if (Math.max(w.y, other.y) < Math.min(w.y + w.depth, other.y + other.depth)) {
+            rightConnected.push(other);
+          }
+        }
+      });
+      if (rightConnected.length > 0) {
+        const moved = [w.id];
+        rightConnected.forEach(p => moveWithCascade(p, 'x', diff, moved, tol));
+      }
     } else {
-      // No joints - resize from right
-      w.length = val;
+      // No joints - check for back/front connections on right side (for G-shape W4)
+      let backFrontConnectionOnRight = false;
+      const frontEdge = w.y + w.depth;
+      const backEdge = w.y;
+      
+      worktops.forEach(other => {
+        if (other.id === w.id) return;
+        // Back connection
+        if (Math.abs((other.y + other.depth) - backEdge) <= tol) {
+          const overlapStart = Math.max(w.x, other.x);
+          const overlapEnd = Math.min(w.x + w.length, other.x + other.length);
+          if (overlapEnd > overlapStart) {
+            const overlapCenter = (overlapStart + overlapEnd) / 2;
+            const myCenter = w.x + w.length / 2;
+            if (overlapCenter > myCenter) backFrontConnectionOnRight = true;
+          }
+        }
+        // Front connection
+        if (Math.abs(other.y - frontEdge) <= tol) {
+          const overlapStart = Math.max(w.x, other.x);
+          const overlapEnd = Math.min(w.x + w.length, other.x + other.length);
+          if (overlapEnd > overlapStart) {
+            const overlapCenter = (overlapStart + overlapEnd) / 2;
+            const myCenter = w.x + w.length / 2;
+            if (overlapCenter > myCenter) backFrontConnectionOnRight = true;
+          }
+        }
+      });
+      
+      if (backFrontConnectionOnRight) {
+        // Keep right edge fixed, resize from left
+        w.length = val;
+        w.x = oldX + oldLength - val;
+      } else {
+        // Resize from right
+        w.length = val;
+      }
     }
     
     // Update dropdowns
@@ -5888,22 +6161,31 @@ function updateWorktop(id, prop, val) {
     
   } else if (prop === 'depth') {
     const diff = val - oldDepth;
+    const frontEdge = oldY + oldDepth;
     
-    if (hasJointFront && !hasJointBack) {
-      // Joint on FRONT - keep front edge fixed, resize from back
-      // Front edge is at oldY + oldDepth, keep it there
-      w.depth = val;
-      w.y = oldY + oldDepth - val;
-    } else if (hasJointBack && !hasJointFront) {
-      // Joint on BACK - keep back edge fixed, resize from front
-      w.depth = val;
-      // y stays the same
-    } else if (hasJointBack && hasJointFront) {
-      // Joints on BOTH - resize from front, may break front joint
-      w.depth = val;
-    } else {
-      // No joints - resize from front
-      w.depth = val;
+    // For depth changes, ALWAYS keep back edge fixed (against wall)
+    // and move any pieces connected to our front edge
+    
+    // Find pieces connected to our front edge BEFORE changing depth
+    const frontConnected = [];
+    worktops.forEach(other => {
+      if (other.id === w.id) return;
+      const yMatch = Math.abs(other.y - frontEdge) <= tol;
+      if (yMatch) {
+        const xOverlap = Math.max(w.x, other.x) < Math.min(w.x + w.length, other.x + other.length);
+        if (xOverlap) {
+          frontConnected.push(other);
+        }
+      }
+    });
+    
+    // Update depth (back edge stays at y, front edge moves)
+    w.depth = val;
+    
+    // Move front-connected pieces
+    if (frontConnected.length > 0) {
+      const moved = [w.id];
+      frontConnected.forEach(p => moveWithCascade(p, 'y', diff, moved, tol));
     }
     
     // Update dropdowns
@@ -5920,11 +6202,78 @@ function updateWorktop(id, prop, val) {
     autoResizeUpstands(w, oldLength, oldDepth);
   }
   
-  detectAllJoints(); 
+  detectAllJoints();
+  
+  // Realign edge profiles to match current free segments
+  if (prop === 'length' || prop === 'depth') {
+    realignEdgeProfiles(w);
+  }
+  
   renderLists(); 
   renderProps();
   render(); 
   updateSummary(); 
+}
+
+// Find all pieces connected to a piece (recursively) - skip pieces in skipList
+function findAllConnected(startPiece, tol, found, skipList) {
+  if (found.includes(startPiece.id)) return;
+  if (skipList && skipList.includes(startPiece.id)) return;
+  found.push(startPiece.id);
+  
+  const rightEdge = startPiece.x + startPiece.length;
+  const leftEdge = startPiece.x;
+  const frontEdge = startPiece.y + startPiece.depth;
+  const backEdge = startPiece.y;
+  
+  worktops.forEach(other => {
+    if (found.includes(other.id)) return;
+    if (skipList && skipList.includes(other.id)) return;
+    
+    // Check RIGHT edge connection (other's left at our right, with Y overlap)
+    if (Math.abs(other.x - rightEdge) <= tol) {
+      if (Math.max(startPiece.y, other.y) < Math.min(startPiece.y + startPiece.depth, other.y + other.depth)) {
+        findAllConnected(other, tol, found, skipList);
+      }
+    }
+    
+    // Check LEFT edge connection (other's right at our left, with Y overlap)
+    if (Math.abs((other.x + other.length) - leftEdge) <= tol) {
+      if (Math.max(startPiece.y, other.y) < Math.min(startPiece.y + startPiece.depth, other.y + other.depth)) {
+        findAllConnected(other, tol, found, skipList);
+      }
+    }
+    
+    // Check FRONT edge connection (other's back at our front, with X overlap)
+    if (Math.abs(other.y - frontEdge) <= tol) {
+      if (Math.max(startPiece.x, other.x) < Math.min(startPiece.x + startPiece.length, other.x + other.length)) {
+        findAllConnected(other, tol, found, skipList);
+      }
+    }
+    
+    // Check BACK edge connection (other's front at our back, with X overlap)
+    if (Math.abs((other.y + other.depth) - backEdge) <= tol) {
+      if (Math.max(startPiece.x, other.x) < Math.min(startPiece.x + startPiece.length, other.x + other.length)) {
+        findAllConnected(other, tol, found, skipList);
+      }
+    }
+  });
+}
+
+// Move a piece and all pieces connected to it
+function moveWithCascade(piece, axis, amount, alreadyMoved, tol) {
+  // Find all pieces connected to this one BEFORE moving (skip already moved)
+  const connectedIds = [];
+  findAllConnected(piece, tol, connectedIds, alreadyMoved);
+  
+  // Move all found pieces
+  connectedIds.forEach(id => {
+    const p = worktops.find(w => w.id === id);
+    if (p) {
+      p[axis] += amount;
+      alreadyMoved.push(id);
+    }
+  });
 }
 
 // Update corner radius for worktop
@@ -5950,7 +6299,7 @@ function updateDropdownsForResize(w, dimension, oldVal, newVal) {
   if (!w.edgeTypes) return;
   
   const newEdgeTypes = {};
-  const ratio = newVal / oldVal;
+  const tol = 5; // Tolerance for detecting full edge
   
   Object.entries(w.edgeTypes).forEach(([key, value]) => {
     const parts = key.split('_');
@@ -5960,16 +6309,91 @@ function updateDropdownsForResize(w, dimension, oldVal, newVal) {
     
     // Scale positions for edges that run along the changed dimension
     if (dimension === 'length' && (edge === 'back' || edge === 'front')) {
-      start = Math.round(start * ratio);
-      end = Math.min(Math.round(end * ratio), newVal);
+      // Check if this edge covered the full length before (with tolerance)
+      const wasFullLength = (start <= tol && Math.abs(end - oldVal) <= tol);
+      
+      if (wasFullLength) {
+        // Keep as full length
+        start = 0;
+        end = newVal;
+      } else {
+        // Scale proportionally
+        const ratio = newVal / oldVal;
+        start = Math.round(start * ratio);
+        end = Math.min(Math.round(end * ratio), newVal);
+      }
     } else if (dimension === 'depth' && (edge === 'left' || edge === 'right')) {
-      start = Math.round(start * ratio);
-      end = Math.min(Math.round(end * ratio), newVal);
+      // Check if this edge covered the full depth before (with tolerance)
+      const wasFullDepth = (start <= tol && Math.abs(end - oldVal) <= tol);
+      
+      if (wasFullDepth) {
+        // Keep as full depth
+        start = 0;
+        end = newVal;
+      } else {
+        // Scale proportionally
+        const ratio = newVal / oldVal;
+        start = Math.round(start * ratio);
+        end = Math.min(Math.round(end * ratio), newVal);
+      }
     }
     
     // Only keep if still valid
     if (end > start) {
       newEdgeTypes[`${edge}_${start}_${end}`] = value;
+    }
+  });
+  
+  w.edgeTypes = newEdgeTypes;
+}
+
+// Realign edge profile keys to match current free segments
+// Called after detectAllJoints to fix any misaligned keys
+function realignEdgeProfiles(w) {
+  if (!w.edgeTypes || Object.keys(w.edgeTypes).length === 0) return;
+  
+  const newEdgeTypes = {};
+  
+  ['back', 'front', 'left', 'right'].forEach(edge => {
+    const free = getFreeSegments(w, edge);
+    
+    // Find all edge profiles for this edge
+    const edgeProfiles = [];
+    Object.entries(w.edgeTypes).forEach(([key, value]) => {
+      const parts = key.split('_');
+      if (parts[0] === edge) {
+        edgeProfiles.push({
+          start: parseInt(parts[1]),
+          end: parseInt(parts[2]),
+          value: value
+        });
+      }
+    });
+    
+    // For each free segment, find matching profile
+    free.forEach(seg => {
+      edgeProfiles.forEach(profile => {
+        // Check if profile overlaps significantly with this segment
+        const overlapStart = Math.max(seg.start, profile.start);
+        const overlapEnd = Math.min(seg.end, profile.end);
+        const overlapLen = Math.max(0, overlapEnd - overlapStart);
+        const segLen = seg.end - seg.start;
+        const profileLen = profile.end - profile.start;
+        
+        // If 80% overlap or profile intended to cover full edge
+        if (overlapLen >= segLen * 0.8 || overlapLen >= profileLen * 0.8) {
+          // Realign to current free segment
+          newEdgeTypes[`${edge}_${seg.start}_${seg.end}`] = profile.value;
+        }
+      });
+    });
+  });
+  
+  // Merge with any edge types we couldn't realign (might be partial segments)
+  Object.entries(w.edgeTypes).forEach(([key, value]) => {
+    if (!Object.keys(newEdgeTypes).some(k => k.startsWith(key.split('_')[0] + '_'))) {
+      // Keep original if we couldn't find a match
+      newEdgeTypes[key] = value;
     }
   });
   
@@ -6168,6 +6592,7 @@ function updateUpstand(id, prop, val) {
 
 // Add a join to split an upstand into two pieces
 let splitUpstandId = null;
+let moveJoinData = null;  // For moving join position between adjacent upstands
 
 function showUpstandSplitModal(id) {
   const u = upstands.find(u => u.id === id);
@@ -6175,11 +6600,45 @@ function showUpstandSplitModal(id) {
   
   splitUpstandId = id;
   
-  // Update info text
+  // Update modal title based on type
   const typeText = u.isSplash ? 'Splashback' : 'Upstand';
+  const modalTitle = document.querySelector('#upstandSplitModal .modal-title');
+  if (modalTitle) {
+    modalTitle.textContent = u.isSplash ? '✂️ Edit Splashback' : '✂️ Split Upstand';
+  }
+  
+  // Update info text
   document.getElementById('upstandSplitInfo').textContent = 
     `${typeText}: ${u.length}mm × ${u.height}mm - Split for better material utilization`;
   document.getElementById('upstandSplitEnd').textContent = `${u.length}mm`;
+  
+  // Show/hide socket button based on whether it's a splashback
+  const socketBtn = document.getElementById('addSocketFromModalBtn');
+  if (socketBtn) {
+    socketBtn.style.display = u.isSplash ? 'block' : 'none';
+  }
+  
+  // Check for adjacent upstands and show move join buttons
+  const adjacent = findAdjacentUpstands(u);
+  const moveJoinContainer = document.getElementById('moveJoinButtonsContainer');
+  const moveJoinButtons = document.getElementById('moveJoinButtons');
+  
+  if (adjacent.length > 0 && moveJoinContainer && moveJoinButtons) {
+    let buttonsHtml = '';
+    adjacent.forEach(adj => {
+      const otherName = adj.upstand.isSplash ? 'Splashback' : 'Upstand';
+      const totalLen = u.length + adj.upstand.length;
+      buttonsHtml += `
+        <button onclick="showMoveJoinModal(${u.id}, ${adj.upstand.id}, '${adj.side}')" 
+                style="width:100%;padding:10px;margin-bottom:6px;background:#e3f2fd;border:1px solid #1976d2;color:#1565c0;border-radius:6px;cursor:pointer;font-size:12px;">
+          Move join with ${otherName} (${adj.upstand.length}mm) - Total: ${totalLen}mm
+        </button>`;
+    });
+    moveJoinButtons.innerHTML = buttonsHtml;
+    moveJoinContainer.style.display = 'block';
+  } else if (moveJoinContainer) {
+    moveJoinContainer.style.display = 'none';
+  }
   
   // Set default position to middle
   const defaultPos = Math.round(u.length / 2);
@@ -6195,6 +6654,12 @@ function showUpstandSplitModal(id) {
 }
 
 function updateSplitPreview() {
+  // Check if in move join mode
+  if (moveJoinData) {
+    updateMoveJoinPreview();
+    return;
+  }
+  
   const u = upstands.find(u => u.id === splitUpstandId);
   if (!u) return;
   
@@ -6213,13 +6678,41 @@ function updateSplitPreview() {
   `;
   
   // Update size labels
-  document.getElementById('splitLeftSize').textContent = `●€ Left: ${pos}mm`;
-  document.getElementById('splitRightSize').textContent = `Right: ${total - pos}mm â–¶`;
+  document.getElementById('splitLeftSize').textContent = `◀ Left: ${pos}mm`;
+  document.getElementById('splitRightSize').textContent = `Right: ${total - pos}mm ▶`;
 }
 
 function cancelUpstandSplit() {
   document.getElementById('upstandSplitModal').style.display = 'none';
   splitUpstandId = null;
+  
+  // Also reset move join mode if active
+  if (moveJoinData) {
+    moveJoinData = null;
+    // Restore split button
+    const splitBtn = document.querySelector('#upstandSplitModal .modal-btn.primary');
+    if (splitBtn) {
+      splitBtn.textContent = '✂️ Split';
+      splitBtn.onclick = applyUpstandSplit;
+    }
+  }
+}
+
+// Add socket to splashback directly from modal
+function addSocketFromModal() {
+  if (!splitUpstandId) return;
+  
+  const u = upstands.find(u => u.id === splitUpstandId);
+  if (!u || !u.isSplash) return;
+  
+  // Close the split modal
+  document.getElementById('upstandSplitModal').style.display = 'none';
+  
+  // Set up for socket placement
+  pendingSocketData = { targetSplash: u };
+  
+  // Show socket size modal
+  document.getElementById('socketModal').style.display = 'flex';
 }
 
 function deleteUpstandFromModal() {
@@ -6292,6 +6785,247 @@ function applyUpstandSplit() {
   renderLists();
   render();
   updateSummary();
+}
+
+// Find adjacent upstands (same edge, same height, touching)
+function findAdjacentUpstands(u) {
+  const tol = 5; // tolerance in mm
+  const adjacent = [];
+  
+  upstands.forEach(other => {
+    if (other.id === u.id) return;
+    if (other.parentId !== u.parentId) return;
+    if (other.parentEdge !== u.parentEdge) return;
+    if (Math.abs(other.height - u.height) > tol) return;
+    if (other.isSplash !== u.isSplash) return;
+    
+    // Check if they're touching (end of one meets start of other)
+    const uStart = u.edgeStart || 0;
+    const uEnd = uStart + u.length;
+    const otherStart = other.edgeStart || 0;
+    const otherEnd = otherStart + other.length;
+    
+    // Adjacent on the right (this ends where other starts)
+    if (Math.abs(uEnd - otherStart) <= tol) {
+      adjacent.push({ upstand: other, side: 'right', joinPos: uEnd });
+    }
+    // Adjacent on the left (other ends where this starts)
+    if (Math.abs(otherEnd - uStart) <= tol) {
+      adjacent.push({ upstand: other, side: 'left', joinPos: uStart });
+    }
+  });
+  
+  return adjacent;
+}
+
+// Generate buttons for adjacent upstands
+function getAdjacentUpstandButtons(u) {
+  const adjacent = findAdjacentUpstands(u);
+  if (adjacent.length === 0) return '';
+  
+  let html = `<div style="border-top:1px solid #eee;margin:8px 0;padding-top:8px;">
+    <div style="font-size:10px;color:#1e4d3a;margin-bottom:6px;font-weight:600;">🔗 Move Join Position</div>`;
+  
+  adjacent.forEach(adj => {
+    const otherName = adj.upstand.isSplash ? 'Splashback' : 'Upstand';
+    const totalLen = u.length + adj.upstand.length;
+    html += `
+      <button onclick="showMoveJoinModal(${u.id}, ${adj.upstand.id}, '${adj.side}')" class="tool-btn" style="width:100%;padding:8px;margin-bottom:4px;background:#e3f2fd;border-color:#1976d2;color:#1565c0;">
+        Move join with ${otherName} (${adj.upstand.length}mm)
+      </button>`;
+  });
+  
+  html += `<div style="font-size:9px;color:#999;margin-top:4px;">Adjust where pieces meet (total: ${u.length + (adjacent[0]?.upstand.length || 0)}mm)</div>
+  </div>`;
+  
+  return html;
+}
+
+// Modal for moving join position
+function showMoveJoinModal(id1, id2, side) {
+  const u1 = upstands.find(u => u.id === id1);
+  const u2 = upstands.find(u => u.id === id2);
+  if (!u1 || !u2) return;
+  
+  // Determine which is left and which is right based on edgeStart/absoluteX
+  let leftUpstand, rightUpstand;
+  
+  const u1Start = u1.edgeStart !== undefined ? u1.edgeStart : (u1.absoluteX || u1.x || 0);
+  const u2Start = u2.edgeStart !== undefined ? u2.edgeStart : (u2.absoluteX || u2.x || 0);
+  
+  if (u1Start < u2Start) {
+    leftUpstand = u1;
+    rightUpstand = u2;
+  } else {
+    leftUpstand = u2;
+    rightUpstand = u1;
+  }
+  
+  const totalLength = leftUpstand.length + rightUpstand.length;
+  const currentJoinPos = leftUpstand.length;
+  
+  console.log('Move join setup:', {
+    left: { id: leftUpstand.id, length: leftUpstand.length, edgeStart: leftUpstand.edgeStart, absoluteX: leftUpstand.absoluteX },
+    right: { id: rightUpstand.id, length: rightUpstand.length, edgeStart: rightUpstand.edgeStart, absoluteX: rightUpstand.absoluteX },
+    totalLength, currentJoinPos
+  });
+  
+  moveJoinData = { leftUpstand, rightUpstand, totalLength };
+  
+  // Use the split modal but reconfigure it
+  splitUpstandId = null; // Clear normal split mode
+  
+  const typeText = u1.isSplash ? 'Splashback' : 'Upstand';
+  document.getElementById('upstandSplitInfo').textContent = 
+    `Move join between ${typeText} pieces (Total: ${totalLength}mm)`;
+  document.getElementById('upstandSplitEnd').textContent = `${totalLength}mm`;
+  
+  // Update modal title
+  const modalTitle = document.querySelector('#upstandSplitModal .modal-title');
+  if (modalTitle) {
+    modalTitle.textContent = '🔗 Move Join Position';
+  }
+  
+  // Hide socket button for this mode
+  const socketBtn = document.getElementById('addSocketFromModalBtn');
+  if (socketBtn) socketBtn.style.display = 'none';
+  
+  // Hide the move join buttons container (we're already in move join mode)
+  const moveJoinContainer = document.getElementById('moveJoinButtonsContainer');
+  if (moveJoinContainer) moveJoinContainer.style.display = 'none';
+  
+  // Change split button to "Apply"
+  const splitBtn = document.querySelector('#upstandSplitModal .modal-btn.primary');
+  if (splitBtn) {
+    splitBtn.textContent = '✓ Apply';
+    splitBtn.onclick = applyMoveJoin;
+  }
+  
+  // Set position input
+  document.getElementById('upstandSplitPosition').value = currentJoinPos;
+  document.getElementById('upstandSplitPosition').max = totalLength - 50;
+  document.getElementById('upstandSplitPosition').min = 50;
+  
+  // Update preview
+  updateMoveJoinPreview();
+  
+  document.getElementById('upstandSplitModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('upstandSplitPosition').select(), 100);
+}
+
+function updateMoveJoinPreview() {
+  if (!moveJoinData) {
+    updateSplitPreview();
+    return;
+  }
+  
+  const { totalLength } = moveJoinData;
+  const pos = parseInt(document.getElementById('upstandSplitPosition').value) || 0;
+  const leftPct = (pos / totalLength) * 100;
+  
+  // Update visual
+  const visual = document.getElementById('upstandSplitVisual');
+  visual.innerHTML = `
+    <div style="position:absolute;left:0;top:0;bottom:0;width:${leftPct}%;background:#81c784;border-radius:2px 0 0 2px;"></div>
+    <div style="position:absolute;left:${leftPct}%;top:-8px;bottom:-8px;width:3px;background:#1976d2;"></div>
+    <div style="position:absolute;left:${leftPct}%;top:-20px;transform:translateX(-50%);font-size:10px;color:#1976d2;font-weight:bold;">🔗 ${pos}mm</div>
+  `;
+  
+  // Update size labels
+  document.getElementById('splitLeftSize').textContent = `◀ Left: ${pos}mm`;
+  document.getElementById('splitRightSize').textContent = `Right: ${totalLength - pos}mm ▶`;
+}
+
+function applyMoveJoin() {
+  if (!moveJoinData) {
+    applyUpstandSplit();
+    return;
+  }
+  
+  const { leftUpstand, rightUpstand, totalLength } = moveJoinData;
+  const newJoinPos = parseInt(document.getElementById('upstandSplitPosition').value);
+  
+  if (newJoinPos < 50 || newJoinPos > totalLength - 50) {
+    alert('Join position must leave at least 50mm on each piece.');
+    return;
+  }
+  
+  saveHistory();
+  
+  // Calculate new lengths
+  const newLeftLength = newJoinPos;
+  const newRightLength = totalLength - newJoinPos;
+  
+  // Get the base position - where the left upstand starts
+  const leftEdgeStart = leftUpstand.edgeStart || 0;
+  const edge = leftUpstand.parentEdge || 'back';
+  
+  // Update the upstands lengths
+  leftUpstand.length = newLeftLength;
+  rightUpstand.length = newRightLength;
+  
+  // Update right upstand's edgeStart (for relative positioning)
+  rightUpstand.edgeStart = leftEdgeStart + newLeftLength;
+  
+  // Update absolute positions - use left upstand's position as base
+  if (edge === 'back' || edge === 'front') {
+    // Horizontal edges - X position changes
+    const leftStartX = leftUpstand.absoluteX !== undefined ? leftUpstand.absoluteX : leftUpstand.x;
+    if (leftStartX !== undefined) {
+      rightUpstand.absoluteX = leftStartX + newLeftLength;
+      rightUpstand.x = rightUpstand.absoluteX;
+    }
+    // Copy Y from left upstand
+    if (leftUpstand.absoluteY !== undefined) {
+      rightUpstand.absoluteY = leftUpstand.absoluteY;
+    }
+    if (leftUpstand.y !== undefined) {
+      rightUpstand.y = leftUpstand.y;
+    }
+  } else {
+    // Vertical edges (left/right) - Y position changes
+    const leftStartY = leftUpstand.absoluteY !== undefined ? leftUpstand.absoluteY : leftUpstand.y;
+    if (leftStartY !== undefined) {
+      rightUpstand.absoluteY = leftStartY + newLeftLength;
+      rightUpstand.y = rightUpstand.absoluteY;
+    }
+    // Copy X from left upstand
+    if (leftUpstand.absoluteX !== undefined) {
+      rightUpstand.absoluteX = leftUpstand.absoluteX;
+    }
+    if (leftUpstand.x !== undefined) {
+      rightUpstand.x = leftUpstand.x;
+    }
+  }
+  
+  console.log('Move join applied:', {
+    edge: edge,
+    leftLength: newLeftLength,
+    rightLength: newRightLength,
+    leftEdgeStart: leftEdgeStart,
+    leftAbsoluteX: leftUpstand.absoluteX,
+    rightEdgeStart: rightUpstand.edgeStart,
+    rightAbsoluteX: rightUpstand.absoluteX,
+    rightAbsoluteY: rightUpstand.absoluteY
+  });
+  
+  // Reset modal
+  document.getElementById('upstandSplitModal').style.display = 'none';
+  
+  // Restore split button
+  const splitBtn = document.querySelector('#upstandSplitModal .modal-btn.primary');
+  if (splitBtn) {
+    splitBtn.textContent = '✂️ Split';
+    splitBtn.onclick = applyUpstandSplit;
+  }
+  
+  moveJoinData = null;
+  
+  renderLists();
+  render();
+  renderProps();
+  updateSummary();
+  if (currentView === '3d') render3D();
 }
 
 // Keep old function for sidebar button
@@ -8291,7 +9025,8 @@ function renderSlabLayout() {
     { c: '#e8f5e9', l: 'Upstand' },
     { c: '#e0f7fa', l: 'Splashback' },
     { c: '#fff3e0', l: 'Window Cill' },
-    { c: '#f3e5f5', l: 'Dropdown (Mitre)' }
+    { c: '#f3e5f5', l: 'Dropdown (Mitre)' },
+    { c: '#d7ccc8', l: 'Mitred Edge' }
   ].forEach((item, i) => {
     const ly = PADDING + 28 + i * 20;
     ctx.fillStyle = item.c;
@@ -8810,8 +9545,51 @@ function capture2DView() {
     selectedId = null;
     selectedType = null;
     
-    // Fit and render
-    zoomFit();
+    // Calculate bounds for all elements
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const VISUAL_DEPTH = 80;
+    
+    worktops.forEach(w => {
+      minX = Math.min(minX, w.x);
+      maxX = Math.max(maxX, w.x + w.length);
+      minY = Math.min(minY, w.y);
+      maxY = Math.max(maxY, w.y + w.depth);
+    });
+    
+    upstands.forEach(u => {
+      const parent = worktops.find(w => w.id === u.parentId);
+      if (parent && u.parentEdge) {
+        if (u.parentEdge === 'back') {
+          minX = Math.min(minX, parent.x);
+          maxX = Math.max(maxX, parent.x + u.length);
+          minY = Math.min(minY, parent.y - VISUAL_DEPTH);
+        } else if (u.parentEdge === 'front') {
+          minX = Math.min(minX, parent.x);
+          maxX = Math.max(maxX, parent.x + u.length);
+          maxY = Math.max(maxY, parent.y + parent.depth + VISUAL_DEPTH);
+        }
+      }
+    });
+    
+    // Use custom zoom for capture - more padding and lower max scale for large designs
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    if (width > 0 && height > 0 && isFinite(width) && isFinite(height)) {
+      const pad = 200; // More padding for capture
+      // Calculate scale needed to fit, with lower max (0.2) for large designs
+      const fitScale = Math.min(
+        (canvas.width - pad) / (width + pad), 
+        (canvas.height - pad) / (height + pad)
+      );
+      // Use lower max scale (0.15) for quote capture to ensure everything fits well
+      scale = Math.max(0.03, Math.min(0.15, fitScale));
+      offset.x = canvas.width / 2 - (minX + maxX) / 2 * scale;
+      offset.y = canvas.height / 2 - (minY + maxY) / 2 * scale;
+    } else {
+      zoomFit();
+    }
+    
     render();
     
     // Capture the canvas
@@ -8821,11 +9599,12 @@ function capture2DView() {
     selectedId = savedSelectedId;
     selectedType = savedSelectedType;
     
-    // Restore view
+    // Restore view with normal zoom
     if (!wasIn2D) {
       switchView('3d');
     } else {
-      render(); // Re-render with selection
+      zoomFit(); // Restore normal zoom
+      render();
     }
     
     return dataUrl;
