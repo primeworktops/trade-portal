@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quote Summary - Prime Worktops</title>
+  <title>Quote Summary - Prime Stone Works</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
@@ -184,6 +184,33 @@
       font-size: 9px;
       padding: 2px 4px;
       text-align: center;
+    }
+    
+    .use-for-pdf-thumb {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      padding: 2px 5px;
+      font-size: 8px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #1e4d3a;
+      color: #1e4d3a;
+      border-radius: 3px;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: all 0.2s;
+    }
+    
+    .use-for-pdf-thumb:hover {
+      opacity: 1;
+      background: #fff;
+    }
+    
+    .use-for-pdf-thumb.selected {
+      background: #1e4d3a;
+      color: white;
+      opacity: 1;
     }
     
     .material-info {
@@ -815,7 +842,7 @@
           </svg>
           <!-- Hidden img for trade partner logos -->
           <img id="logoImg" style="display:none;height:120px;width:auto;" alt="Logo">
-          <div id="logoPdfFallback" style="display:none;font-size:32px;font-weight:800;color:#1e4d3a;">Prime<span style="color:#d4a843;">Worktops</span></div>
+          <div id="logoPdfFallback" style="display:none;font-size:32px;font-weight:800;color:#1e4d3a;">Prime<span style="color:#d4a843;">StoneWorks</span></div>
         </div>
         <div class="quote-info">
           <div class="quote-number" id="quoteNumber">Quote #PW-2024-001</div>
@@ -868,11 +895,30 @@
             </div>
           </div>
           
+          <!-- TEST: Material selector for pricing testing -->
+          <div id="materialTestPanel" style="background:#fff3e0;padding:12px;border-radius:8px;margin-bottom:15px;border:2px dashed #ff9800;">
+            <div style="font-size:11px;font-weight:600;color:#e65100;margin-bottom:8px;">🧪 TEST MODE: Change Material to Test Pricing</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+              <span id="loadStatus" style="font-size:11px;color:#666;">Loading...</span>
+              <input type="file" id="jsonFileInput" accept=".json" onchange="loadPricingJSON(this)" style="font-size:10px;" title="Override with different JSON">
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <select id="testMaterialSelect" onchange="changeTestMaterial(this.value)" style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;font-size:13px;min-width:250px;">
+                <option value="">-- Select Material --</option>
+              </select>
+              <select id="testThicknessSelect" onchange="changeTestThickness(+this.value)" style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;font-size:13px;">
+                <option value="20">20mm</option>
+                <option value="30">30mm</option>
+              </select>
+              <span id="testPriceInfo" style="font-size:12px;color:#666;"></span>
+            </div>
+          </div>
+          
           <!-- Image containers wrapper for side-by-side in PDF -->
           <div class="images-row" id="imagesRow" style="display:flex;flex-direction:column;gap:15px;">
             <!-- 3D Preview (first) -->
             <div class="image-wrapper" id="image3dWrapper">
-              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">🎨 3D Preview</div>
+              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">🎨 3D Preview <span style="font-size:10px;font-weight:400;color:#999;">(click PDF on thumbnail to select for quote)</span></div>
               <div class="render-container" id="renderContainer">
                 <!-- Main 3D view image (shown when captured images available) -->
                 <img id="mainViewImage" style="width:100%;height:100%;object-fit:contain;background:#f5f5f5;display:none;">
@@ -885,11 +931,18 @@
               </div>
             </div>
             
-            <!-- 2D Plan View (below 3D normally, side-by-side in PDF) -->
+            <!-- 2D Plan View -->
             <div class="image-wrapper" id="plan2dContainer" style="display:none;">
-              <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">📐 Plan View</div>
-              <div style="background:#f9f9f9;border-radius:8px;padding:10px;border:1px solid #e0e0e0;">
-                <img id="plan2dImage" style="width:100%;height:auto;max-height:300px;object-fit:contain;display:block;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div style="font-size:12px;font-weight:600;color:#666;">📐 Plan View</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button onclick="zoomPlan2d(-0.2)" style="padding:4px 8px;font-size:12px;background:#f5f5f5;border:1px solid #ccc;border-radius:4px;cursor:pointer;">−</button>
+                  <button onclick="zoomPlan2d(0.2)" style="padding:4px 8px;font-size:12px;background:#f5f5f5;border:1px solid #ccc;border-radius:4px;cursor:pointer;">+</button>
+                  <button onclick="resetPlan2dZoom()" style="padding:4px 8px;font-size:10px;background:#f5f5f5;border:1px solid #ccc;border-radius:4px;cursor:pointer;">Fit</button>
+                </div>
+              </div>
+              <div id="plan2dInnerContainer" style="background:#f9f9f9;border-radius:8px;padding:10px;border:1px solid #e0e0e0;overflow:auto;max-height:500px;text-align:center;">
+                <img id="plan2dImage" style="max-width:100%;height:auto;object-fit:contain;display:inline-block;transition:transform 0.2s;" data-zoom="1">
               </div>
             </div>
           </div>
@@ -976,13 +1029,13 @@
   <script>
     // ========== TRADE PARTNER SETTINGS (customisable per partner) ==========
     const tradePartnerSettings = {
-      logo: '12PZu-OK96_gbZ_b2QY5yd6Qpquzni0a_', // Google Drive ID - cropped logo
-      companyName: 'Prime Worktops',
+      logo: '1b4siXtYe-hHBn8BDDE79cbL_fJAHaRgq', // Google Drive ID - Prime Stone Works logo
+      companyName: 'Prime Stone Works',
       headerColor: '#f5f5f5', // Light background to show logo better
       headerTextColor: '#333',
       phone: '0800 123 4567',
-      email: 'info@primeworktops.com',
-      website: 'www.primeworktops.com',
+      email: 'info@primestoneworks.com',
+      website: 'www.primestoneworks.com',
       terms: [
         'Quote valid for 30 days from date of issue',
         '50% deposit required to confirm order',
@@ -994,10 +1047,82 @@
       customTerms: null
     };
     
+    // ========== MATERIAL PRICING DATA ==========
+    const MATERIAL_PRICING = {
+      // Silestone with pricing from CSV
+      jardinemerald: { tier: 5, price20slab: 1478.20, price30slab: 2275.64, name: 'Jardin Emerald', brand: 'Silestone' },
+      stellarnight: { tier: 2, price20slab: 687.46, price30slab: 927.95, name: 'Stellar Night', brand: 'Silestone' },
+      versaillesivory: { tier: 4, price20slab: 1154.36, price30slab: 1615.56, name: 'Versailles Ivory', brand: 'Silestone' },
+      calacattatova: { tier: 2, price20slab: 687.41, price30slab: null, name: 'Calacatta Tova', brand: 'Silestone' },
+      romanticash: { tier: 5, price20slab: 1625.65, price30slab: 2275.64, name: 'Romantic Ash', brand: 'Silestone' },
+      lyra: { tier: 2, price20slab: 624.95, price30slab: 843.73, name: 'Lyra', brand: 'Silestone' },
+      coralclaycolour: { tier: 1, price20slab: 519.32, price30slab: 639.69, name: 'Coral Clay', brand: 'Silestone' },
+      ariel: { tier: 2, price20slab: 756.17, price30slab: 927.95, name: 'Ariel', brand: 'Silestone' },
+      motiongrey: { tier: 1, price20slab: 456.75, price30slab: 619.21, name: 'Motion Grey', brand: 'Silestone' },
+      etmarquina: { tier: 4, price20slab: 1083.75, price30slab: 1517.11, name: 'Et. Marquina', brand: 'Silestone' },
+      cindercraze: { tier: 2, price20slab: 687.46, price30slab: 928.10, name: 'Cinder Craze', brand: 'Silestone' },
+      farowhite: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Faro White', brand: 'Silestone' },
+      etherealnoctis: { tier: 4, price20slab: 1313.89, price30slab: 1838.90, name: 'Ethereal Noctis', brand: 'Silestone' },
+      nolita: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Nolita', brand: 'Silestone' },
+      blanclyse: { tier: 5, price20slab: 1478.20, price30slab: 2068.79, name: 'Blanc Lys E', brand: 'Silestone' },
+      halcyon: { tier: 2, price20slab: 687.41, price30slab: 927.95, name: 'Halcyon', brand: 'Silestone' },
+      biancocalacatta: { tier: 2, price20slab: 687.41, price30slab: 927.95, name: 'Bianco Calacatta', brand: 'Silestone' },
+      chteaubrown: { tier: 5, price20slab: 1478.20, price30slab: null, name: 'Château Brown', brand: 'Silestone' },
+      rougui: { tier: 1, price20slab: null, price30slab: 723.76, name: 'Rougui', brand: 'Silestone' },
+      etnoir: { tier: 4, price20slab: 1026.05, price30slab: 1579.67, name: 'Et. Noir', brand: 'Silestone' },
+      brassrelish: { tier: 2, price20slab: 687.46, price30slab: 928.10, name: 'Brass Relish', brand: 'Silestone' },
+      lusso: { tier: 2, price20slab: 687.41, price30slab: 927.95, name: 'Lusso', brand: 'Silestone' },
+      rawd: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Raw D', brand: 'Silestone' },
+      etcalacattagold: { tier: 4, price20slab: 1026.05, price30slab: 1436.06, name: 'Et. Calacatta Gold', brand: 'Silestone' },
+      whitearabesque: { tier: 1, price20slab: 509.18, price30slab: 689.61, name: 'White Arabesque', brand: 'Silestone' },
+      whitestorm14: { tier: 1, price20slab: 535.91, price30slab: 723.76, name: 'White Storm', brand: 'Silestone' },
+      blancoorion: { tier: 3, price20slab: 985.29, price30slab: null, name: 'Blanco Orion', brand: 'Silestone' },
+      miamivena: { tier: 1, price20slab: 509.18, price30slab: 689.61, name: 'Miami Vena', brand: 'Silestone' },
+      blanconorte14: { tier: 1, price20slab: 535.91, price30slab: 723.76, name: 'Blanco Norte', brand: 'Silestone' },
+      classiccalacatta: { tier: 2, price20slab: 687.41, price30slab: 927.95, name: 'Classic Calacatta', brand: 'Silestone' },
+      grisexpo: { tier: 1, price20slab: 535.91, price30slab: 723.76, name: 'Gris Expo', brand: 'Silestone' },
+      etstatuario: { tier: 3, price20slab: 769.43, price30slab: 1184.82, name: 'Et. Statuario', brand: 'Silestone' },
+      charcoalsoapstone: { tier: 2, price20slab: 687.41, price30slab: 928.05, name: 'Charcoal Soapstone', brand: 'Silestone' },
+      blancomaple: { tier: 1, price20slab: 535.91, price30slab: 723.76, name: 'Bianco Maple', brand: 'Silestone' },
+      linencream: { tier: 1, price20slab: 415.23, price30slab: 619.21, name: 'Linen Cream', brand: 'Silestone' },
+      persianwhite: { tier: 1, price20slab: 472.06, price30slab: 703.64, name: 'Persian White', brand: 'Silestone' },
+      miamiwhite: { tier: 2, price20slab: 624.95, price30slab: 843.73, name: 'Miami White', brand: 'Silestone' },
+      poblenou: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Poblenou', brand: 'Silestone' },
+      whitezeus: { tier: 3, price20slab: 985.29, price30slab: 1517.16, name: 'White Zeus', brand: 'Silestone' },
+      desertsilver: { tier: 1, price20slab: 509.18, price30slab: 689.61, name: 'Desert Silver', brand: 'Silestone' },
+      snowyibiza: { tier: 1, price20slab: 560.08, price30slab: 689.61, name: 'Snowy Ibiza', brand: 'Silestone' },
+      stellarblanco13: { tier: 2, price20slab: null, price30slab: 927.95, name: 'Stellar Blanco', brand: 'Silestone' },
+      siberian: { tier: 1, price20slab: 472.06, price30slab: 703.64, name: 'Siberian', brand: 'Silestone' },
+      etherealhaze: { tier: 4, price20slab: 1313.89, price30slab: 1838.90, name: 'Ethereal Haze', brand: 'Silestone' },
+      bronzerivers: { tier: 1, price20slab: 509.18, price30slab: 689.61, name: 'Bronze Rivers', brand: 'Silestone' },
+      lagoon: { tier: 1, price20slab: 472.06, price30slab: 639.69, name: 'Lagoon', brand: 'Silestone' },
+      nighttebas18: { tier: 1, price20slab: 536.88, price30slab: 724.79, name: 'Night Tebas', brand: 'Silestone' },
+      eclecticpearl: { tier: 5, price20slab: 1478.20, price30slab: 2068.79, name: 'Eclectic Pearl', brand: 'Silestone' },
+      marengo: { tier: 1, price20slab: 535.91, price30slab: 723.76, name: 'Marengo', brand: 'Silestone' },
+      etherealglow: { tier: 4, price20slab: 1026.05, price30slab: 1579.67, name: 'Ethereal Glow', brand: 'Silestone' },
+      pearljasmine: { tier: 4, price20slab: 1192.14, price30slab: 1517.11, name: 'Pearl Jasmine', brand: 'Silestone' },
+      limedelight: { tier: 2, price20slab: 687.46, price30slab: 928.10, name: 'Lime Delight', brand: 'Silestone' },
+      posidoniagreen: { tier: 4, price20slab: null, price30slab: 1517.16, name: 'Posidonia Green', brand: 'Silestone' },
+      etherealdusk: { tier: 4, price20slab: 1313.89, price30slab: 1838.90, name: 'Ethereal Dusk', brand: 'Silestone' },
+      victoriansilver: { tier: 5, price20slab: 1478.20, price30slab: 2068.79, name: 'Victorian Silver', brand: 'Silestone' },
+      concretepulse: { tier: 2, price20slab: 687.46, price30slab: 928.10, name: 'Concrete Pulse', brand: 'Silestone' },
+      rivirerose: { tier: 5, price20slab: 1478.20, price30slab: 2275.64, name: 'Rivière Rose', brand: 'Silestone' },
+      bohemianflame: { tier: 4, price20slab: 1269.81, price30slab: 1777.10, name: 'Bohemian Flame', brand: 'Silestone' },
+      rawa: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Raw A', brand: 'Silestone' },
+      parisienbleu: { tier: 5, price20slab: 1478.20, price30slab: 2068.79, name: 'Parisien Bleu', brand: 'Silestone' },
+      corktown: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Corktown', brand: 'Silestone' },
+      rawg: { tier: 4, price20slab: 1083.80, price30slab: 1517.16, name: 'Raw G', brand: 'Silestone' },
+      blancocity: { tier: 1, price20slab: 535.91, price30slab: null, name: 'Blanco City', brand: 'Silestone' }
+    };
+    
+    // Current test state
+    let testThickness = 20;
+    
     // ========== LOAD QUOTE DATA ==========
     // Try URL parameter first (most reliable), then localStorage, then sample data
     let quoteData;
     let dataSource = 'sample';
+    // Track which 3D view index to use for PDF (set by selectPdfView)
     
     // Check URL parameter
     const urlParams = new URLSearchParams(window.location.search);
@@ -1163,6 +1288,12 @@
         if (quoteData.material?.textureId) {
           swatchEl.style.backgroundImage = 
             `url('https://lh3.googleusercontent.com/d/${quoteData.material.textureId}=s400')`;
+          
+          // Apply cropping for brands with borders/watermarks
+          const brandCode = quoteData.material?.brandCode || quoteData.material?.key?.split('_')[0]?.toUpperCase();
+          const needsCrop = ['GLO', 'MOD', 'ART', 'NAT', 'CQS'].includes(brandCode);
+          swatchEl.style.backgroundSize = needsCrop ? '300%' : 'cover';
+          swatchEl.style.backgroundPosition = 'center';
         }
         // Always set background color as fallback
         swatchEl.style.backgroundColor = quoteData.material?.css || '#e8e8e8';
@@ -1346,11 +1477,14 @@
         // Set first image as main view
         mainImage.src = views[0].image;
         
-        // Create thumbnails
+        // Create thumbnails with "Use for PDF" option
         thumbnails.innerHTML = views.map((view, i) => `
-          <div class="view-thumb ${i === 0 ? 'active' : ''}" onclick="selectView(${i})">
-            <img src="${view.image}" alt="${view.name}">
+          <div class="view-thumb ${i === 0 ? 'active' : ''}" data-index="${i}">
+            <img src="${view.image}" alt="${view.name}" onclick="selectView(${i})">
             <div class="view-thumb-label">${view.name}</div>
+            <button class="use-for-pdf-thumb ${i === 0 ? 'selected' : ''}" onclick="selectPdfView(${i})" title="Use this view for PDF">
+              ${i === 0 ? '✓ PDF' : 'PDF'}
+            </button>
           </div>
         `).join('');
         
@@ -1360,6 +1494,9 @@
         init3D();  // Fallback
       }
     }
+    
+    // Track which 3D view to use for PDF (default: 0 = isometric)
+    let selectedPdfViewIndex = 0;
     
     function selectView(index) {
       const views = quoteData.render3dViews;
@@ -1372,6 +1509,49 @@
       document.querySelectorAll('.view-thumb').forEach((thumb, i) => {
         thumb.classList.toggle('active', i === index);
       });
+    }
+    
+    function selectPdfView(index) {
+      const views = quoteData.render3dViews;
+      if (!views || !views[index]) return;
+      
+      selectedPdfViewIndex = index;
+      
+      // Update all PDF buttons
+      document.querySelectorAll('.use-for-pdf-thumb').forEach((btn, i) => {
+        if (i === index) {
+          btn.textContent = '✓ PDF';
+          btn.classList.add('selected');
+        } else {
+          btn.textContent = 'PDF';
+          btn.classList.remove('selected');
+        }
+      });
+      
+      console.log('PDF view set to index:', index, '-', views[index].name);
+    }
+    
+    // 2D Plan view zoom controls
+    let plan2dZoom = 1;
+    
+    function zoomPlan2d(delta) {
+      const img = document.getElementById('plan2dImage');
+      if (!img) return;
+      
+      plan2dZoom = Math.max(0.5, Math.min(3, plan2dZoom + delta));
+      img.style.maxWidth = (100 * plan2dZoom) + '%';
+      img.style.width = 'auto';
+      img.dataset.zoom = plan2dZoom;
+    }
+    
+    function resetPlan2dZoom() {
+      const img = document.getElementById('plan2dImage');
+      if (!img) return;
+      
+      plan2dZoom = 1;
+      img.style.maxWidth = '100%';
+      img.style.width = 'auto';
+      img.dataset.zoom = 1;
     }
     
     function createPieceSVG(width, height, type) {
@@ -1415,16 +1595,35 @@
       let rows = '';
       let subtotal = 0;
       
-      // Base worktop price (slabs)
+      // Material cost (slabs)
       const slabs = quoteData.pricing.slabsUsed;
-      const worktopPrice = quoteData.pricing.firstSlab + (slabs - 1) * quoteData.pricing.additionalSlab;
-      subtotal += worktopPrice;
+      const materialPerSlab = quoteData.pricing.materialPerSlab || quoteData.material?.slabPrice || 0;
+      const materialCost = slabs * materialPerSlab;
       
+      // Fabrication cost
+      const fabricationCost = quoteData.pricing.firstSlab + (slabs - 1) * quoteData.pricing.additionalSlab;
+      
+      // Total worktop cost
+      const worktopTotal = materialCost + fabricationCost;
+      subtotal += worktopTotal;
+      
+      // Material row
+      if (materialPerSlab > 0) {
+        rows += `
+          <tr>
+            <td>Material Cost (${slabs} slab${slabs > 1 ? 's' : ''})</td>
+            <td>${quoteData.material.name} - ${quoteData.material.thickness}mm @ £${materialPerSlab.toFixed(2)}/slab</td>
+            <td class="amount">£${materialCost.toFixed(2)}</td>
+          </tr>
+        `;
+      }
+      
+      // Fabrication row
       rows += `
         <tr>
-          <td>Worktops (${slabs} slab${slabs > 1 ? 's' : ''})</td>
-          <td>${quoteData.material.name} - ${quoteData.material.thickness}mm</td>
-          <td class="amount">£${worktopPrice.toFixed(2)}</td>
+          <td>Fabrication & Install</td>
+          <td>£${quoteData.pricing.firstSlab} first + £${quoteData.pricing.additionalSlab} × ${Math.max(0, slabs-1)} additional</td>
+          <td class="amount">£${fabricationCost.toFixed(2)}</td>
         </tr>
       `;
       
@@ -1602,6 +1801,217 @@
       
       document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
       document.getElementById('totalPrice').textContent = '£' + total.toFixed(2);
+    }
+    
+    // ========== MATERIAL TEST FUNCTIONS ==========
+    let loadedPricing = null; // Store loaded JSON data
+    
+    function loadPricingJSON(input) {
+      const file = input.files[0];
+      if (!file) return;
+      
+      const statusEl = document.getElementById('loadStatus');
+      statusEl.textContent = 'Loading...';
+      statusEl.style.color = '#666';
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          loadedPricing = JSON.parse(e.target.result);
+          const count = Object.keys(loadedPricing).length;
+          statusEl.textContent = `✓ Loaded ${count} materials`;
+          statusEl.style.color = '#2e7d32';
+          
+          // Merge with built-in pricing
+          Object.assign(MATERIAL_PRICING, loadedPricing);
+          
+          // Repopulate dropdown
+          populateMaterialDropdown();
+        } catch (err) {
+          statusEl.textContent = '✗ Invalid JSON: ' + err.message;
+          statusEl.style.color = '#c62828';
+        }
+      };
+      reader.readAsText(file);
+    }
+    
+    // Auto-fetch materials_pricing.json from same folder
+    async function autoLoadPricingJSON() {
+      const statusEl = document.getElementById('loadStatus');
+      
+      try {
+        if (statusEl) {
+          statusEl.textContent = 'Loading...';
+          statusEl.style.color = '#666';
+        }
+        
+        const response = await fetch('materials_pricing.json');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        loadedPricing = await response.json();
+        const count = Object.keys(loadedPricing).length;
+        
+        if (statusEl) {
+          statusEl.textContent = `✓ ${count} materials`;
+          statusEl.style.color = '#2e7d32';
+        }
+        
+        // Merge with built-in pricing
+        Object.assign(MATERIAL_PRICING, loadedPricing);
+        
+        // Repopulate dropdown
+        populateMaterialDropdown();
+        
+        console.log('Auto-loaded materials_pricing.json');
+        return true;
+      } catch (err) {
+        console.warn('Could not auto-load materials_pricing.json:', err.message);
+        if (statusEl) {
+          statusEl.textContent = 'Load JSON →';
+          statusEl.style.color = '#e65100';
+        }
+        return false;
+      }
+    }
+    
+    function populateMaterialDropdown() {
+      const select = document.getElementById('testMaterialSelect');
+      if (!select) return;
+      
+      // Clear existing options
+      select.innerHTML = '<option value="">-- Select Material --</option>';
+      
+      // Sort materials by brand then tier then name
+      const sortedMaterials = Object.entries(MATERIAL_PRICING)
+        .filter(([k, v]) => v.name) // Only include items with names
+        .sort((a, b) => {
+          // First by brand
+          const brandA = a[1].brand || 'ZZZ';
+          const brandB = b[1].brand || 'ZZZ';
+          if (brandA !== brandB) return brandA.localeCompare(brandB);
+          // Then by tier
+          if (a[1].tier !== b[1].tier) return a[1].tier - b[1].tier;
+          // Then by name
+          return a[1].name.localeCompare(b[1].name);
+        });
+      
+      // Group by brand
+      let currentBrand = '';
+      sortedMaterials.forEach(([key, mat]) => {
+        const brand = mat.brand || 'Other';
+        if (brand !== currentBrand) {
+          currentBrand = brand;
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = `━━ ${brand} ━━`;
+          select.appendChild(optgroup);
+        }
+        const option = document.createElement('option');
+        option.value = key;
+        const tierSymbol = '£'.repeat(mat.tier || 1);
+        const price20 = mat.price20slab ? `£${mat.price20slab}` : '-';
+        const price30 = mat.price30slab ? `£${mat.price30slab}` : '-';
+        option.textContent = `${tierSymbol} ${mat.name} (20mm: ${price20} | 30mm: ${price30})`;
+        // Mark current material
+        if (quoteData.material?.key === key) {
+          option.selected = true;
+        }
+        select.lastElementChild.appendChild(option);
+      });
+      
+      // Show count
+      const statusEl = document.getElementById('loadStatus');
+      if (statusEl && !statusEl.textContent.includes('Loaded')) {
+        statusEl.textContent = `${sortedMaterials.length} materials available`;
+      }
+      
+      // Set thickness to match quote
+      const thickSelect = document.getElementById('testThicknessSelect');
+      if (thickSelect && quoteData.material?.thickness) {
+        thickSelect.value = quoteData.material.thickness;
+        testThickness = quoteData.material.thickness;
+      }
+      
+      // Show current price info
+      updateTestPriceInfo();
+    }
+    
+    function changeTestMaterial(key) {
+      if (!key || !MATERIAL_PRICING[key]) return;
+      
+      const mat = MATERIAL_PRICING[key];
+      const slabPrice = testThickness === 30 ? mat.price30slab : mat.price20slab;
+      
+      // Update quoteData
+      quoteData.material.key = key;
+      quoteData.material.name = mat.name;
+      quoteData.material.brand = mat.brand;
+      quoteData.material.brandCode = mat.brandCode;  // For cropping logic
+      quoteData.material.tier = mat.tier;
+      quoteData.material.slabPrice = slabPrice;
+      quoteData.material.textureId = mat.textureId || null;
+      quoteData.pricing.materialPerSlab = slabPrice;
+      
+      // Update display
+      document.getElementById('materialName').textContent = mat.name;
+      document.getElementById('materialBrand').textContent = `${mat.brand} • ${mat.type || 'Quartz'}`;
+      
+      const tierEl = document.getElementById('materialTier');
+      tierEl.textContent = '£'.repeat(mat.tier || 1);
+      tierEl.className = 'tier-badge tier-' + (mat.tier || 1);
+      
+      // Update swatch if texture available
+      const swatchEl = document.getElementById('materialSwatch');
+      if (mat.textureId) {
+        swatchEl.style.backgroundImage = `url('https://lh3.googleusercontent.com/d/${mat.textureId}=s400')`;
+        
+        // Apply cropping for brands with borders/watermarks
+        const needsCrop = ['GLO', 'MOD', 'ART', 'NAT', 'CQS'].includes(mat.brandCode);
+        swatchEl.style.backgroundSize = needsCrop ? '300%' : 'cover';
+        swatchEl.style.backgroundPosition = 'center';
+      } else {
+        swatchEl.style.backgroundImage = 'none';
+        swatchEl.style.backgroundColor = '#e8e8e8';
+      }
+      
+      // Refresh pricing table
+      populatePricing();
+      updateTestPriceInfo();
+    }
+    
+    function changeTestThickness(thickness) {
+      testThickness = thickness;
+      quoteData.material.thickness = thickness;
+      document.getElementById('materialThickness').textContent = thickness + 'mm';
+      
+      // Recalculate with new thickness
+      const key = quoteData.material?.key;
+      if (key && MATERIAL_PRICING[key]) {
+        const mat = MATERIAL_PRICING[key];
+        const slabPrice = thickness === 30 ? mat.price30slab : mat.price20slab;
+        quoteData.material.slabPrice = slabPrice;
+        quoteData.pricing.materialPerSlab = slabPrice;
+      }
+      
+      populatePricing();
+      updateTestPriceInfo();
+    }
+    
+    function updateTestPriceInfo() {
+      const infoEl = document.getElementById('testPriceInfo');
+      if (!infoEl) return;
+      
+      const slabs = quoteData.pricing?.slabsUsed || 1;
+      const matPrice = quoteData.pricing?.materialPerSlab || 0;
+      const fabPrice = quoteData.pricing?.firstSlab + (slabs - 1) * quoteData.pricing?.additionalSlab || 0;
+      
+      if (matPrice > 0) {
+        const total = (slabs * matPrice) + fabPrice;
+        infoEl.innerHTML = `<strong>${slabs} slabs</strong> × £${matPrice.toFixed(2)} = £${(slabs * matPrice).toFixed(2)} material + £${fabPrice.toFixed(2)} fab = <strong style="color:#2e7d32;">£${total.toFixed(2)}</strong>`;
+      } else {
+        infoEl.innerHTML = '<span style="color:#ff9800;">No price for this thickness</span>';
+      }
     }
     
     // ========== 3D RENDERING ==========
@@ -2121,6 +2531,9 @@
       const thumbs = document.getElementById('viewThumbnails');
       if (thumbs) thumbs.style.display = 'none';
       
+      // Hide the "Use for PDF" buttons
+      document.querySelectorAll('.use-for-pdf-thumb').forEach(btn => btn.style.display = 'none');
+      
       // Reduce header padding for PDF
       const header = document.querySelector('.header');
       const originalHeaderPadding = header?.style.padding;
@@ -2130,9 +2543,20 @@
         header.style.marginBottom = '10px';
       }
       
-      // Adjust render container for PDF - BIG 3D only
+      // Handle image for PDF - always show selected 3D view, hide 2D
       const renderContainer = document.getElementById('renderContainer');
+      const plan2dContainer = document.getElementById('plan2dContainer');
+      const image3dWrapper = document.getElementById('image3dWrapper');
       const originalRenderHeight = renderContainer?.style.height;
+      const originalPlan2dDisplay = plan2dContainer?.style.display;
+      const original3dWrapperDisplay = image3dWrapper?.style.display;
+      
+      console.log('PDF generation - using 3D view index:', selectedPdfViewIndex);
+      
+      // Hide 2D plan view for PDF
+      if (plan2dContainer) plan2dContainer.style.display = 'none';
+      
+      // Configure 3D container for PDF
       if (renderContainer) {
         renderContainer.style.height = '380px';
         renderContainer.style.minHeight = '380px';
@@ -2146,7 +2570,7 @@
         }
       }
       
-      // 2D plan view - hidden in PDF (kept for screen)
+      // 2D plan view reference for restore
       const plan2dImage = document.getElementById('plan2dImage');
       const originalPlan2dMaxHeight = plan2dImage?.style.maxHeight;
       
@@ -2160,21 +2584,14 @@
         materialInfo.style.alignItems = 'flex-start';
       }
       
-      // Hide 2D image in PDF - only show 3D
-      const plan2dContainer = document.getElementById('plan2dContainer');
-      const originalPlan2dDisplay = plan2dContainer?.style.display;
-      if (plan2dContainer) {
-        plan2dContainer.style.display = 'none';
-      }
-      
-      // Images row - single column for 3D only
+      // Images row - single column for selected view
       const imagesRow = document.getElementById('imagesRow');
       const originalImagesRowStyle = imagesRow?.style.flexDirection;
       if (imagesRow) {
         imagesRow.style.display = 'block';
       }
       
-      // Image wrappers - full width for 3D
+      // Image wrappers - full width
       const imageWrappers = document.querySelectorAll('.image-wrapper');
       imageWrappers.forEach(wrapper => {
         wrapper.style.flex = '';
@@ -2182,9 +2599,13 @@
         wrapper.style.width = '100%';
       });
       
-      // Hide image labels for PDF
-      const imageLabels = document.querySelectorAll('.image-wrapper > div[style*="font-size:12px"]');
-      imageLabels.forEach(label => label.style.display = 'none');
+      // Hide image labels and Use for PDF buttons in PDF
+      const imageLabels = document.querySelectorAll('.image-wrapper > div:first-child');
+      imageLabels.forEach(label => {
+        if (label.style.cssText.includes('font-size:12px') || label.style.cssText.includes('display:flex')) {
+          label.style.display = 'none';
+        }
+      });
       
       // Customer card - keep visible if has data, hide only if empty
       const customerCard = document.getElementById('customerCard');
@@ -2194,11 +2615,13 @@
         customerCard.style.display = 'none';
       }
       
-      // If using image gallery, ensure isometric (first) view is shown
+      // Set the selected 3D view image for PDF
       const mainImage = document.getElementById('mainViewImage');
       if (quoteData.render3dViews && quoteData.render3dViews.length > 0 && mainImage) {
-        // Set to isometric view (index 0) for PDF
-        mainImage.src = quoteData.render3dViews[0].image;
+        // Use the selected view index (default: 0 = isometric)
+        const viewIndex = Math.min(selectedPdfViewIndex, quoteData.render3dViews.length - 1);
+        mainImage.src = quoteData.render3dViews[viewIndex].image;
+        console.log('Set PDF image to view:', viewIndex, '-', quoteData.render3dViews[viewIndex].name);
       }
       
       // Hide interactive elements
@@ -2258,6 +2681,14 @@
         if (thumbs) thumbs.style.display = 'flex';
         if (resetBtn) resetBtn.style.display = 'block';
         if (acceptSection) acceptSection.style.display = 'block';
+        
+        // Restore Use for PDF buttons
+        document.querySelectorAll('.use-for-pdf-thumb').forEach(btn => btn.style.display = '');
+        
+        // Restore 3D wrapper
+        if (image3dWrapper) {
+          image3dWrapper.style.display = original3dWrapperDisplay || 'block';
+        }
         if (renderContainer) {
           renderContainer.style.height = originalRenderHeight || '400px';
           renderContainer.style.minHeight = '';
@@ -2270,11 +2701,24 @@
           }
         }
         if (plan2dImage) {
-          plan2dImage.style.maxHeight = originalPlan2dMaxHeight || '300px';
+          plan2dImage.style.maxHeight = originalPlan2dMaxHeight || '';
+          plan2dImage.style.width = '';
+          plan2dImage.style.maxWidth = '100%';
+          plan2dImage.style.height = 'auto';
+        }
+        // Restore 2D inner container
+        const plan2dInner = document.getElementById('plan2dInnerContainer');
+        if (plan2dInner) {
+          plan2dInner.style.maxHeight = '500px';
+          plan2dInner.style.overflow = 'auto';
         }
         // Restore 2D container visibility
         if (plan2dContainer) {
           plan2dContainer.style.display = originalPlan2dDisplay || 'block';
+        }
+        // Restore 3D wrapper
+        if (image3dWrapper) {
+          image3dWrapper.style.display = original3dWrapperDisplay || 'block';
         }
         if (materialInfo) {
           materialInfo.style.display = originalMaterialInfoDisplay || 'grid';
@@ -2480,6 +2924,12 @@
     // Initialize
     applyBranding();
     populatePage();
+    
+    // Auto-load materials pricing JSON, then populate dropdown
+    autoLoadPricingJSON().then(() => {
+      console.log('Materials loaded, dropdown populated');
+    });
+    
     preloadImagesForPDF(); // Pre-load images as base64 for PDF export
   </script>
 </body>

@@ -138,8 +138,15 @@
       <button class="tool-btn" onclick="rotateSelected()">↻ Rotate</button>
       <button class="tool-btn" onclick="deleteSelected()">🗑 Delete</button>
     </div>
-    <div class="tool-group">
+    <div class="tool-group" style="display:flex;align-items:center;gap:10px;">
       <button onclick="showMaterialModal()" style="padding:8px 16px;background:#ff9800;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:0 2px 4px rgba(0,0,0,0.2);" onmouseover="this.style.background='#f57c00'" onmouseout="this.style.background='#ff9800'">🎨 Select Material</button>
+      <div id="currentMaterialDisplay" style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:#f5f5f5;border-radius:6px;border:1px solid #ddd;">
+        <div id="currentMatSwatch" style="width:28px;height:28px;border-radius:4px;background:#ccc;border:1px solid #aaa;"></div>
+        <div>
+          <div id="currentMatName" style="font-size:12px;font-weight:600;color:#333;">No material selected</div>
+          <div id="currentMatBrand" style="font-size:10px;color:#666;"></div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -259,7 +266,7 @@
               <input type="number" id="slabHeightInput" value="1600" style="width:70px;padding:4px;border:1px solid #ccc;border-radius:4px;" onchange="renderSlabLayout()">
             </div>
           </div>
-          <div style="margin-top:4px;font-size:9px;color:#999;">Default: 3200×1600mm (Quartz/Dekton)</div>
+          <div style="margin-top:4px;font-size:9px;color:#999;">Default: 3200×1600mm (Natural Stone: 3200×1900)</div>
         </div>
         
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee;">
@@ -576,7 +583,7 @@
             <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
           </div>
           <div onclick="setBrandFilter('GLO')" class="brand-logo-btn" data-brand="GLO" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Global Granite">
-            <img src="https://lh3.googleusercontent.com/d/1hZuVaZoVR4fcPIlZNoDQCgXBc5r-Oh17=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            <img src="https://lh3.googleusercontent.com/d/14ZsCCuxLnjCcVaWM0LA5O0n9Pkva4cYq=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
           <div onclick="setBrandFilter('CQS')" class="brand-logo-btn" data-brand="CQS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Classic Quartz">
             <img src="https://lh3.googleusercontent.com/d/1q_3OAIMDWym_zBMhqwFtdaBhFKpihsKl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
@@ -589,6 +596,9 @@
           </div>
           <div onclick="setBrandFilter('NAT')" class="brand-logo-btn" data-brand="NAT" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Natural Stone">
             <img src="https://lh3.googleusercontent.com/d/1mdHLk0qRIDBt4EGneLpPLi3iA8vpk_Fw=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+          </div>
+          <div onclick="setBrandFilter('HOR')" class="brand-logo-btn" data-brand="HOR" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Horizon Stone">
+            <img src="https://lh3.googleusercontent.com/d/1J6p-NlkoyZ5WKS8nxF5Pgz4IQ6fQ0M1l=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
           </div>
         </div>
       </div>
@@ -614,8 +624,12 @@
       </div>
       
       <!-- Search -->
-      <div style="margin-bottom:12px;">
-        <input type="text" id="materialSearch" placeholder="Search materials..." style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:14px;box-sizing:border-box;" oninput="filterMaterialsNew()">
+      <div style="margin-bottom:12px;display:flex;gap:12px;align-items:center;">
+        <input type="text" id="materialSearch" placeholder="Search materials..." style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:14px;box-sizing:border-box;" oninput="filterMaterialsNew()">
+        <div style="display:flex;align-items:center;gap:8px;background:#e8f5e9;padding:6px 12px;border-radius:6px;border:1px solid #4CAF50;">
+          <span id="pricingLoadStatus" style="font-size:11px;color:#2e7d32;font-weight:500;">Loading...</span>
+          <input type="file" id="pricingJsonInput" accept=".json" onchange="loadPricingJSON(this)" style="font-size:10px;max-width:120px;" title="Override with different JSON">
+        </div>
       </div>
       
       <div id="materialCount" style="font-size:11px;color:#666;margin-bottom:8px;">Showing 84 materials</div>
@@ -635,11 +649,12 @@
             <div style="display:flex;gap:12px;margin-top:4px;">
               <div id="selectedMatBrand" style="font-size:12px;color:#666;"></div>
               <div id="selectedMatThickness" style="font-size:12px;color:#666;font-weight:600;"></div>
+              <div id="selectedMatPrice" style="font-size:12px;font-weight:600;"></div>
             </div>
           </div>
           <div id="selectedMatTier" style="font-size:24px;font-weight:700;"></div>
           <div style="display:flex;gap:8px;margin-left:16px;">
-            <button onclick="closeMaterialModal()" style="background:#ffebee;border:2px solid #c62828;color:#c62828;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Cancel</button>
+            <button onclick="clearMaterialSelection()" style="background:#ffebee;border:2px solid #c62828;color:#c62828;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Clear Selection</button>
             <button id="confirmMaterialBtn" onclick="confirmMaterial()" style="background:#4CAF50;border:2px solid #388E3C;color:white;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">OK - Use This Material</button>
           </div>
         </div>
@@ -713,9 +728,11 @@ const TEXTURE_CROP_CONFIG = {
   'SIL': { crop: 0, offset: 0, repeat: 1 },       // Silestone - clean images, no crop
   'GLO': { crop: 0.20, offset: 0.20, repeat: 0.60 }, // Global - 20% crop
   'MOD': { crop: 0.20, offset: 0.20, repeat: 0.60 }, // Modern Quartz - 20% crop
+  'ART': { crop: 0.20, offset: 0.20, repeat: 0.60 }, // Artemis - 20% crop (has border)
+  'NAT': { crop: 0.20, offset: 0.20, repeat: 0.60 }, // Natural Stone - 20% crop (watermark)
+  'CQS': { crop: 0.20, offset: 0.20, repeat: 0.60 }, // Classic Quartz - 20% crop (watermark)
   'COS': { crop: 0, offset: 0, repeat: 1 },       // Cosy Stone - clean images
   'DEK': { crop: 0, offset: 0, repeat: 1 },       // Dekton - clean images
-  'NAT': { crop: 0, offset: 0, repeat: 1 },       // Natural Stone - TBD
   'default': { crop: 0, offset: 0, repeat: 1 }    // Default - no crop
 };
 
@@ -821,8 +838,99 @@ const MATERIAL_COLORS = {
   mod_calacattaoro: { name: 'Calacatta Oro (Modern)', color: 0xfaf8f0, css: '#faf8f0', cssSelected: '#eae8e0', roughness: 0.1, textureId: '1H1ljkUTlrQ4IoI2lvFqeNUyUUFkbl3kb', brand: 'MOD' }
 };
 
-let selectedMaterial = 'ariel';
+// Material pricing data (from Silestone price list)
+// tier: 1-5 (£ to £££££), prices in GBP
+const MATERIAL_PRICING = {
+  jardinemerald: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: 444.46, price30slab: 2275.64 },
+  stellarnight: { tier: 2, price20sqm: 134.27, price20slab: 687.46, price30sqm: 181.24, price30slab: 927.95 },
+  versaillesivory: { tier: 4, price20sqm: 225.46, price20slab: 1154.36, price30sqm: 315.54, price30slab: 1615.56 },
+  calacattatova: { tier: 2, price20sqm: 134.26, price20slab: 687.41, price30sqm: null, price30slab: null },
+  romanticash: { tier: 5, price20sqm: 317.51, price20slab: 1625.65, price30sqm: 444.46, price30slab: 2275.64 },
+  lyra: { tier: 2, price20sqm: 122.06, price20slab: 624.95, price30sqm: 164.79, price30slab: 843.73 },
+  coralclaycolour: { tier: 1, price20sqm: 101.43, price20slab: 519.32, price30sqm: 124.94, price30slab: 639.69 },
+  ariel: { tier: 2, price20sqm: 147.69, price20slab: 756.17, price30sqm: 181.24, price30slab: 927.95 },
+  motiongrey: { tier: 1, price20sqm: 89.21, price20slab: 456.75, price30sqm: 120.94, price30slab: 619.21 },
+  etmarquina: { tier: 4, price20sqm: 211.67, price20slab: 1083.75, price30sqm: 296.31, price30slab: 1517.11 },
+  cindercraze: { tier: 2, price20sqm: 134.27, price20slab: 687.46, price30sqm: 181.27, price30slab: 928.10 },
+  farowhite: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  etherealnoctis: { tier: 4, price20sqm: 256.62, price20slab: 1313.89, price30sqm: 359.16, price30slab: 1838.90 },
+  nolita: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  blanclyse: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: 404.06, price30slab: 2068.79 },
+  halcyon: { tier: 2, price20sqm: 134.26, price20slab: 687.41, price30sqm: 181.24, price30slab: 927.95 },
+  biancocalacatta: { tier: 2, price20sqm: 134.26, price20slab: 687.41, price30sqm: 181.24, price30slab: 927.95 },
+  chteaubrown: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: null, price30slab: null },
+  rougui: { tier: 1, price20sqm: null, price20slab: null, price30sqm: 141.36, price30slab: 723.76 },
+  etnoir: { tier: 4, price20sqm: 200.40, price20slab: 1026.05, price30sqm: 308.53, price30slab: 1579.67 },
+  brassrelish: { tier: 2, price20sqm: 134.27, price20slab: 687.46, price30sqm: 181.27, price30slab: 928.10 },
+  lusso: { tier: 2, price20sqm: 134.26, price20slab: 687.41, price30sqm: 181.24, price30slab: 927.95 },
+  rawd: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  etcalacattagold: { tier: 4, price20sqm: 200.40, price20slab: 1026.05, price30sqm: 280.48, price30slab: 1436.06 },
+  whitearabesque: { tier: 1, price20sqm: 99.45, price20slab: 509.18, price30sqm: 134.69, price30slab: 689.61 },
+  whitestorm14: { tier: 1, price20sqm: 104.67, price20slab: 535.91, price30sqm: 141.36, price30slab: 723.76 },
+  blancoorion: { tier: 3, price20sqm: 192.44, price20slab: 985.29, price30sqm: null, price30slab: null },
+  miamivena: { tier: 1, price20sqm: 99.45, price20slab: 509.18, price30sqm: 134.69, price30slab: 689.61 },
+  blanconorte14: { tier: 1, price20sqm: 104.67, price20slab: 535.91, price30sqm: 141.36, price30slab: 723.76 },
+  classiccalacatta: { tier: 2, price20sqm: 134.26, price20slab: 687.41, price30sqm: 181.24, price30slab: 927.95 },
+  grisexpo: { tier: 1, price20sqm: 104.67, price20slab: 535.91, price30sqm: 141.36, price30slab: 723.76 },
+  etstatuario: { tier: 3, price20sqm: 150.28, price20slab: 769.43, price30sqm: 231.41, price30slab: 1184.82 },
+  charcoalsoapstone: { tier: 2, price20sqm: 134.26, price20slab: 687.41, price30sqm: 181.26, price30slab: 928.05 },
+  blancomaple: { tier: 1, price20sqm: 104.67, price20slab: 535.91, price30sqm: 141.36, price30slab: 723.76 },
+  linencream: { tier: 1, price20sqm: 81.10, price20slab: 415.23, price30sqm: 120.94, price30slab: 619.21 },
+  persianwhite: { tier: 1, price20sqm: 92.20, price20slab: 472.06, price30sqm: 137.43, price30slab: 703.64 },
+  miamiwhite: { tier: 2, price20sqm: 122.06, price20slab: 624.95, price30sqm: 164.79, price30slab: 843.73 },
+  poblenou: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  whitezeus: { tier: 3, price20sqm: 192.44, price20slab: 985.29, price30sqm: 296.32, price30slab: 1517.16 },
+  desertsilver: { tier: 1, price20sqm: 99.45, price20slab: 509.18, price30sqm: 134.69, price30slab: 689.61 },
+  snowyibiza: { tier: 1, price20sqm: 109.39, price20slab: 560.08, price30sqm: 134.69, price30slab: 689.61 },
+  stellarblanco13: { tier: 2, price20sqm: null, price20slab: null, price30sqm: 181.24, price30slab: 927.95 },
+  siberian: { tier: 1, price20sqm: 92.20, price20slab: 472.06, price30sqm: 137.43, price30slab: 703.64 },
+  etherealhaze: { tier: 4, price20sqm: 256.62, price20slab: 1313.89, price30sqm: 359.16, price30slab: 1838.90 },
+  bronzerivers: { tier: 1, price20sqm: 99.45, price20slab: 509.18, price30sqm: 134.69, price30slab: 689.61 },
+  lagoon: { tier: 1, price20sqm: 92.20, price20slab: 472.06, price30sqm: 124.94, price30slab: 639.69 },
+  nighttebas18: { tier: 1, price20sqm: 104.86, price20slab: 536.88, price30sqm: 141.56, price30slab: 724.79 },
+  eclecticpearl: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: 404.06, price30slab: 2068.79 },
+  marengo: { tier: 1, price20sqm: 104.67, price20slab: 535.91, price30sqm: 141.36, price30slab: 723.76 },
+  etherealglow: { tier: 4, price20sqm: 200.40, price20slab: 1026.05, price30sqm: 308.53, price30slab: 1579.67 },
+  pearljasmine: { tier: 4, price20sqm: 232.84, price20slab: 1192.14, price30sqm: 296.31, price30slab: 1517.11 },
+  limedelight: { tier: 2, price20sqm: 134.27, price20slab: 687.46, price30sqm: 181.27, price30slab: 928.10 },
+  posidoniagreen: { tier: 4, price20sqm: null, price20slab: null, price30sqm: 296.32, price30slab: 1517.16 },
+  etherealdusk: { tier: 4, price20sqm: 256.62, price20slab: 1313.89, price30sqm: 359.16, price30slab: 1838.90 },
+  victoriansilver: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: 404.06, price30slab: 2068.79 },
+  concretepulse: { tier: 2, price20sqm: 134.27, price20slab: 687.46, price30sqm: 181.27, price30slab: 928.10 },
+  rivirerose: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: 444.46, price30slab: 2275.64 },
+  bohemianflame: { tier: 4, price20sqm: 248.01, price20slab: 1269.81, price30sqm: 347.09, price30slab: 1777.10 },
+  rawa: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  parisienbleu: { tier: 5, price20sqm: 288.71, price20slab: 1478.20, price30sqm: 404.06, price30slab: 2068.79 },
+  corktown: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  rawg: { tier: 4, price20sqm: 211.68, price20slab: 1083.80, price30sqm: 296.32, price30slab: 1517.16 },
+  blancocity: { tier: 1, price20sqm: 104.67, price20slab: 535.91, price30sqm: null, price30slab: null },
+  // Additional materials with estimated tiers (no CSV pricing yet)
+  calacattathemis: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  calypso: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  camden: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  cincelgrey: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  coppermist: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  etbella: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  etdor: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  etmarfil: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  etherealindigo: { tier: 4, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  ffrom01: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  ffrom02: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  ffrom03: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  helix: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  miamioro: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  oceanjasperf: { tier: 4, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  oceanstorm: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  pietra: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  calablue: { tier: 3, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  toscanacream: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null },
+  yukon: { tier: 2, price20sqm: null, price20slab: null, price30sqm: null, price30slab: null }
+};
+
+// Selected thickness for pricing (20 or 30mm)
+let selectedThickness = 20;
 let pendingMaterial = null; // Material being previewed before confirmation
+let selectedMaterial = null; // Currently confirmed material
 
 // Material filter state
 let currentBrandFilter = 'all';
@@ -2572,6 +2680,153 @@ function updateTierFilterButtons() {
   container.innerHTML = html;
 }
 
+// ========== LOAD PRICING JSON ==========
+function loadPricingJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const statusEl = document.getElementById('pricingLoadStatus');
+  if (statusEl) {
+    statusEl.textContent = 'Loading...';
+    statusEl.style.color = '#666';
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      loadMaterialsFromData(data);
+      
+      // Save to sessionStorage for persistence
+      try {
+        sessionStorage.setItem('materials_pricing_json', e.target.result);
+        console.log('Saved materials to sessionStorage');
+      } catch (storageErr) {
+        console.warn('Could not save to sessionStorage:', storageErr);
+      }
+      
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = '✗ Error';
+        statusEl.style.color = '#c62828';
+      }
+      console.error('Failed to load pricing JSON:', err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Load materials from data object (used by both file load and sessionStorage restore)
+function loadMaterialsFromData(data) {
+  const statusEl = document.getElementById('pricingLoadStatus');
+  const count = Object.keys(data).length;
+  
+  // CLEAR existing materials and pricing - REPLACE don't add
+  Object.keys(MATERIAL_COLORS).forEach(key => delete MATERIAL_COLORS[key]);
+  Object.keys(MATERIAL_PRICING).forEach(key => delete MATERIAL_PRICING[key]);
+  
+  // Load fresh from data
+  Object.entries(data).forEach(([key, mat]) => {
+    // Tier should already be 1-5 from JSON, but cap just in case
+    let tier = mat.tier || 2;
+    if (tier > 5) tier = 5;
+    
+    // Add to MATERIAL_PRICING
+    MATERIAL_PRICING[key] = {
+      tier: tier,
+      price20sqm: null,
+      price20slab: mat.price20slab,
+      price30sqm: null,
+      price30slab: mat.price30slab
+    };
+    
+    // Add to MATERIAL_COLORS
+    MATERIAL_COLORS[key] = {
+      name: mat.name,
+      color: 0xe8e8e8,
+      css: '#e8e8e8',
+      cssSelected: '#d0d0d0',
+      roughness: 0.15,
+      textureId: mat.textureId || null,
+      brand: mat.brandCode || 'OTH',
+      tier: tier,
+      type: mat.type || 'Quartz',
+      finish: mat.finish || 'Polished',
+      thickness: mat.price20slab && mat.price30slab ? [20, 30] : 
+                 mat.price20slab ? [20] : 
+                 mat.price30slab ? [30] : [20, 30]
+    };
+  });
+  
+  // Clear selected material since old one may not exist
+  selectedMaterial = null;
+  pendingMaterial = null;
+  updateCurrentMaterialDisplay();
+  
+  if (statusEl) {
+    statusEl.textContent = `✓ ${count} materials`;
+    statusEl.style.color = '#2e7d32';
+  }
+  
+  // Refresh the material grid
+  filterMaterialsNew();
+  
+  console.log(`Loaded ${count} materials (replaced existing)`);
+}
+
+// Restore materials from sessionStorage on page load
+function restoreMaterialsFromStorage() {
+  try {
+    const stored = sessionStorage.getItem('materials_pricing_json');
+    if (stored) {
+      const data = JSON.parse(stored);
+      loadMaterialsFromData(data);
+      console.log('Restored materials from sessionStorage');
+      return true;
+    }
+  } catch (err) {
+    console.warn('Could not restore from sessionStorage:', err);
+  }
+  return false;
+}
+
+// Auto-fetch materials_pricing.json from same folder
+async function autoLoadPricingJSON() {
+  const statusEl = document.getElementById('pricingLoadStatus');
+  
+  try {
+    if (statusEl) {
+      statusEl.textContent = 'Loading...';
+      statusEl.style.color = '#666';
+    }
+    
+    const response = await fetch('materials_pricing.json');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    loadMaterialsFromData(data);
+    
+    // Save to sessionStorage for persistence
+    try {
+      sessionStorage.setItem('materials_pricing_json', JSON.stringify(data));
+    } catch (storageErr) {
+      console.warn('Could not save to sessionStorage:', storageErr);
+    }
+    
+    console.log('Auto-loaded materials_pricing.json');
+    return true;
+  } catch (err) {
+    console.warn('Could not auto-load materials_pricing.json:', err.message);
+    if (statusEl) {
+      statusEl.textContent = 'Load JSON →';
+      statusEl.style.color = '#e65100';
+    }
+    return false;
+  }
+}
+
 function setTierFilter(tier) {
   currentTierFilter = tier;
   
@@ -2645,22 +2900,40 @@ function filterMaterialsNew() {
     
     // Filter by tier
     if (tierFilter !== 'all') {
-      const tierSymbol = mat.tier ? '£'.repeat(mat.tier) : '£';
+      const pricing = MATERIAL_PRICING[key];
+      const tier = pricing ? pricing.tier : (mat.tier || 1);
+      const tierSymbol = '£'.repeat(tier);
       if (tierSymbol !== tierFilter) return;
     }
     
-    // Filter by thickness
+    // Filter by thickness - don't filter, but mark unavailable
+    const pricing = MATERIAL_PRICING[key];
     const thicknesses = mat.thickness || [20, 30];
-    if (!thicknesses.includes(worktopThickness)) return;
+    // Check actual price availability - explicitly check for number > 0
+    const has20 = pricing && pricing.price20slab > 0 ? true : 
+                  !pricing && thicknesses.includes(20);
+    const has30 = pricing && pricing.price30slab > 0 ? true : 
+                  !pricing && thicknesses.includes(30);
+    const hasCurrentThickness = worktopThickness === 20 ? has20 : has30;
+    
+    // Only skip if NO thickness is available at all
+    if (!has20 && !has30) return;
     
     count++;
     
-    const isSelected = key === pendingMaterial;
-    const borderColor = isSelected ? '#4CAF50' : '#ddd';
-    const bgColor = isSelected ? '#e8f5e9' : 'white';
+    // Check if this is the currently selected OR pending material
+    const isCurrentSelection = key === selectedMaterial;
+    const isPending = key === pendingMaterial;
+    const borderColor = isPending ? '#4CAF50' : isCurrentSelection ? '#2196F3' : '#ddd';
+    const bgColor = isPending ? '#e8f5e9' : isCurrentSelection ? '#e3f2fd' : 'white';
     
-    // Thumbnail with cropping
-    const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD';
+    // Grey out if current thickness not available
+    const isGreyedOut = !hasCurrentThickness;
+    const opacity = isGreyedOut ? '0.4' : '1';
+    const pointerEvents = isGreyedOut ? 'none' : 'auto';
+    
+    // Thumbnail with cropping - ART (Artemis) also needs cropping
+    const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD' || mat.brand === 'ART' || mat.brand === 'NAT' || mat.brand === 'CQS';
     const bgSize = needsCrop ? '300%' : 'cover';
     const thumbnailUrl = mat.textureId ? 
       `https://lh3.googleusercontent.com/d/${mat.textureId}=s200` : '';
@@ -2669,19 +2942,46 @@ function filterMaterialsNew() {
       `background-image:url('${thumbnailUrl}');background-size:${bgSize};background-position:center;` :
       `background:${mat.css};`;
     
-    // Price tier display
-    const tier = mat.tier || 1;
+    // Price tier display - get from MATERIAL_PRICING
+    const tier = pricing ? pricing.tier : (mat.tier || 1);
     const tierHTML = getTierHTML(tier);
     
-    // Material type
-    const matType = materialTypes[mat.brand] || 'Stone';
+    // Material type - for NAT use actual type (Granite/Quartzite), for others use brand mapping
+    const matType = mat.brand === 'NAT' ? (mat.type || 'Natural Stone') : (materialTypes[mat.brand] || mat.type || 'Stone');
+    
+    // Finish (Polished, Honed, etc.) - with color coding
+    const finish = mat.finish || 'Polished';
+    const finishColors = {
+      'Honed': { bg: '#e3f2fd', color: '#1565c0' },
+      'Suede': { bg: '#fce4ec', color: '#c2185b' },
+      'Leather': { bg: '#fff3e0', color: '#e65100' },
+      'Matte': { bg: '#f3e5f5', color: '#7b1fa2' },
+      'Matt': { bg: '#f3e5f5', color: '#7b1fa2' },
+      'Satinato': { bg: '#e8f5e9', color: '#2e7d32' },
+      'Velvet': { bg: '#ede7f6', color: '#512da8' },
+      'Silk': { bg: '#fff8e1', color: '#ff8f00' },
+      'Anticato': { bg: '#efebe9', color: '#5d4037' },
+      'Caress': { bg: '#fbe9e7', color: '#d84315' }
+    };
+    const finishStyle = finishColors[finish] || { bg: '#f5f5f5', color: '#666' };
+    const finishDisplay = finish !== 'Polished' ? 
+      `<span style="display:inline-block;font-size:9px;font-weight:600;color:${finishStyle.color};background:${finishStyle.bg};padding:2px 6px;border-radius:4px;margin-top:3px;border:1px solid ${finishStyle.color}30;">${finish}</span>` : '';
+    
+    // Current selection indicator
+    const selectionBadge = isCurrentSelection ? '<span style="position:absolute;top:4px;right:4px;background:#2196F3;color:white;font-size:8px;padding:2px 5px;border-radius:3px;">CURRENT</span>' : '';
+    
+    // Unavailable thickness warning
+    const thicknessWarning = isGreyedOut ? `<div style="font-size:8px;color:#c62828;margin-top:2px;">${worktopThickness}mm not available</div>` : '';
     
     html += `
-      <div class="material-option" onclick="previewMaterial('${key}')" style="cursor:pointer;padding:10px;border:2px solid ${borderColor};border-radius:8px;text-align:center;background:${bgColor};transition:all 0.2s;">
+      <div class="material-option" onclick="previewMaterial('${key}')" style="cursor:pointer;padding:10px;border:2px solid ${borderColor};border-radius:8px;text-align:center;background:${bgColor};transition:all 0.2s;opacity:${opacity};pointer-events:${pointerEvents};position:relative;">
+        ${selectionBadge}
         <div style="width:100px;height:100px;margin:0 auto 8px;border-radius:6px;${colorStyle}border:1px solid #ccc;overflow:hidden;"></div>
         <div style="font-size:11px;font-weight:500;line-height:1.2;max-height:2.4em;overflow:hidden;">${mat.name}</div>
         <div style="font-size:9px;color:#888;margin-top:2px;">${matType}</div>
+        ${finishDisplay}
         <div style="display:inline-block;margin-top:4px;">${tierHTML}</div>
+        ${thicknessWarning}
       </div>
     `;
   });
@@ -2731,17 +3031,24 @@ function previewMaterial(key) {
       'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
       'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
     };
-    const matType = materialTypes[mat.brand] || 'Stone';
+    // For NAT use actual type (Granite/Quartzite), for others use brand mapping
+    const matType = mat.brand === 'NAT' ? (mat.type || 'Natural Stone') : (materialTypes[mat.brand] || 'Stone');
     brandEl.textContent = `${brandNames[mat.brand] || mat.brand || ''} • ${matType}`;
     
     // Show thickness
     if (thickEl) thickEl.textContent = worktopThickness + 'mm';
     
-    const tier = mat.tier || 1;
+    // Get tier from MATERIAL_PRICING
+    const pricing = MATERIAL_PRICING[key];
+    const tier = pricing ? pricing.tier : (mat.tier || 1);
     tierEl.innerHTML = getTierHTML(tier);
     
+    // Hide slab price element (not needed for display)
+    const priceEl = document.getElementById('selectedMatPrice');
+    if (priceEl) priceEl.style.display = 'none';
+    
     if (mat.textureId) {
-      const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD';
+      const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD' || mat.brand === 'ART' || mat.brand === 'NAT' || mat.brand === 'CQS';
       thumb.style.backgroundImage = `url('https://lh3.googleusercontent.com/d/${mat.textureId}=s200')`;
       thumb.style.backgroundSize = needsCrop ? '300%' : 'cover';
       thumb.style.backgroundPosition = 'center';
@@ -2763,10 +3070,33 @@ function confirmMaterial() {
     
     closeMaterialModal();
     
+    // Update legacy info element
     const matInfo = document.getElementById('selectedMaterialInfo');
     if (matInfo) matInfo.textContent = mat.name;
     
+    // Update current material display in toolbar
+    updateCurrentMaterialDisplay();
+    
+    // Adjust slab size based on material type
+    // Natural Stone (NAT) uses larger slabs: 3200x1900
+    // All others use standard: 3200x1600
+    const slabHeightInput = document.getElementById('slabHeightInput');
+    if (slabHeightInput) {
+      if (mat.brand === 'NAT') {
+        slabHeightInput.value = 1900;
+        console.log('Natural Stone selected - slab size set to 3200x1900');
+      } else {
+        slabHeightInput.value = 1600;
+      }
+    }
+    
+    // Recalculate pricing with new material
+    updateSummary();
+    
     render();
+    
+    // Re-render slab layout with new size
+    if (currentView === 'slab') renderSlabLayout();
     
     if (currentView === '3d') {
       loadMaterialTexture(selectedMaterial, () => {
@@ -2776,9 +3106,82 @@ function confirmMaterial() {
   }
 }
 
+// Update the current material display in toolbar
+function updateCurrentMaterialDisplay() {
+  const nameEl = document.getElementById('currentMatName');
+  const brandEl = document.getElementById('currentMatBrand');
+  const swatchEl = document.getElementById('currentMatSwatch');
+  
+  const mat = MATERIAL_COLORS[selectedMaterial];
+  
+  // Handle no selection
+  if (!mat) {
+    if (nameEl) nameEl.textContent = 'No material selected';
+    if (brandEl) brandEl.textContent = '';
+    if (swatchEl) {
+      swatchEl.style.backgroundImage = 'none';
+      swatchEl.style.background = '#ccc';
+    }
+    return;
+  }
+  
+  // Show name with finish if not Polished
+  const finish = mat.finish || 'Polished';
+  const finishSuffix = finish !== 'Polished' ? ` (${finish})` : '';
+  if (nameEl) nameEl.textContent = mat.name + finishSuffix;
+  
+  // Brand names mapping
+  const brandNames = {
+    'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global',
+    'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
+    'ART': 'Artemis', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon'
+  };
+  if (brandEl) {
+    const pricing = MATERIAL_PRICING[selectedMaterial];
+    const tier = pricing ? pricing.tier : (mat.tier || 1);
+    brandEl.textContent = `${brandNames[mat.brand] || mat.brand || ''} • ${'£'.repeat(tier)}`;
+  }
+  
+  if (swatchEl) {
+    const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD' || mat.brand === 'ART' || mat.brand === 'NAT' || mat.brand === 'CQS';
+    if (mat.textureId) {
+      swatchEl.style.backgroundImage = `url('https://lh3.googleusercontent.com/d/${mat.textureId}=s100')`;
+      swatchEl.style.backgroundSize = needsCrop ? '300%' : 'cover';
+      swatchEl.style.backgroundPosition = 'center';
+    } else {
+      swatchEl.style.backgroundImage = 'none';
+      swatchEl.style.background = mat.css || '#ccc';
+    }
+  }
+}
+
 function closeMaterialModal() {
   document.getElementById('materialModal').style.display = 'none';
   pendingMaterial = null;
+}
+
+// Clear the preview selection without closing modal
+function clearMaterialSelection() {
+  pendingMaterial = null;
+  
+  // Clear preview panel
+  const nameEl = document.getElementById('selectedMatName');
+  const brandEl = document.getElementById('selectedMatBrand');
+  const thickEl = document.getElementById('selectedMatThickness');
+  const tierEl = document.getElementById('selectedMatTier');
+  const thumb = document.getElementById('selectedMatThumb');
+  
+  if (nameEl) nameEl.textContent = 'Select a material';
+  if (brandEl) brandEl.textContent = '';
+  if (thickEl) thickEl.textContent = '';
+  if (tierEl) tierEl.innerHTML = '';
+  if (thumb) {
+    thumb.style.backgroundImage = 'none';
+    thumb.style.background = '#e0e0e0';
+  }
+  
+  // Refresh grid to remove highlight
+  filterMaterialsNew();
 }
 
 // ========== CUTOUT EDIT MODAL ==========
@@ -7101,9 +7504,13 @@ function deleteCillFromModal() {
 // ========== SUMMARY ==========
 function setWorktopThickness(thickness) {
   worktopThickness = thickness;
+  selectedThickness = thickness; // For pricing calculation
   
   // Update modal thickness buttons if present
   updateThicknessButtons();
+  
+  // Recalculate pricing
+  updateSummary();
   
   if (currentView === '3d') render3D();
 }
@@ -9537,9 +9944,11 @@ function capture2DView() {
       switchView('2d');
     }
     
-    // Save current selection state
+    // Save current state
     const savedSelectedId = selectedId;
     const savedSelectedType = selectedType;
+    const savedScale = scale;
+    const savedOffset = { x: offset.x, y: offset.y };
     
     // Deselect everything for clean capture
     selectedId = null;
@@ -9571,39 +9980,52 @@ function capture2DView() {
       }
     });
     
-    // Use custom zoom for capture - more padding and lower max scale for large designs
-    const width = maxX - minX;
-    const height = maxY - minY;
+    // Calculate design dimensions
+    const designWidth = maxX - minX;
+    const designHeight = maxY - minY;
     
-    if (width > 0 && height > 0 && isFinite(width) && isFinite(height)) {
-      const pad = 200; // More padding for capture
-      // Calculate scale needed to fit, with lower max (0.2) for large designs
-      const fitScale = Math.min(
-        (canvas.width - pad) / (width + pad), 
-        (canvas.height - pad) / (height + pad)
-      );
-      // Use lower max scale (0.15) for quote capture to ensure everything fits well
-      scale = Math.max(0.03, Math.min(0.15, fitScale));
-      offset.x = canvas.width / 2 - (minX + maxX) / 2 * scale;
-      offset.y = canvas.height / 2 - (minY + maxY) / 2 * scale;
-    } else {
+    if (designWidth <= 0 || designHeight <= 0 || !isFinite(designWidth) || !isFinite(designHeight)) {
       zoomFit();
+      render();
+      const dataUrl = canvas.toDataURL('image/png');
+      selectedId = savedSelectedId;
+      selectedType = savedSelectedType;
+      return dataUrl;
     }
     
+    // Calculate optimal scale to fit the design with padding
+    const padding = 150;
+    const fitScale = Math.min(
+      (canvas.width - padding * 2) / designWidth,
+      (canvas.height - padding * 2) / designHeight
+    );
+    
+    // Use a reasonable scale range
+    scale = Math.max(0.03, Math.min(0.25, fitScale));
+    
+    // Center the design
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    offset.x = canvas.width / 2 - centerX * scale;
+    offset.y = canvas.height / 2 - centerY * scale;
+    
+    // Render
     render();
     
-    // Capture the canvas
+    // Capture
     const dataUrl = canvas.toDataURL('image/png');
     
-    // Restore selection
+    // Restore state
     selectedId = savedSelectedId;
     selectedType = savedSelectedType;
+    scale = savedScale;
+    offset.x = savedOffset.x;
+    offset.y = savedOffset.y;
     
-    // Restore view with normal zoom
+    // Restore view
     if (!wasIn2D) {
       switchView('3d');
     } else {
-      zoomFit(); // Restore normal zoom
       render();
     }
     
@@ -9715,6 +10137,10 @@ async function generateQuote() {
     alert('Please select a material before generating a quote.');
     return;
   }
+  
+  // IMPORTANT: Calculate slab layout to get accurate slab count
+  // This ensures slabs are calculated even if user never visited Slab Layout tab
+  renderSlabLayout();
   
   // IMPORTANT: Save design state immediately before navigating away
   // This ensures all positions (including taps) are preserved
@@ -9936,6 +10362,18 @@ async function generateQuote() {
   
   // Calculate slabs required
   const slabsRequired = parseInt(document.getElementById('sumSlabs')?.textContent) || 1;
+  console.log('Slabs required for quote:', slabsRequired);
+  
+  // Get profit settings from admin panel
+  const profit1st = parseInt(document.getElementById('profit1stSlab')?.value) || 1300;
+  const profitAdd = parseInt(document.getElementById('profitAddSlab')?.value) || 500;
+  
+  // Get material pricing
+  const matPricing = MATERIAL_PRICING[selectedMaterial];
+  const slabPrice = matPricing ? 
+    (worktopThickness === 30 && matPricing.price30slab ? matPricing.price30slab : matPricing.price20slab) || 0 
+    : 0;
+  const tier = matPricing ? matPricing.tier : (mat.tier || 1);
   
   // Build quote data object (images stored separately to avoid localStorage limits)
   const quoteData = {
@@ -9945,12 +10383,14 @@ async function generateQuote() {
       key: selectedMaterial,
       name: mat.name,
       brand: brandNames[mat.brand] || mat.brand,
-      type: materialTypes[mat.brand] || 'Stone',
-      tier: mat.tier || 1,
+      brandCode: mat.brand,  // For cropping logic
+      type: mat.brand === 'NAT' ? (mat.type || 'Natural Stone') : (materialTypes[mat.brand] || 'Stone'),
+      tier: tier,
       thickness: worktopThickness,
       textureId: mat.textureId || null,
       css: mat.css || '#e8e8e8',
-      roughness: mat.roughness || 0.3
+      roughness: mat.roughness || 0.3,
+      slabPrice: slabPrice  // Material cost per slab
     },
     worktops: worktopData,
     upstands: upstandData,
@@ -9960,8 +10400,9 @@ async function generateQuote() {
     edges: edgesList,
     dropdowns: edgesList.filter(e => e.type === 'dropdown').map(e => ({ length: e.length * 1000, height: e.height })),
     pricing: {
-      firstSlab: 1300,
-      additionalSlab: 500,
+      materialPerSlab: slabPrice,  // Material cost per slab
+      firstSlab: profit1st,        // Fabrication first slab
+      additionalSlab: profitAdd,   // Fabrication additional slabs
       slabsUsed: slabsRequired
     },
     customer: {
@@ -10134,9 +10575,20 @@ saveHistory = function() {
 
 // Init
 loadDesignState(); // Try to load saved design first
+
+// Try to auto-load materials_pricing.json, fall back to sessionStorage
+(async function initMaterials() {
+  const autoLoaded = await autoLoadPricingJSON();
+  if (!autoLoaded) {
+    restoreMaterialsFromStorage(); // Fall back to sessionStorage if auto-load fails
+  }
+  updateCurrentMaterialDisplay(); // Show current material in toolbar
+})();
+
 updateZoom();
 renderLists();
 render();
+updateSummary(); // Initialize pricing display
 updateTierStylePreview();
 updateTierFilterButtons();
 </script>
