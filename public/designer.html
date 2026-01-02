@@ -101,9 +101,11 @@
         max-width: 95vw !important;
         max-height: 95vh !important;
         margin: 10px;
+        padding: 12px !important;
       }
       #materialModal #materialGrid {
         grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
       }
       #materialModal #brandLogos {
         gap: 4px !important;
@@ -112,19 +114,78 @@
         width: 60px !important;
         height: 60px !important;
       }
+      /* Compact selected material bar on smaller screens */
+      #materialModal #selectedMaterialBar {
+        padding: 10px !important;
+      }
+      #materialModal #selectedMaterialBar > div {
+        flex-wrap: wrap;
+        gap: 10px !important;
+      }
+      #materialModal #selectedMatThumb {
+        width: 50px !important;
+        height: 50px !important;
+      }
+      #materialModal #selectedMatName {
+        font-size: 14px !important;
+      }
     }
     
     @media (max-height: 700px) {
       #materialModal .modal-dialog {
         max-height: 98vh !important;
-        padding: 12px !important;
+        padding: 10px !important;
       }
       #materialModal #brandLogos > div {
-        width: 55px !important;
-        height: 55px !important;
+        width: 50px !important;
+        height: 50px !important;
+      }
+      #materialModal #brandLogos > div img {
+        max-height: 30px !important;
       }
       #materialModal #selectedMaterialBar {
         padding: 8px !important;
+        margin-top: 8px !important;
+      }
+      #materialModal #selectedMatThumb {
+        width: 40px !important;
+        height: 40px !important;
+      }
+      #materialModal #selectedMatName {
+        font-size: 13px !important;
+      }
+      #materialModal #confirmMaterialBtn,
+      #materialModal button[onclick="clearMaterialSelection()"] {
+        padding: 8px 12px !important;
+        font-size: 11px !important;
+      }
+    }
+    
+    /* Very small screens - stack buttons */
+    @media (max-width: 800px) {
+      #materialModal #materialGrid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      #materialModal #selectedMaterialBar > div {
+        flex-direction: column;
+        align-items: stretch !important;
+        text-align: center;
+      }
+      #materialModal #selectedMaterialBar > div > div:last-child {
+        margin-left: 0 !important;
+        justify-content: center;
+      }
+      #materialModal #selectedMatThumb {
+        display: none !important;
+      }
+      #materialModal #selectedMatTier {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+      }
+      /* Hide badges on small screens */
+      #materialModal .brand-logo-btn span {
+        display: none !important;
       }
     }
     
@@ -589,92 +650,96 @@
 
   <!-- Modal Dialog for Material Color Selection -->
   <div class="modal-overlay" id="materialModal" style="display:none;">
-    <div class="modal-dialog" style="min-width:900px;max-width:1100px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;position:sticky;top:0;background:white;padding:8px 0;z-index:10;">
+    <div class="modal-dialog" style="min-width:900px;max-width:1100px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+      <!-- Fixed Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
         <div class="modal-title" style="margin:0;">Select Material</div>
         <button onclick="closeMaterialModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;padding:0 8px;" title="Close">×</button>
       </div>
       
-      <!-- Brand Logos with Badges -->
-      <div style="margin-bottom:12px;">
-        <label style="font-size:10px;color:#666;display:block;margin-bottom:6px;">Select Brand</label>
-        <div id="brandLogos" style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;">
-          <div onclick="setBrandFilter('all')" class="brand-logo-btn" id="brandAll" data-brand="all" style="width:80px;height:80px;border:2px solid #1e4d3a;border-radius:8px;cursor:pointer;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;text-align:center;">All<br>Brands</div>
-          <div onclick="setBrandFilter('MOD')" class="brand-logo-btn" data-brand="MOD" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Modern Quartz">
-            <img src="https://lh3.googleusercontent.com/d/1XwYv2zR9YlAXFLaPe22Cz2WsX62sBjA0=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-            <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
-          </div>
-          <div onclick="setBrandFilter('SIL')" class="brand-logo-btn" data-brand="SIL" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Silestone">
-            <img src="https://lh3.googleusercontent.com/d/127k2DZSGjdqXDF4W5KAyNgFAlB6NKj6M=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-            <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
-          </div>
-          <div onclick="setBrandFilter('DEK')" class="brand-logo-btn" data-brand="DEK" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Dekton">
-            <img src="https://lh3.googleusercontent.com/d/1EK1_qmmYeEAGPNFIKmXilJ99bTNrAhDl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-            <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
-          </div>
-          <div onclick="setBrandFilter('COS')" class="brand-logo-btn" data-brand="COS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Cosy Stone">
-            <img src="https://lh3.googleusercontent.com/d/1aFIsbX9EujOD8hiHql6DlIBNXKFl0cmy=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-            <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
-          </div>
-          <div onclick="setBrandFilter('GLO')" class="brand-logo-btn" data-brand="GLO" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Global Granite">
-            <img src="https://lh3.googleusercontent.com/d/14ZsCCuxLnjCcVaWM0LA5O0n9Pkva4cYq=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-          </div>
-          <div onclick="setBrandFilter('CQS')" class="brand-logo-btn" data-brand="CQS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Classic Quartz">
-            <img src="https://lh3.googleusercontent.com/d/1q_3OAIMDWym_zBMhqwFtdaBhFKpihsKl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-          </div>
-          <div onclick="setBrandFilter('ART')" class="brand-logo-btn" data-brand="ART" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Artemis Stone">
-            <img src="https://lh3.googleusercontent.com/d/1C9xFaHbZk5n0hcSxqFOk8SBxxCeTP1i_=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-          </div>
-          <div onclick="setBrandFilter('NLQ')" class="brand-logo-btn" data-brand="NLQ" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Nile Quartz">
-            <img src="https://lh3.googleusercontent.com/d/1IrrKv95yNFfcdymhXryhlzj1DKJzK5fG=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-          </div>
-          <div onclick="setBrandFilter('NAT')" class="brand-logo-btn" data-brand="NAT" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Natural Stone">
-            <img src="https://lh3.googleusercontent.com/d/1mdHLk0qRIDBt4EGneLpPLi3iA8vpk_Fw=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-          </div>
-          <div onclick="setBrandFilter('HOR')" class="brand-logo-btn" data-brand="HOR" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Horizon Stone">
-            <img src="https://lh3.googleusercontent.com/d/1J6p-NlkoyZ5WKS8nxF5Pgz4IQ6fQ0M1l=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
-          </div>
-        </div>
-      </div>
-      
-      <!-- Thickness AND Tier Filter - SIDE BY SIDE -->
-      <div style="display:flex;gap:24px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-start;">
-        <!-- Thickness -->
-        <div>
-          <label style="font-size:10px;color:#666;display:block;margin-bottom:4px;">Thickness</label>
-          <div style="display:flex;gap:4px;">
-            <button id="thick20" onclick="setThickness(20)" class="thickness-btn" style="padding:8px 16px;border:2px solid #1e4d3a;border-radius:6px;background:#e8f5e9;cursor:pointer;font-size:13px;font-weight:600;">20mm</button>
-            <button id="thick30" onclick="setThickness(30)" class="thickness-btn" style="padding:8px 16px;border:2px solid #ccc;border-radius:6px;background:white;cursor:pointer;font-size:13px;">30mm</button>
+      <!-- Scrollable Content Area -->
+      <div style="flex:1;overflow-y:auto;min-height:0;">
+        <!-- Brand Logos with Badges -->
+        <div style="margin-bottom:12px;">
+          <label style="font-size:10px;color:#666;display:block;margin-bottom:6px;">Select Brand</label>
+          <div id="brandLogos" style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;">
+            <div onclick="setBrandFilter('all')" class="brand-logo-btn" id="brandAll" data-brand="all" style="width:80px;height:80px;border:2px solid #1e4d3a;border-radius:8px;cursor:pointer;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;text-align:center;">All<br>Brands</div>
+            <div onclick="setBrandFilter('MOD')" class="brand-logo-btn" data-brand="MOD" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Modern Quartz">
+              <img src="https://lh3.googleusercontent.com/d/1XwYv2zR9YlAXFLaPe22Cz2WsX62sBjA0=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+              <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
+            </div>
+            <div onclick="setBrandFilter('SIL')" class="brand-logo-btn" data-brand="SIL" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Silestone">
+              <img src="https://lh3.googleusercontent.com/d/127k2DZSGjdqXDF4W5KAyNgFAlB6NKj6M=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+              <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
+            </div>
+            <div onclick="setBrandFilter('DEK')" class="brand-logo-btn" data-brand="DEK" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Dekton">
+              <img src="https://lh3.googleusercontent.com/d/1EK1_qmmYeEAGPNFIKmXilJ99bTNrAhDl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+              <span style="position:absolute;top:-8px;right:-8px;background:#9c27b0;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">PREMIUM</span>
+            </div>
+            <div onclick="setBrandFilter('COS')" class="brand-logo-btn" data-brand="COS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;" title="Cosy Stone">
+              <img src="https://lh3.googleusercontent.com/d/1aFIsbX9EujOD8hiHql6DlIBNXKFl0cmy=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+              <span style="position:absolute;top:-8px;right:-8px;background:#4CAF50;color:white;font-size:8px;padding:3px 6px;border-radius:4px;font-weight:700;">BEST VALUE</span>
+            </div>
+            <div onclick="setBrandFilter('GLO')" class="brand-logo-btn" data-brand="GLO" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Global Granite">
+              <img src="https://lh3.googleusercontent.com/d/14ZsCCuxLnjCcVaWM0LA5O0n9Pkva4cYq=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            </div>
+            <div onclick="setBrandFilter('CQS')" class="brand-logo-btn" data-brand="CQS" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Classic Quartz">
+              <img src="https://lh3.googleusercontent.com/d/1q_3OAIMDWym_zBMhqwFtdaBhFKpihsKl=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            </div>
+            <div onclick="setBrandFilter('ART')" class="brand-logo-btn" data-brand="ART" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Artemis Stone">
+              <img src="https://lh3.googleusercontent.com/d/1C9xFaHbZk5n0hcSxqFOk8SBxxCeTP1i_=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            </div>
+            <div onclick="setBrandFilter('NLQ')" class="brand-logo-btn" data-brand="NLQ" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Nile Quartz">
+              <img src="https://lh3.googleusercontent.com/d/1IrrKv95yNFfcdymhXryhlzj1DKJzK5fG=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            </div>
+            <div onclick="setBrandFilter('NAT')" class="brand-logo-btn" data-brand="NAT" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Natural Stone">
+              <img src="https://lh3.googleusercontent.com/d/1mdHLk0qRIDBt4EGneLpPLi3iA8vpk_Fw=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            </div>
+            <div onclick="setBrandFilter('HOR')" class="brand-logo-btn" data-brand="HOR" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Horizon Stone">
+              <img src="https://lh3.googleusercontent.com/d/1J6p-NlkoyZ5WKS8nxF5Pgz4IQ6fQ0M1l=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
+            </div>
           </div>
         </div>
         
-        <!-- Tier Filter - Color coded pills -->
-        <div>
-          <label style="font-size:10px;color:#666;display:block;margin-bottom:4px;">Filter by Price Tier</label>
-          <div id="tierFilterButtons" style="display:flex;gap:4px;flex-wrap:wrap;">
-            <!-- Populated by updateTierFilterButtons() -->
+        <!-- Thickness AND Tier Filter - SIDE BY SIDE -->
+        <div style="display:flex;gap:24px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-start;">
+          <!-- Thickness -->
+          <div>
+            <label style="font-size:10px;color:#666;display:block;margin-bottom:4px;">Thickness</label>
+            <div style="display:flex;gap:4px;">
+              <button id="thick20" onclick="setThickness(20)" class="thickness-btn" style="padding:8px 16px;border:2px solid #1e4d3a;border-radius:6px;background:#e8f5e9;cursor:pointer;font-size:13px;font-weight:600;">20mm</button>
+              <button id="thick30" onclick="setThickness(30)" class="thickness-btn" style="padding:8px 16px;border:2px solid #ccc;border-radius:6px;background:white;cursor:pointer;font-size:13px;">30mm</button>
+            </div>
+          </div>
+          
+          <!-- Tier Filter - Color coded pills -->
+          <div>
+            <label style="font-size:10px;color:#666;display:block;margin-bottom:4px;">Filter by Price Tier</label>
+            <div id="tierFilterButtons" style="display:flex;gap:4px;flex-wrap:wrap;">
+              <!-- Populated by updateTierFilterButtons() -->
+            </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Search -->
-      <div style="margin-bottom:12px;display:flex;gap:12px;align-items:center;">
-        <input type="text" id="materialSearch" placeholder="Search materials..." style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:14px;box-sizing:border-box;" oninput="filterMaterialsNew()">
-        <div style="display:flex;align-items:center;gap:8px;background:#e8f5e9;padding:6px 12px;border-radius:6px;border:1px solid #4CAF50;">
-          <span id="pricingLoadStatus" style="font-size:11px;color:#2e7d32;font-weight:500;">Loading...</span>
-          <input type="file" id="pricingJsonInput" accept=".json" onchange="loadPricingJSON(this)" style="font-size:10px;max-width:120px;" title="Override with different JSON">
+        
+        <!-- Search -->
+        <div style="margin-bottom:12px;display:flex;gap:12px;align-items:center;">
+          <input type="text" id="materialSearch" placeholder="Search materials..." style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:14px;box-sizing:border-box;" oninput="filterMaterialsNew()">
+          <div style="display:flex;align-items:center;gap:8px;background:#e8f5e9;padding:6px 12px;border-radius:6px;border:1px solid #4CAF50;">
+            <span id="pricingLoadStatus" style="font-size:11px;color:#2e7d32;font-weight:500;">Loading...</span>
+            <input type="file" id="pricingJsonInput" accept=".json" onchange="loadPricingJSON(this)" style="font-size:10px;max-width:120px;" title="Override with different JSON">
+          </div>
+        </div>
+        
+        <div id="materialCount" style="font-size:11px;color:#666;margin-bottom:8px;">Showing 84 materials</div>
+        
+        <!-- Material Grid - 4 columns, bigger tiles -->
+        <div id="materialGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:10px 0;min-height:200px;">
+          <!-- Populated by JavaScript -->
         </div>
       </div>
       
-      <div id="materialCount" style="font-size:11px;color:#666;margin-bottom:8px;">Showing 84 materials</div>
-      
-      <!-- Material Grid - 4 columns, bigger tiles -->
-      <div id="materialGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:10px 0;min-height:200px;">
-        <!-- Populated by JavaScript -->
-      </div>
-      
-      <!-- Selected Material Preview with Buttons -->
-      <div id="selectedMaterialBar" style="margin-top:12px;padding:14px;background:linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);border-radius:10px;display:none;border:2px solid #4CAF50;position:sticky;bottom:0;z-index:10;">
+      <!-- Fixed Bottom Bar - Selected Material Preview with Buttons -->
+      <div id="selectedMaterialBar" style="margin-top:12px;padding:14px;background:linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);border-radius:10px;display:none;border:2px solid #4CAF50;flex-shrink:0;position:relative;">
         <div style="display:flex;align-items:center;gap:16px;">
           <div id="selectedMatThumb" style="width:80px;height:80px;border-radius:8px;border:2px solid #4CAF50;background-size:cover;background-position:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
           <div style="flex:1;">
