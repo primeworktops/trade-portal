@@ -94,6 +94,40 @@
     .modal-btn.cancel { border-color: #999; color: #666; }
     .modal-btn.cancel:hover { background: #f5f5f5; color: #333; }
     
+    /* Responsive modal for smaller screens */
+    @media (max-width: 1000px) {
+      #materialModal .modal-dialog {
+        min-width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 95vh !important;
+        margin: 10px;
+      }
+      #materialModal #materialGrid {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+      #materialModal #brandLogos {
+        gap: 4px !important;
+      }
+      #materialModal #brandLogos > div {
+        width: 60px !important;
+        height: 60px !important;
+      }
+    }
+    
+    @media (max-height: 700px) {
+      #materialModal .modal-dialog {
+        max-height: 98vh !important;
+        padding: 12px !important;
+      }
+      #materialModal #brandLogos > div {
+        width: 55px !important;
+        height: 55px !important;
+      }
+      #materialModal #selectedMaterialBar {
+        padding: 8px !important;
+      }
+    }
+    
     /* Tier display styles */
     .tier-classic { font-weight: 700; font-size: 14px; letter-spacing: 1px; }
     .tier-classic.t1 { color: #4CAF50; }
@@ -555,8 +589,8 @@
 
   <!-- Modal Dialog for Material Color Selection -->
   <div class="modal-overlay" id="materialModal" style="display:none;">
-    <div class="modal-dialog" style="min-width:900px;max-width:1100px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div class="modal-dialog" style="min-width:900px;max-width:1100px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;position:sticky;top:0;background:white;padding:8px 0;z-index:10;">
         <div class="modal-title" style="margin:0;">Select Material</div>
         <button onclick="closeMaterialModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;padding:0 8px;" title="Close">×</button>
       </div>
@@ -635,12 +669,12 @@
       <div id="materialCount" style="font-size:11px;color:#666;margin-bottom:8px;">Showing 84 materials</div>
       
       <!-- Material Grid - 4 columns, bigger tiles -->
-      <div id="materialGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:10px 0;flex:1;overflow-y:auto;min-height:200px;max-height:55vh;">
+      <div id="materialGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:10px 0;min-height:200px;">
         <!-- Populated by JavaScript -->
       </div>
       
       <!-- Selected Material Preview with Buttons -->
-      <div id="selectedMaterialBar" style="margin-top:12px;padding:14px;background:linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);border-radius:10px;display:none;border:2px solid #4CAF50;">
+      <div id="selectedMaterialBar" style="margin-top:12px;padding:14px;background:linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);border-radius:10px;display:none;border:2px solid #4CAF50;position:sticky;bottom:0;z-index:10;">
         <div style="display:flex;align-items:center;gap:16px;">
           <div id="selectedMatThumb" style="width:80px;height:80px;border-radius:8px;border:2px solid #4CAF50;background-size:cover;background-position:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
           <div style="flex:1;">
@@ -2758,8 +2792,13 @@ function loadMaterialsFromData(data) {
     };
   });
   
-  // Clear selected material since old one may not exist
-  selectedMaterial = null;
+  // Preserve selected material if it exists in new data, otherwise clear
+  if (selectedMaterial && !data[selectedMaterial]) {
+    console.log('Selected material not found in new data, clearing:', selectedMaterial);
+    selectedMaterial = null;
+  } else if (selectedMaterial) {
+    console.log('Preserved selected material:', selectedMaterial);
+  }
   pendingMaterial = null;
   updateCurrentMaterialDisplay();
   
@@ -10520,6 +10559,48 @@ function loadDesignState() {
           previewEl.style.backgroundColor = mat.css || '#e8e8e8';
         }
         
+        // Show and update the selected material bar
+        const bar = document.getElementById('selectedMaterialBar');
+        const thumb = document.getElementById('selectedMatThumb');
+        const nameEl = document.getElementById('selectedMatName');
+        const brandEl = document.getElementById('selectedMatBrand');
+        const tierEl = document.getElementById('selectedMatTier');
+        const thickEl = document.getElementById('selectedMatThickness');
+        
+        if (bar && thumb && nameEl) {
+          bar.style.display = 'block';
+          nameEl.textContent = mat.name;
+          
+          const brandNames = {
+            'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global Granite',
+            'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
+            'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
+          };
+          const materialTypes = {
+            'SIL': 'Quartz', 'DEK': 'Sintered Stone', 'GLO': 'Quartz',
+            'MOD': 'Quartz', 'COS': 'Quartz', 'CQS': 'Quartz',
+            'ART': 'Quartz', 'NLQ': 'Quartz', 'NAT': 'Natural Stone', 'HOR': 'Porcelain'
+          };
+          const matType = mat.brand === 'NAT' ? (mat.type || 'Natural Stone') : (materialTypes[mat.brand] || 'Stone');
+          if (brandEl) brandEl.textContent = `${brandNames[mat.brand] || mat.brand} • ${matType}`;
+          
+          const pricing = MATERIAL_PRICING[selectedMaterial];
+          const tier = pricing ? pricing.tier : (mat.tier || 1);
+          if (tierEl) tierEl.textContent = '£'.repeat(tier);
+          if (thickEl) thickEl.textContent = worktopThickness + 'mm';
+          
+          // Thumbnail with cropping for watermarks
+          const needsCrop = mat.brand === 'GLO' || mat.brand === 'MOD' || mat.brand === 'ART' || mat.brand === 'NAT' || mat.brand === 'CQS';
+          if (mat.textureId) {
+            thumb.style.backgroundImage = `url('https://lh3.googleusercontent.com/d/${mat.textureId}=s100')`;
+            thumb.style.backgroundSize = needsCrop ? '300%' : 'cover';
+            thumb.style.backgroundPosition = 'center';
+          } else {
+            thumb.style.backgroundImage = 'none';
+            thumb.style.backgroundColor = mat.css || '#ccc';
+          }
+        }
+        
         // Reload the texture for 3D view
         loadMaterialTexture(selectedMaterial, () => {
           console.log('Material texture reloaded for:', selectedMaterial);
@@ -10573,24 +10654,26 @@ saveHistory = function() {
   triggerAutoSave();
 };
 
-// Init
-loadDesignState(); // Try to load saved design first
-
-// Try to auto-load materials_pricing.json, fall back to sessionStorage
-(async function initMaterials() {
+// Init - load materials first, then design
+(async function init() {
+  // First load materials
   const autoLoaded = await autoLoadPricingJSON();
   if (!autoLoaded) {
     restoreMaterialsFromStorage(); // Fall back to sessionStorage if auto-load fails
   }
-  updateCurrentMaterialDisplay(); // Show current material in toolbar
+  
+  // Then load saved design (which may reference materials)
+  loadDesignState();
+  
+  // Update UI
+  updateCurrentMaterialDisplay();
+  updateZoom();
+  renderLists();
+  render();
+  updateSummary();
+  updateTierStylePreview();
+  updateTierFilterButtons();
 })();
-
-updateZoom();
-renderLists();
-render();
-updateSummary(); // Initialize pricing display
-updateTierStylePreview();
-updateTierFilterButtons();
 </script>
 </body>
 </html>
