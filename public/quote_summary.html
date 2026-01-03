@@ -815,7 +815,7 @@
       <!-- Header -->
       <div class="header">
         <div class="logo">
-          <!-- Default Prime Worktops SVG logo (cropped viewBox for no whitespace) -->
+          <!-- Default Prime Stone Works SVG logo (cropped viewBox for no whitespace) -->
           <svg id="logoSvg" xmlns="http://www.w3.org/2000/svg" viewBox="90 388 820 240" style="height:120px;width:auto;">
             <defs>
               <linearGradient id="lg1" x1="379.23" y1="537.63" x2="601.52" y2="537.63" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffdb42"/><stop offset="0.32" stop-color="#efbc00"/></linearGradient>
@@ -892,25 +892,6 @@
                 <span class="material-type" id="materialThickness">20mm</span>
                 <span class="tier-badge tier-3" id="materialTier">£££</span>
               </div>
-            </div>
-          </div>
-          
-          <!-- TEST: Material selector for pricing testing -->
-          <div id="materialTestPanel" style="background:#fff3e0;padding:12px;border-radius:8px;margin-bottom:15px;border:2px dashed #ff9800;">
-            <div style="font-size:11px;font-weight:600;color:#e65100;margin-bottom:8px;">🧪 TEST MODE: Change Material to Test Pricing</div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-              <span id="loadStatus" style="font-size:11px;color:#666;">Loading...</span>
-              <input type="file" id="jsonFileInput" accept=".json" onchange="loadPricingJSON(this)" style="font-size:10px;" title="Override with different JSON">
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <select id="testMaterialSelect" onchange="changeTestMaterial(this.value)" style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;font-size:13px;min-width:250px;">
-                <option value="">-- Select Material --</option>
-              </select>
-              <select id="testThicknessSelect" onchange="changeTestThickness(+this.value)" style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;font-size:13px;">
-                <option value="20">20mm</option>
-                <option value="30">30mm</option>
-              </select>
-              <span id="testPriceInfo" style="font-size:12px;color:#666;"></span>
             </div>
           </div>
           
@@ -1047,6 +1028,50 @@
       customTerms: null
     };
     
+    // ══════════════════════════════════════════════════════════════════════════════
+    // PRICING CONFIGURATION - Must match designer.html
+    // ══════════════════════════════════════════════════════════════════════════════
+    
+    const FABRICATION_PRICES = {
+      quartz: {
+        firstSlab: 1400,
+        additionalSlab: 400,
+        brands: ['SIL', 'MOD', 'GLO', 'COS', 'CQS', 'ART', 'NLQ', 'HOR']
+      },
+      dekton: {
+        firstSlab: 1700,
+        additionalSlab: 400,
+        brands: ['DEK']
+      },
+      natural_stone: {
+        firstSlab: 1800,
+        additionalSlab: 500,
+        brands: ['NAT']
+      }
+    };
+    
+    const CUTOUT_PRICES = {
+      undermount_sink: { name: 'Undermount Sink', price: 110, credit: 55 },
+      overmount_sink: { name: 'Overmount Sink', price: 55, credit: 27.50 },
+      hob: { name: 'Hob Cutout', price: 55, credit: 27.50 },
+      recess_hob: { name: 'Recess Hob', price: 150, credit: 75 },
+      tap: { name: 'Tap Hole', price: 9.17, credit: 4.58 },
+      drainer: { name: 'Drainer Grooves', price: 110, credit: 55 },
+      recess_drainer: { name: 'Recess Drainer', price: 330, credit: 165 },
+      socket: { name: 'Socket Cutout', price: 35, credit: 17.50 }
+    };
+    
+    function getFabricationPrices(brandCode) {
+      for (const [type, config] of Object.entries(FABRICATION_PRICES)) {
+        if (config.brands.includes(brandCode)) {
+          return { firstSlab: config.firstSlab, additionalSlab: config.additionalSlab, type: type };
+        }
+      }
+      return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlab: FABRICATION_PRICES.quartz.additionalSlab, type: 'quartz' };
+    }
+    
+    // ══════════════════════════════════════════════════════════════════════════════
+    
     // ========== MATERIAL PRICING DATA ==========
     const MATERIAL_PRICING = {
       // Silestone with pricing from CSV
@@ -1181,6 +1206,9 @@
     
     // Log for debugging
     console.log('Data source:', dataSource);
+    console.log('=== FULL QUOTE DATA ===');
+    console.log(JSON.stringify(quoteData, null, 2));
+    console.log('=======================');
     console.log('Worktops:', quoteData.worktops?.length || 0);
     console.log('Upstands/Splashbacks:', quoteData.upstands?.length || 0);
     console.log('Window Cills:', quoteData.windowCills?.length || 0);
@@ -1188,6 +1216,8 @@
     console.log('Edges (dropdowns):', quoteData.edges?.filter(e => e.type === 'dropdown')?.length || 0);
     console.log('3D Views:', quoteData.render3dViews?.length || 0);
     console.log('Material:', quoteData.material?.name);
+    console.log('Material brandCode:', quoteData.material?.brandCode);
+    console.log('Pricing:', quoteData.pricing);
     
     // Add customer details if not present
     if (!quoteData.customer) {
@@ -1221,6 +1251,7 @@
           key: 'calacattagold',
           name: 'Calacatta Gold',
           brand: 'Silestone',
+          brandCode: 'SIL',
           type: 'Quartz',
           tier: 3,
           thickness: 20,
@@ -1254,8 +1285,6 @@
           { length: 900, height: 900 }
         ],
         pricing: {
-          firstSlab: 1300,
-          additionalSlab: 500,
           slabsUsed: 3
         }
       };
@@ -1595,35 +1624,51 @@
       let rows = '';
       let subtotal = 0;
       
-      // Material cost (slabs)
-      const slabs = quoteData.pricing.slabsUsed;
-      const materialPerSlab = quoteData.pricing.materialPerSlab || quoteData.material?.slabPrice || 0;
-      const materialCost = slabs * materialPerSlab;
+      // Get correct pricing based on material brand
+      const slabs = quoteData.pricing?.slabsUsed || 1;
+      const brandCode = quoteData.material?.brandCode || 'MOD';
+      const fabPrices = getFabricationPrices(brandCode);
       
-      // Fabrication cost
-      const fabricationCost = quoteData.pricing.firstSlab + (slabs - 1) * quoteData.pricing.additionalSlab;
+      // Material cost (supplier slab price)
+      const slabPrice = quoteData.material?.slabPrice || quoteData.pricing?.materialPerSlab || 0;
+      const materialCost = slabs * slabPrice;
       
-      // Total worktop cost
-      const worktopTotal = materialCost + fabricationCost;
-      subtotal += worktopTotal;
+      // Fabrication cost (our charges)
+      const fabricationCost = fabPrices.firstSlab + (slabs - 1) * fabPrices.additionalSlab;
       
-      // Material row
-      if (materialPerSlab > 0) {
-        rows += `
-          <tr>
-            <td>Material Cost (${slabs} slab${slabs > 1 ? 's' : ''})</td>
-            <td>${quoteData.material.name} - ${quoteData.material.thickness}mm @ £${materialPerSlab.toFixed(2)}/slab</td>
-            <td class="amount">£${materialCost.toFixed(2)}</td>
-          </tr>
-        `;
+      // Total worktop cost = material + fabrication
+      subtotal = materialCost + fabricationCost;
+      
+      console.log('=== PRICING DEBUG ===');
+      console.log('quoteData.material:', quoteData.material);
+      console.log('quoteData.pricing:', quoteData.pricing);
+      console.log('brandCode:', brandCode);
+      console.log('slabPrice:', slabPrice);
+      console.log('slabs:', slabs);
+      console.log('materialCost:', materialCost);
+      console.log('fabricationCost:', fabricationCost);
+      console.log('subtotal (material + fab):', subtotal);
+      console.log('=====================');
+      
+      if (slabPrice === 0) {
+        console.warn('⚠️ WARNING: Material slab price is £0 - materials_pricing.json may not be loaded');
       }
       
-      // Fabrication row
+      // Material row - show as Included (don't reveal cost)
+      rows += `
+        <tr>
+          <td>Material</td>
+          <td>${quoteData.material?.name || 'Unknown'} - ${quoteData.material?.thickness || 20}mm ${quoteData.material?.type || 'Quartz'} (${slabs} slab${slabs > 1 ? 's' : ''})</td>
+          <td class="amount"><span class="included">Included</span></td>
+        </tr>
+      `;
+      
+      // Fabrication row - show as Included (don't reveal cost)
       rows += `
         <tr>
           <td>Fabrication & Install</td>
-          <td>£${quoteData.pricing.firstSlab} first + £${quoteData.pricing.additionalSlab} × ${Math.max(0, slabs-1)} additional</td>
-          <td class="amount">£${fabricationCost.toFixed(2)}</td>
+          <td>Template, cut, polish & fit</td>
+          <td class="amount"><span class="included">Included</span></td>
         </tr>
       `;
       
@@ -1639,62 +1684,100 @@
       const taps = cutouts.filter(c => c.type === 'tap');
       const drainers = cutouts.filter(c => c.type?.includes('drainer'));
       
-      // Sinks
+      // Sinks - base includes 1 undermount, overmount is £55 less work
       sinks.forEach((c, i) => {
-        const isIncluded = c.included !== false && i === 0;
-        if (!isIncluded) subtotal += (c.price || 150);
-        rows += `
-          <tr>
-            <td>${c.name || 'Sink Cutout'}</td>
-            <td>${c.width}mm × ${c.height}mm</td>
-            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 150).toFixed(2)}</td>
-          </tr>
-        `;
+        const isFirst = i === 0;
+        const isOvermount = c.type === 'overmount_sink';
+        
+        if (isFirst) {
+          // First sink included, but overmount saves £55
+          if (isOvermount) {
+            subtotal -= 55; // Overmount is less work, reduce price
+          }
+          const typeName = isOvermount ? 'Overmount Sink' : 'Undermount Sink';
+          rows += `
+            <tr>
+              <td>${typeName}</td>
+              <td>${c.width}mm × ${c.height}mm</td>
+              <td class="amount"><span class="included">Included</span></td>
+            </tr>
+          `;
+        } else {
+          // Additional sinks charged at their rate
+          const sinkPrice = isOvermount ? CUTOUT_PRICES.overmount_sink.price : CUTOUT_PRICES.undermount_sink.price;
+          subtotal += sinkPrice;
+          const typeName = isOvermount ? 'Overmount Sink' : 'Undermount Sink';
+          rows += `
+            <tr>
+              <td>${typeName}</td>
+              <td>${c.width}mm × ${c.height}mm</td>
+              <td class="amount">£${sinkPrice.toFixed(2)}</td>
+            </tr>
+          `;
+        }
       });
       
-      // Hobs
+      // Hobs - first one included, recess hob is extra £150
       hobs.forEach((c, i) => {
-        const isIncluded = c.included !== false && i === 0;
-        if (!isIncluded) subtotal += (c.price || 100);
+        const isRecess = c.type === 'recess_hob';
+        const isIncluded = i === 0 && !isRecess; // First regular hob included, recess always charged
+        const hobPrice = isRecess ? CUTOUT_PRICES.recess_hob.price : CUTOUT_PRICES.hob.price;
+        if (!isIncluded) subtotal += hobPrice;
+        const typeName = isRecess ? 'Recess Hob' : 'Hob Cutout';
         rows += `
           <tr>
-            <td>${c.name || 'Hob Cutout'}</td>
+            <td>${typeName}</td>
             <td>${c.width}mm × ${c.height}mm</td>
-            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 100).toFixed(2)}</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + hobPrice.toFixed(2)}</td>
           </tr>
         `;
       });
       
       // Taps
       taps.forEach((c, i) => {
-        const isIncluded = c.included !== false && i === 0;
-        if (!isIncluded) subtotal += (c.price || 35);
+        const isIncluded = i === 0; // First one included
+        if (!isIncluded) subtotal += (c.price || 9.17);
         rows += `
           <tr>
             <td>${c.name || 'Tap Hole'}</td>
             <td>Ø${c.width}mm</td>
-            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 35).toFixed(2)}</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 9.17).toFixed(2)}</td>
           </tr>
         `;
       });
       
-      // Drainers
+      // Drainers - first regular drainer included, recess drainer always charged
       drainers.forEach((c, i) => {
-        const isIncluded = c.included !== false && i === 0;
-        if (!isIncluded) subtotal += (c.price || 75);
+        const isRecess = c.type === 'recess_drainer';
+        const isIncluded = i === 0 && !isRecess; // First regular drainer included, recess always charged
+        const drainerPrice = isRecess ? CUTOUT_PRICES.recess_drainer.price : CUTOUT_PRICES.drainer.price;
+        if (!isIncluded) subtotal += drainerPrice;
         
-        // Get drainer type name and side (uses clickedSide from designer)
-        const typeName = c.type === 'recess_drainer' ? 'Recess Drainer' : 'Drainer Grooves';
+        const typeName = isRecess ? 'Recess Drainer' : 'Drainer Grooves';
         const sideName = c.side === 'left' ? 'Left' : c.side === 'right' ? 'Right' : c.side === 'both' ? 'Both' : '-';
         
         rows += `
           <tr>
             <td>${typeName}</td>
             <td>${sideName}</td>
-            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + (c.price || 75).toFixed(2)}</td>
+            <td class="amount">${isIncluded ? '<span class="included">Included</span>' : '£' + drainerPrice.toFixed(2)}</td>
           </tr>
         `;
       });
+      
+      // Credits for missing items (applied to total but not shown as line items)
+      if (sinks.length === 0) {
+        subtotal += -55;  // Credit for no sink
+      }
+      if (hobs.length === 0) {
+        subtotal += -27.50;  // Credit for no hob
+      }
+      if (taps.length === 0) {
+        subtotal += -4.58;  // Credit for no tap
+      }
+      if (drainers.length === 0) {
+        subtotal += -55;  // Credit for no drainer
+      }
       
       // Edge profiles - consolidate by profile type
       const includedEdges = (quoteData.edges || []).filter(e => e.included);
@@ -1798,6 +1881,8 @@
       // VAT calculation
       const vat = subtotal * 0.2;
       const total = subtotal + vat;
+      
+      console.log('FINAL VALUES - subtotal:', subtotal, 'vat:', vat, 'total:', total);
       
       document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
       document.getElementById('totalPrice').textContent = '£' + total.toFixed(2);
@@ -2499,7 +2584,7 @@
         if (logoSvg) logoSvg.style.display = 'none';
         if (logoPdfFallback) logoPdfFallback.style.display = 'none';
       } else if (logoSvg) {
-        // Default Prime Worktops SVG - just use the SVG as-is
+        // Default Prime Stone Works SVG - just use the SVG as-is
         logoSvg.style.height = '80px';
         if (logoImg) logoImg.style.display = 'none';
         if (logoPdfFallback) logoPdfFallback.style.display = 'none';
@@ -2752,7 +2837,7 @@
           }
           if (logoSvg) logoSvg.style.display = 'none';
         } else {
-          // Default Prime Worktops SVG - restore SVG
+          // Default Prime Stone Works SVG - restore SVG
           if (logoSvg) {
             logoSvg.style.display = 'block';
             logoSvg.style.height = '120px';

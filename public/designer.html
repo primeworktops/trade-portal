@@ -785,9 +785,55 @@ let worktopThickness = 20; // Default 20mm, can be 20mm or 30mm
 const SNAP_DIST = 30;
 const EDGE_CLICK_DIST = 20; // More precise edge clicking
 
-// ========== EDGE PROFILE DEFINITIONS ==========
-// 20mm: Chamfer, Pencil, Shark Nose
-// 30mm: Chamfer, Pencil, Demi Bullnose, Bullnose, Ogee
+// ══════════════════════════════════════════════════════════════════════════════
+// ██████  PRICING CONFIGURATION - EASY TO UPDATE  ██████
+// ══════════════════════════════════════════════════════════════════════════════
+
+// FABRICATION PRICES BY MATERIAL TYPE
+// These are the all-inclusive prices shown to customers
+const FABRICATION_PRICES = {
+  quartz: {
+    firstSlab: 1400,      // First slab price
+    additionalSlab: 400,  // Each additional slab
+    brands: ['SIL', 'MOD', 'GLO', 'COS', 'CQS', 'ART', 'NLQ', 'HOR']  // Silestone, Modern, Global, Cosy, Classic, Artemis, Nile, Horizon
+  },
+  dekton: {
+    firstSlab: 1700,      // First slab price
+    additionalSlab: 400,  // Each additional slab
+    brands: ['DEK']       // Dekton only
+  },
+  natural_stone: {
+    firstSlab: 1800,      // First slab price (Granite & Quartzite)
+    additionalSlab: 500,  // Each additional slab
+    brands: ['NAT']       // Natural Stone
+  }
+};
+
+// WHAT'S INCLUDED IN BASE PRICE
+// These items are included - removing them gives credit, adding extras costs more
+const INCLUDED_IN_BASE = {
+  sinks: 1,           // 1 undermount sink included
+  hobs: 1,            // 1 hob cutout included
+  drainers: 1,        // 1 drainer grooves included
+  taps: 1,            // 1 tap hole included
+  edgeProfile: ['chamfer', 'pencil']  // Standard edges included free
+};
+
+// CUTOUT PRICING
+// Base prices for cutouts - used for extras and credits
+const CUTOUT_PRICES = {
+  undermount_sink: { name: 'Undermount Sink Cutout', price: 110, credit: 55 },   // Full price to add, half back if removed
+  overmount_sink: { name: 'Overmount Sink Cutout', price: 55, credit: 27.50 },
+  hob: { name: 'Hob Cutout', price: 55, credit: 27.50 },
+  recess_hob: { name: 'Recess Hob', price: 150, credit: 75 },
+  tap: { name: 'Tap Hole', price: 9.17, credit: 4.58 },
+  drainer: { name: 'Drainer Grooves', price: 110, credit: 55 },
+  recess_drainer: { name: 'Recess Drainer', price: 330, credit: 165 },
+  socket: { name: 'Socket Cutout', price: 35, credit: 17.50 }
+};
+
+// EDGE PROFILE PRICING
+// Chamfer & Pencil are included free, others are upgrades
 const EDGE_PROFILES = {
   chamfer: { name: 'Chamfer', price: 0, thickness: [20, 30], image: '1wHMJPsK5RJaRPHQnyP7nikWOrHoKUiz3', color: '#e91e63' },
   pencil: { name: 'Pencil', price: 0, thickness: [20, 30], image: '1WZUd1Bn5aw3zPSdZxaOQ-wghh0YyTKu-', color: '#9c27b0' },
@@ -798,8 +844,22 @@ const EDGE_PROFILES = {
   mitred_edge: { name: 'Mitred Edge', price: 66.67, thickness: [20, 30], image: null, color: '#795548' }
 };
 
-// ========== CUTOUT PRICING (from Excel) ==========
-// Images from Google Drive
+// Helper function to get fabrication price based on material brand
+function getFabricationPrices(brandCode) {
+  for (const [type, config] of Object.entries(FABRICATION_PRICES)) {
+    if (config.brands.includes(brandCode)) {
+      return { firstSlab: config.firstSlab, additionalSlab: config.additionalSlab, type: type };
+    }
+  }
+  // Default to quartz if brand not found
+  return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlab: FABRICATION_PRICES.quartz.additionalSlab, type: 'quartz' };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// END OF PRICING CONFIGURATION
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Cutout images from Google Drive
 const CUTOUT_IMAGES = {
   drainer: '1OkNW1HvAOABRG2XpeC6W379L4H0WZxIP',
   hob: '17sdiphAm7KDwJRH664cZcD-UWDSyHmxX',
@@ -807,17 +867,6 @@ const CUTOUT_IMAGES = {
   recess_hob: '1V99gR1cZdTa2wvSU8vEEc_0GZ5ISaQaW',
   sink: '1vKV4RkYHmwsVzlnEtXvH0woSjQ5FYcZ6',
   tap: '17-G19NoJACgypg3TUtDrUFb6pKdRDhF9'
-};
-
-const CUTOUT_PRICES = {
-  undermount_sink: { name: 'Undermount Sink Cutout', price: 110 },
-  overmount_sink: { name: 'Overmount Sink Cutout', price: 55 },
-  hob: { name: 'Hob Cutout', price: 55 },
-  recess_hob: { name: 'Recess Hob', price: 110 },
-  tap: { name: 'Tap Hole', price: 9.17 },
-  drainer: { name: 'Drainer Grooves', price: 110 },
-  recess_drainer: { name: 'Recess Drainer', price: 330 },
-  socket: { name: 'Socket Cutout', price: 35 }
 };
 
 // ========== MATERIAL COLORS ==========
@@ -9107,9 +9156,17 @@ function renderSlabLayout() {
   
   console.log('SLAB PACKING: Using slab size', SLAB_W, '×', SLAB_H);
   
-  // Get profit settings
-  const profit1st = parseInt(document.getElementById('profit1stSlab')?.value) || 1300;
-  const profitAdd = parseInt(document.getElementById('profitAddSlab')?.value) || 500;
+  // Get fabrication prices based on selected material
+  const materialBrand = selectedMaterial ? (MATERIAL_COLORS[selectedMaterial]?.brand || 'MOD') : 'MOD';
+  const fabPrices = getFabricationPrices(materialBrand);
+  const profit1st = fabPrices.firstSlab;
+  const profitAdd = fabPrices.additionalSlab;
+  
+  // Update the input fields to show current pricing
+  const profit1stEl = document.getElementById('profit1stSlab');
+  const profitAddEl = document.getElementById('profitAddSlab');
+  if (profit1stEl) profit1stEl.value = profit1st;
+  if (profitAddEl) profitAddEl.value = profitAdd;
   
   // Collect all pieces
   const pieces = [];
@@ -10468,9 +10525,10 @@ async function generateQuote() {
   const slabsRequired = parseInt(document.getElementById('sumSlabs')?.textContent) || 1;
   console.log('Slabs required for quote:', slabsRequired);
   
-  // Get profit settings from admin panel
-  const profit1st = parseInt(document.getElementById('profit1stSlab')?.value) || 1300;
-  const profitAdd = parseInt(document.getElementById('profitAddSlab')?.value) || 500;
+  // Get fabrication prices based on material type
+  const fabPrices = getFabricationPrices(mat.brand);
+  const profit1st = fabPrices.firstSlab;
+  const profitAdd = fabPrices.additionalSlab;
   
   // Get material pricing
   const matPricing = MATERIAL_PRICING[selectedMaterial];
@@ -10481,7 +10539,7 @@ async function generateQuote() {
   
   // Build quote data object (images stored separately to avoid localStorage limits)
   const quoteData = {
-    quoteNumber: 'PW-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000),
+    quoteNumber: 'PSW-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000),
     date: new Date().toISOString(),
     material: {
       key: selectedMaterial,
@@ -10489,12 +10547,13 @@ async function generateQuote() {
       brand: brandNames[mat.brand] || mat.brand,
       brandCode: mat.brand,  // For cropping logic
       type: mat.brand === 'NAT' ? (mat.type || 'Natural Stone') : (materialTypes[mat.brand] || 'Stone'),
+      materialType: fabPrices.type,  // quartz, dekton, or natural_stone - for pricing
       tier: tier,
       thickness: worktopThickness,
       textureId: mat.textureId || null,
       css: mat.css || '#e8e8e8',
       roughness: mat.roughness || 0.3,
-      slabPrice: slabPrice  // Material cost per slab
+      slabPrice: slabPrice  // Material cost per slab (internal use only)
     },
     worktops: worktopData,
     upstands: upstandData,
@@ -10504,16 +10563,24 @@ async function generateQuote() {
     edges: edgesList,
     dropdowns: edgesList.filter(e => e.type === 'dropdown').map(e => ({ length: e.length * 1000, height: e.height })),
     pricing: {
-      materialPerSlab: slabPrice,  // Material cost per slab
-      firstSlab: profit1st,        // Fabrication first slab
-      additionalSlab: profitAdd,   // Fabrication additional slabs
-      slabsUsed: slabsRequired
+      materialPerSlab: slabPrice,  // Material cost per slab (internal)
+      firstSlab: profit1st,        // All-inclusive first slab price
+      additionalSlab: profitAdd,   // All-inclusive additional slabs
+      slabsUsed: slabsRequired,
+      // Include what's in the base price for reference
+      included: {
+        sinks: INCLUDED_IN_BASE.sinks,
+        hobs: INCLUDED_IN_BASE.hobs,
+        drainers: INCLUDED_IN_BASE.drainers,
+        taps: INCLUDED_IN_BASE.taps,
+        edges: INCLUDED_IN_BASE.edgeProfile
+      }
     },
     customer: {
-      name: 'John Smith',
-      email: 'john.smith@example.com',
-      phone: '07700 900123',
-      address: '123 Test Street, Manchester, M1 2AB'
+      name: '',
+      email: '',
+      phone: '',
+      address: ''
     }
     // Note: render3dViews removed - images too large for localStorage
     // Quote summary will use interactive 3D instead
