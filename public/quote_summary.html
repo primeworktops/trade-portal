@@ -815,6 +815,44 @@
       page-break-before: always !important;
       break-before: page !important;
     }
+    
+    /* Customer edit styles */
+    .edit-btn {
+      float: right;
+      background: none;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .edit-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+    .customer-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .customer-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(30, 77, 58, 0.1);
+    }
+    
+    @media print {
+      .edit-btn {
+        display: none !important;
+      }
+      #customerEditForm {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -885,10 +923,10 @@
         </div>
       </div>
       
-      <!-- Customer Details -->
+      <!-- Customer Details - Editable -->
       <div class="card" id="customerCard">
-        <div class="card-title">Customer Details</div>
-        <div class="details-grid">
+        <div class="card-title">Customer Details <button onclick="toggleCustomerEdit()" class="edit-btn" id="customerEditBtn">✏️ Edit</button></div>
+        <div class="details-grid" id="customerDisplay">
           <div>
             <div class="detail-group">
               <div class="detail-label">Customer Name</div>
@@ -907,6 +945,29 @@
             <div class="detail-group">
               <div class="detail-label">Address</div>
               <div class="detail-value" id="customerAddress">-</div>
+            </div>
+          </div>
+        </div>
+        <!-- Editable form (hidden by default) -->
+        <div class="details-grid" id="customerEditForm" style="display:none;">
+          <div>
+            <div class="detail-group">
+              <div class="detail-label">Customer Name</div>
+              <input type="text" id="customerNameInput" class="customer-input" placeholder="Enter customer name">
+            </div>
+            <div class="detail-group">
+              <div class="detail-label">Email</div>
+              <input type="email" id="customerEmailInput" class="customer-input" placeholder="Enter email">
+            </div>
+          </div>
+          <div>
+            <div class="detail-group">
+              <div class="detail-label">Phone</div>
+              <input type="tel" id="customerPhoneInput" class="customer-input" placeholder="Enter phone number">
+            </div>
+            <div class="detail-group">
+              <div class="detail-label">Address</div>
+              <input type="text" id="customerAddressInput" class="customer-input" placeholder="Enter address">
             </div>
           </div>
         </div>
@@ -1061,18 +1122,18 @@
   <script>
     // ========== TRADE PARTNER SETTINGS (customisable per partner) ==========
     const tradePartnerSettings = {
-      logo: '1b4siXtYe-hHBn8BDDE79cbL_fJAHaRgq', // Google Drive ID - Prime Stone Works logo
-      companyName: 'Prime Stone Works',
+      logo: '1mz2ohkqemwBnafFM_oDKKyfVAzTe40qT', // Google Drive ID - SPM Granite logo
+      companyName: 'SPM Granite',
       headerColor: '#f5f5f5', // Light background to show logo better
       headerTextColor: '#333',
-      phone: '0800 123 4567',
-      email: 'info@primestoneworks.com',
-      website: 'www.primestoneworks.com',
+      phone: '',
+      email: '',
+      website: '',
       terms: [
         'Quote valid for 30 days from date of issue',
-        '50% deposit required to confirm order',
-        'Balance due before installation',
-        'Lead time: 2-3 weeks from template',
+        '0% deposit required to confirm order',
+        'Balance due on/after installation',
+        'Lead time: 10-14 days from template',
         'Measurements subject to final template'
       ],
       // Partners can add their own terms
@@ -1152,6 +1213,68 @@
         
         const slabSection = document.getElementById('slabLayoutSection');
         if (slabSection) slabSection.style.display = 'block';
+      }
+    }
+    
+    // ========== CUSTOMER DETAILS ==========
+    let customerEditMode = false;
+    
+    function toggleCustomerEdit() {
+      customerEditMode = !customerEditMode;
+      const display = document.getElementById('customerDisplay');
+      const form = document.getElementById('customerEditForm');
+      const btn = document.getElementById('customerEditBtn');
+      
+      if (customerEditMode) {
+        display.style.display = 'none';
+        form.style.display = 'grid';
+        btn.textContent = '✓ Save';
+        btn.style.background = '#1e4d3a';
+        btn.style.color = 'white';
+        
+        // Populate inputs with current values
+        const name = document.getElementById('customerName').textContent;
+        const email = document.getElementById('customerEmail').textContent;
+        const phone = document.getElementById('customerPhone').textContent;
+        const address = document.getElementById('customerAddress').textContent;
+        
+        document.getElementById('customerNameInput').value = name === '-' ? '' : name;
+        document.getElementById('customerEmailInput').value = email === '-' ? '' : email;
+        document.getElementById('customerPhoneInput').value = phone === '-' ? '' : phone;
+        document.getElementById('customerAddressInput').value = address === '-' ? '' : address;
+      } else {
+        // Save values
+        const name = document.getElementById('customerNameInput').value.trim();
+        const email = document.getElementById('customerEmailInput').value.trim();
+        const phone = document.getElementById('customerPhoneInput').value.trim();
+        const address = document.getElementById('customerAddressInput').value.trim();
+        
+        document.getElementById('customerName').textContent = name || '-';
+        document.getElementById('customerEmail').textContent = email || '-';
+        document.getElementById('customerPhone').textContent = phone || '-';
+        document.getElementById('customerAddress').textContent = address || '-';
+        
+        display.style.display = 'grid';
+        form.style.display = 'none';
+        btn.textContent = '✏️ Edit';
+        btn.style.background = '';
+        btn.style.color = '';
+        
+        // Save to sessionStorage
+        sessionStorage.setItem('customerDetails', JSON.stringify({ name, email, phone, address }));
+      }
+    }
+    
+    function loadCustomerDetails() {
+      const saved = sessionStorage.getItem('customerDetails');
+      if (saved) {
+        try {
+          const details = JSON.parse(saved);
+          if (details.name) document.getElementById('customerName').textContent = details.name;
+          if (details.email) document.getElementById('customerEmail').textContent = details.email;
+          if (details.phone) document.getElementById('customerPhone').textContent = details.phone;
+          if (details.address) document.getElementById('customerAddress').textContent = details.address;
+        } catch (e) {}
       }
     }
     
@@ -1664,6 +1787,9 @@
         
         // Initialize admin state (check if unlocked from designer)
         initAdminState();
+        
+        // Load saved customer details
+        loadCustomerDetails();
         
         // Render slab layout if admin unlocked
         if (adminUnlocked) {
@@ -2664,6 +2790,7 @@
           const wLen = d.worktopLength || 3000;
           const wDepth = d.worktopDepth || 600;
           const startMm = d.startMm || 0;
+          const stepout = d.stepout;
           
           // Position dropdown based on edge
           if (edge === 'back') {
@@ -2675,25 +2802,50 @@
           } else if (edge === 'left') {
             dx = wx + WORKTOP_THICKNESS/2 - cx;
             dz = wy + startMm + segLen/2 - cz;
-          } else { // right
+          } else if (edge === 'right') {
             dx = wx + wLen - WORKTOP_THICKNESS/2 - cx;
             dz = wy + startMm + segLen/2 - cz;
+          } else if (edge === 'stepout_bottom' && stepout) {
+            // Bottom of stepout
+            if (stepout.corner === 'front-left') {
+              dx = wx + startMm + segLen/2 - cx;
+              dz = wy + wDepth + stepout.depth - WORKTOP_THICKNESS/2 - cz;
+            } else if (stepout.corner === 'front-right') {
+              dx = wx + wLen - stepout.length + startMm + segLen/2 - cx;
+              dz = wy + wDepth + stepout.depth - WORKTOP_THICKNESS/2 - cz;
+            }
+          } else if (edge === 'stepout_left' && stepout) {
+            if (stepout.corner === 'front-left') {
+              dx = wx + WORKTOP_THICKNESS/2 - cx;
+              dz = wy + wDepth + startMm + segLen/2 - cz;
+            }
+          } else if (edge === 'stepout_right' && stepout) {
+            if (stepout.corner === 'front-left') {
+              dx = wx + stepout.length - WORKTOP_THICKNESS/2 - cx;
+              dz = wy + wDepth + startMm + segLen/2 - cz;
+            } else if (stepout.corner === 'front-right') {
+              dx = wx + wLen - WORKTOP_THICKNESS/2 - cx;
+              dz = wy + wDepth + startMm + segLen/2 - cz;
+            }
           }
           
-          // Create dropdown geometry
-          const dGeo = (edge === 'back' || edge === 'front') 
-            ? new THREE.BoxGeometry(segLen, dropH, WORKTOP_THICKNESS)
-            : new THREE.BoxGeometry(WORKTOP_THICKNESS, dropH, segLen);
-          
-          const dMesh = new THREE.Mesh(dGeo, material);
-          
-          // Position: dropdown hangs from bottom of worktop
-          const dropdownCenterY = -WORKTOP_THICKNESS/2 - dropH/2;
-          dMesh.position.set(dx, dropdownCenterY, dz);
-          dMesh.castShadow = true;
-          scene.add(dMesh);
-          
-          console.log(`Dropdown ${i}: edge=${edge}, size=${segLen}x${dropH}`);
+          if (dx !== undefined && dz !== undefined) {
+            // Create dropdown geometry
+            const isHorizontalEdge = edge === 'back' || edge === 'front' || edge === 'stepout_bottom' || edge === 'stepout_top';
+            const dGeo = isHorizontalEdge
+              ? new THREE.BoxGeometry(segLen, dropH, WORKTOP_THICKNESS)
+              : new THREE.BoxGeometry(WORKTOP_THICKNESS, dropH, segLen);
+            
+            const dMesh = new THREE.Mesh(dGeo, material);
+            
+            // Position: dropdown hangs from bottom of worktop
+            const dropdownCenterY = -WORKTOP_THICKNESS/2 - dropH/2;
+            dMesh.position.set(dx, dropdownCenterY, dz);
+            dMesh.castShadow = true;
+            scene.add(dMesh);
+            
+            console.log(`Dropdown ${i}: edge=${edge}, size=${segLen}x${dropH}`);
+          }
         });
       }
       

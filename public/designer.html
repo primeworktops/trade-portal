@@ -992,6 +992,12 @@ const TEXTURE_CROP_CONFIG = {
   'default': { crop: 0, offset: 0, repeat: 1 }    // Default - no crop
 };
 
+// Material-specific crop overrides (for materials that need different zoom than their brand default)
+const MATERIAL_CROP_OVERRIDE = {
+  'mod_tajmahal_leather': { crop: 0.35, offset: 0.35, repeat: 0.30 },  // Taj Mahal Leather - zoom in more to hide border
+  'mod_calacattaviola': { crop: 0.35, offset: 0.35, repeat: 0.30 }     // Calacatta Viola - zoom in more to hide border
+};
+
 const MATERIAL_COLORS = {
   // Silestone Collection - 84 materials (brand: 'SIL')
   ariel: { name: 'Ariel', color: 0xe8e8e8, css: '#e8e8e8', cssSelected: '#d0d0d0', roughness: 0.15, textureId: '1aKMbFb_Qmnfsy9K2zyK1SYbEIyp_XUi_' },
@@ -1683,19 +1689,62 @@ function detectJointBetween(w1, w2) {
 }
 
 function getFreeSegments(w, edge) {
-  const len = (edge === 'back' || edge === 'front') ? w.length : w.depth;
+  let len = (edge === 'back' || edge === 'front') ? w.length : w.depth;
   const joints = w.joints[edge] || [];
-  if (joints.length === 0) return [{ start: 0, end: len }];
+  
+  // Adjust for stepout - the main edge is shortened where stepout exists
+  let stepoutOffset = 0;
+  let stepoutEnd = len;
+  
+  if (w.stepout) {
+    const s = w.stepout;
+    const isVertical = w.depth > w.length;
+    
+    if (isVertical) {
+      // Vertical worktop - stepout affects left/right edges
+      if ((s.corner === 'front-left' && edge === 'left') ||
+          (s.corner === 'front-right' && edge === 'right')) {
+        // Edge ends before stepout starts
+        stepoutEnd = w.depth - s.length;
+      } else if ((s.corner === 'back-left' && edge === 'left') ||
+                 (s.corner === 'back-right' && edge === 'right')) {
+        // Edge starts after stepout ends
+        stepoutOffset = s.length;
+      }
+    } else {
+      // Horizontal worktop - stepout affects front/back edges
+      if ((s.corner === 'front-left' && edge === 'front') ||
+          (s.corner === 'back-left' && edge === 'back')) {
+        // Edge starts after stepout (stepout.length from left)
+        stepoutOffset = s.length;
+      } else if ((s.corner === 'front-right' && edge === 'front') ||
+                 (s.corner === 'back-right' && edge === 'back')) {
+        // Edge ends before stepout (stepout.length from right)
+        stepoutEnd = w.length - s.length;
+      }
+    }
+  }
+  
+  // Start with base segment (adjusted for stepout)
+  if (joints.length === 0) {
+    return [{ start: stepoutOffset, end: stepoutEnd }];
+  }
   
   const sorted = [...joints].sort((a, b) => a.start - b.start);
   const free = [];
-  let pos = 0;
+  let pos = stepoutOffset;
+  
   sorted.forEach(j => {
-    if (j.start > pos) free.push({ start: pos, end: j.start });
-    pos = Math.max(pos, j.end);
+    // Clamp joint to valid range
+    const jStart = Math.max(stepoutOffset, Math.min(stepoutEnd, j.start));
+    const jEnd = Math.max(stepoutOffset, Math.min(stepoutEnd, j.end));
+    
+    if (jStart > pos) free.push({ start: pos, end: jStart });
+    pos = Math.max(pos, jEnd);
   });
-  if (pos < len) free.push({ start: pos, end: len });
-  return free;
+  
+  if (pos < stepoutEnd) free.push({ start: pos, end: stepoutEnd });
+  return free.filter(seg => seg.end > seg.start);
 }
 
 // ========== SNAPPING ==========
@@ -3082,6 +3131,74 @@ function selectEdgeProfile(profileKey) {
     return;
   }
   
+  // Helper function to apply profile to stepout edge if applicable
+  function applyToStepoutEdge(w, edge, profileData) {
+    if (!w.stepout) return;
+    
+    const s = w.stepout;
+    const isVertical = w.depth > w.length;
+    
+    console.log('applyToStepoutEdge:', edge, 'isVertical:', isVertical, 'corner:', s.corner);
+    
+    // Determine if this edge should extend to include stepout
+    let stepoutEdge = null;
+    let stepoutStart = 0;
+    let stepoutEnd = 0;
+    
+    if (!isVertical) {
+      // Horizontal worktop - stepout extends down (front) or up (back)
+      // Left/right edges extend to stepout_left/stepout_right
+      // Back/front edges extend to stepout_top/stepout_bottom
+      
+      if (edge === 'left' && (s.corner === 'front-left' || s.corner === 'back-left')) {
+        stepoutEdge = 'stepout_left';
+        stepoutEnd = s.depth;
+      } else if (edge === 'right' && (s.corner === 'front-right' || s.corner === 'back-right')) {
+        stepoutEdge = 'stepout_right';
+        stepoutEnd = s.depth;
+      } else if (edge === 'front' && (s.corner === 'front-left' || s.corner === 'front-right')) {
+        stepoutEdge = 'stepout_bottom';
+        stepoutEnd = s.length;
+        console.log('  -> Extending front edge to stepout_bottom, length:', s.length);
+      } else if (edge === 'back' && (s.corner === 'back-left' || s.corner === 'back-right')) {
+        stepoutEdge = 'stepout_top';
+        stepoutEnd = s.length;
+        console.log('  -> Extending back edge to stepout_top, length:', s.length);
+      }
+    } else {
+      // Vertical worktop - stepout extends left or right
+      // Front edge extends to stepout_bottom if stepout is on front side
+      // Back edge extends to stepout_top if stepout is on back side
+      // Left edge extends to stepout_outer if stepout is on left side
+      // Right edge extends to stepout_outer if stepout is on right side
+      
+      if (edge === 'front' && (s.corner === 'front-left' || s.corner === 'front-right')) {
+        stepoutEdge = 'stepout_bottom';
+        stepoutEnd = s.depth;
+        console.log('  -> Extending front edge to stepout_bottom, depth:', s.depth);
+      } else if (edge === 'back' && (s.corner === 'back-left' || s.corner === 'back-right')) {
+        stepoutEdge = 'stepout_top';
+        stepoutEnd = s.depth;
+        console.log('  -> Extending back edge to stepout_top, depth:', s.depth);
+      } else if (edge === 'left' && (s.corner === 'front-left' || s.corner === 'back-left')) {
+        stepoutEdge = 'stepout_outer';
+        stepoutEnd = s.length;
+        console.log('  -> Extending left edge to stepout_outer, length:', s.length);
+      } else if (edge === 'right' && (s.corner === 'front-right' || s.corner === 'back-right')) {
+        stepoutEdge = 'stepout_outer';
+        stepoutEnd = s.length;
+        console.log('  -> Extending right edge to stepout_outer, length:', s.length);
+      } else {
+        console.log('  -> No match for vertical worktop. edge:', edge, 'corner:', s.corner);
+      }
+    }
+    
+    if (stepoutEdge) {
+      w.edgeTypes[`${stepoutEdge}_${stepoutStart}_${stepoutEnd}`] = { ...profileData };
+      console.log('Auto-extended profile to stepout edge:', stepoutEdge, stepoutStart, '-', stepoutEnd);
+    }
+  }
+  
   // Special handling for mitred edge - prompt for height
   if (profileKey === 'mitred_edge') {
     const h = prompt(`Mitred Edge drop (10-100mm):`, lastMitredEdgeHeight.toString());
@@ -3110,11 +3227,17 @@ function selectEdgeProfile(profileKey) {
     
     const { edge, seg } = edgeMenuTarget;
     if (!w.edgeTypes) w.edgeTypes = {};
-    w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { 
+    
+    const profileData = { 
       type: 'mitred_edge', 
       height: height,
       pricePerMeter: profile.price
     };
+    
+    w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { ...profileData };
+    
+    // Auto-extend to stepout edge
+    applyToStepoutEdge(w, edge, profileData);
     
     lastSelectedProfile = profileKey;
     document.getElementById('profileModal').style.display = 'none';
@@ -3143,12 +3266,18 @@ function selectEdgeProfile(profileKey) {
   
   const { edge, seg } = edgeMenuTarget;
   if (!w.edgeTypes) w.edgeTypes = {};
-  w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { 
+  
+  const profileData = { 
     type: 'profile', 
     profileKey: profileKey,
     profileName: profile.name,
     pricePerMeter: profile.price
   };
+  
+  w.edgeTypes[`${edge}_${seg.start}_${seg.end}`] = { ...profileData };
+  
+  // Auto-extend to stepout edge
+  applyToStepoutEdge(w, edge, profileData);
   
   document.getElementById('profileModal').style.display = 'none';
   hideEdgeMenu();
@@ -4557,17 +4686,178 @@ function setEdgeType(type) {
   const { edge } = edgeMenuTarget;
   const MAX_LENGTH = 3200;
   
-  // Get FULL edge length (ignore joints for upstands)
-  const fullLength = (edge === 'back' || edge === 'front') ? w.length : w.depth;
+  // Get FULL edge length (ignore joints for upstands) - but account for stepouts
+  let fullLength = (edge === 'back' || edge === 'front') ? w.length : w.depth;
+  
+  // Check if this is a stepout edge
+  const isStepoutEdge = edge.startsWith('stepout_');
+  
+  // Adjust for stepout on main edges
+  if (!isStepoutEdge && w.stepout) {
+    const s = w.stepout;
+    const isVertical = w.depth > w.length;
+    
+    if (isVertical) {
+      // Vertical worktop - stepout affects left/right edges
+      if ((s.corner === 'front-left' && edge === 'left') ||
+          (s.corner === 'front-right' && edge === 'right') ||
+          (s.corner === 'back-left' && edge === 'left') ||
+          (s.corner === 'back-right' && edge === 'right')) {
+        fullLength = w.depth - s.length;
+      }
+    } else {
+      // Horizontal worktop - stepout affects front/back edges
+      if ((s.corner === 'front-left' && edge === 'front') ||
+          (s.corner === 'back-left' && edge === 'back') ||
+          (s.corner === 'front-right' && edge === 'front') ||
+          (s.corner === 'back-right' && edge === 'back')) {
+        fullLength = w.length - s.length;
+      }
+    }
+  }
+  
+  // For stepout edges, use the segment length
+  if (isStepoutEdge && edgeMenuTarget.seg) {
+    fullLength = edgeMenuTarget.seg.end - edgeMenuTarget.seg.start;
+  }
   
   // Calculate position for upstand - sits directly against worktop edge
-  let vertical = (edge === 'left' || edge === 'right');
+  let vertical = (edge === 'left' || edge === 'right' || edge === 'stepout_left' || edge === 'stepout_right' || edge === 'stepout_outer' || edge === 'stepout_inner');
   
   if (type === 'upstand' || type === 'splashback') {
     const height = type === 'splashback' ? prompt('Splashback height (mm):', '300') : '100';
     if (!height) return;
     
     const h = parseInt(height) || 100;
+    
+    // Handle stepout edges first
+    if (isStepoutEdge && w.stepout) {
+      const s = w.stepout;
+      const isVertical = w.depth > w.length;
+      const seg = edgeMenuTarget.seg;
+      const upstandLen = seg.end - seg.start;
+      
+      console.log('Creating upstand for stepout edge:', edge, 'corner:', s.corner, 'isVertical worktop:', isVertical, 'len:', upstandLen);
+      console.log('Worktop position:', w.x, w.y, 'size:', w.length, 'x', w.depth);
+      
+      // Calculate position based on stepout geometry - store the actual edge position
+      let upstandX, upstandY, isVerticalUpstand;
+      
+      // For horizontal worktops (stepout extends down/up)
+      if (!isVertical) {
+        if (edge === 'stepout_bottom') {
+          isVerticalUpstand = false;
+          if (s.corner === 'front-left') {
+            upstandX = w.x;
+            upstandY = w.y + w.depth + s.depth; // Bottom of stepout
+          } else if (s.corner === 'front-right') {
+            upstandX = w.x + w.length - s.length;
+            upstandY = w.y + w.depth + s.depth;
+          } else if (s.corner === 'back-left') {
+            upstandX = w.x;
+            upstandY = w.y - s.depth;
+          } else {
+            upstandX = w.x + w.length - s.length;
+            upstandY = w.y - s.depth;
+          }
+        } else if (edge === 'stepout_top') {
+          isVerticalUpstand = false;
+          if (s.corner === 'back-left') {
+            upstandX = w.x;
+            upstandY = w.y - s.depth;
+          } else if (s.corner === 'back-right') {
+            upstandX = w.x + w.length - s.length;
+            upstandY = w.y - s.depth;
+          }
+        } else if (edge === 'stepout_left') {
+          isVerticalUpstand = true;
+          if (s.corner === 'front-left') {
+            upstandX = w.x;
+            upstandY = w.y + w.depth;
+          } else if (s.corner === 'front-right') {
+            upstandX = w.x + w.length - s.length;
+            upstandY = w.y + w.depth;
+          } else if (s.corner === 'back-left') {
+            upstandX = w.x;
+            upstandY = w.y - s.depth;
+          } else {
+            upstandX = w.x + w.length - s.length;
+            upstandY = w.y - s.depth;
+          }
+        } else if (edge === 'stepout_right') {
+          isVerticalUpstand = true;
+          if (s.corner === 'front-left') {
+            upstandX = w.x + s.length;
+            upstandY = w.y + w.depth;
+          } else if (s.corner === 'front-right') {
+            upstandX = w.x + w.length;
+            upstandY = w.y + w.depth;
+          } else if (s.corner === 'back-left') {
+            upstandX = w.x + s.length;
+            upstandY = w.y - s.depth;
+          } else {
+            upstandX = w.x + w.length;
+            upstandY = w.y - s.depth;
+          }
+        }
+      } else {
+        // For vertical worktops (stepout extends left/right)
+        if (edge === 'stepout_outer') {
+          isVerticalUpstand = true;
+          if (s.corner === 'front-left' || s.corner === 'back-left') {
+            upstandX = w.x - s.depth;
+          } else {
+            upstandX = w.x + w.length + s.depth;
+          }
+          upstandY = s.corner.startsWith('front') ? w.y + w.depth - s.length : w.y;
+        } else if (edge === 'stepout_inner') {
+          isVerticalUpstand = true;
+          upstandX = s.corner.includes('left') ? w.x : w.x + w.length;
+          upstandY = s.corner.startsWith('front') ? w.y + w.depth - s.length : w.y;
+        } else if (edge === 'stepout_bottom') {
+          isVerticalUpstand = false;
+          if (s.corner === 'front-left' || s.corner === 'front-right') {
+            upstandX = s.corner === 'front-left' ? w.x - s.depth : w.x + w.length;
+            upstandY = w.y + w.depth;
+          }
+        } else if (edge === 'stepout_top') {
+          isVerticalUpstand = false;
+          if (s.corner === 'back-left' || s.corner === 'back-right') {
+            upstandX = s.corner === 'back-left' ? w.x - s.depth : w.x + w.length;
+            upstandY = w.y;
+          }
+        }
+      }
+      
+      console.log('Upstand position:', upstandX, upstandY, 'vertical:', isVerticalUpstand);
+      
+      // Create upstand for stepout edge
+      if (upstandLen > 0 && upstandX !== undefined && upstandY !== undefined) {
+        upstands.push({
+          id: nextId++,
+          x: upstandX,
+          y: upstandY,
+          absoluteX: upstandX,
+          absoluteY: upstandY,
+          length: Math.round(upstandLen),
+          height: h,
+          vertical: isVerticalUpstand,
+          isSplash: type === 'splashback',
+          parentEdge: edge,
+          parentId: w.id
+        });
+        console.log('Upstand created successfully');
+      } else {
+        console.log('Failed to create upstand - invalid position or length');
+      }
+      
+      renderLists();
+      if (type === 'splashback') checkAndSplitUpstands();
+      hideEdgeMenu();
+      render();
+      updateSummary();
+      return;
+    }
     
     // Find CONNECTED worktops only (those that share a joint or overlap)
     function findConnectedWorktops(startWorktop, edgeType) {
@@ -4635,11 +4925,38 @@ function setEdgeType(type) {
       connectedWorktops.forEach(wt => {
         xStart = Math.min(xStart, wt.x);
         xEnd = Math.max(xEnd, wt.x + wt.length);
+        
+        // Extend range to include stepout if it's on the same edge (for vertical worktops)
+        if (wt.stepout) {
+          const s = wt.stepout;
+          const isVerticalWt = wt.depth > wt.length;
+          
+          if (isVerticalWt) {
+            // Vertical worktop - stepout extends LEFT or RIGHT
+            // For back edge: back-left/back-right stepouts
+            // For front edge: front-left/front-right stepouts
+            if (edge === 'back' && (s.corner === 'back-left' || s.corner === 'back-right')) {
+              if (s.corner === 'back-left') {
+                xStart = Math.min(xStart, wt.x - s.depth);
+              } else {
+                xEnd = Math.max(xEnd, wt.x + wt.length + s.depth);
+              }
+            } else if (edge === 'front' && (s.corner === 'front-left' || s.corner === 'front-right')) {
+              if (s.corner === 'front-left') {
+                xStart = Math.min(xStart, wt.x - s.depth);
+              } else {
+                xEnd = Math.max(xEnd, wt.x + wt.length + s.depth);
+              }
+            }
+          }
+        }
       });
       
-      // Remove existing upstands only in this X range
+      // Remove existing upstands only in this X range (including stepout upstands on same edge)
       upstands = upstands.filter(u => {
-        if (u.parentEdge !== edge) return true;
+        const isMatchingStepoutEdge = (edge === 'back' && u.parentEdge === 'stepout_top') ||
+                                       (edge === 'front' && u.parentEdge === 'stepout_bottom');
+        if (u.parentEdge !== edge && !isMatchingStepoutEdge) return true;
         const absY = u.absoluteY !== undefined ? u.absoluteY : u.y;
         const absX = u.absoluteX !== undefined ? u.absoluteX : u.x;
         // Keep upstands that are not at this Y level OR not in this X range
@@ -4758,11 +5075,40 @@ function setEdgeType(type) {
       connectedWorktops.forEach(wt => {
         yStart = Math.min(yStart, wt.y);
         yEnd = Math.max(yEnd, wt.y + wt.depth);
+        
+        // Extend range to include stepout if it's on the same side
+        if (wt.stepout) {
+          const s = wt.stepout;
+          const isVerticalWt = wt.depth > wt.length;
+          
+          if (!isVerticalWt) {
+            // Check if stepout is on the same side as this edge
+            if (edge === 'left' && (s.corner === 'front-left' || s.corner === 'back-left')) {
+              // Front-left: stepout extends DOWN (increases yEnd)
+              // Back-left: stepout extends UP (decreases yStart)
+              if (s.corner === 'front-left') {
+                yEnd = Math.max(yEnd, wt.y + wt.depth + s.depth);
+              } else {
+                yStart = Math.min(yStart, wt.y - s.depth);
+              }
+            } else if (edge === 'right' && (s.corner === 'front-right' || s.corner === 'back-right')) {
+              if (s.corner === 'front-right') {
+                yEnd = Math.max(yEnd, wt.y + wt.depth + s.depth);
+              } else {
+                yStart = Math.min(yStart, wt.y - s.depth);
+              }
+            }
+          }
+        }
       });
       
-      // Remove existing upstands only in this Y range
+      // Remove existing upstands only in this Y range (including stepout upstands on same edge)
       upstands = upstands.filter(u => {
-        if (u.parentEdge !== edge) return true;
+        // Keep upstands on different edges, but remove stepout_left when adding left, etc.
+        const isMatchingStepoutEdge = (edge === 'left' && u.parentEdge === 'stepout_left') ||
+                                       (edge === 'right' && u.parentEdge === 'stepout_right');
+        if (u.parentEdge !== edge && !isMatchingStepoutEdge) return true;
+        
         const absX = u.absoluteX !== undefined ? u.absoluteX : u.x;
         const absY = u.absoluteY !== undefined ? u.absoluteY : u.y;
         // Keep upstands that are not at this X level OR not in this Y range
@@ -6261,90 +6607,219 @@ function drawWorktop2D(w) {
     });
   });
   
-  // Draw stepout edges if present (green free edges)
+  // Draw stepout edges if present (check for profiles)
   if (stepout) {
     const stepLen = stepout.length * scale;
     const stepDepth = stepout.depth * scale;
+    const s = stepout;
     
-    ctx.strokeStyle = '#4CAF50';
-    ctx.lineWidth = 4;
-    ctx.setLineDash([]);
+    // Helper function to get edge style based on profile
+    function getStepoutEdgeStyle(edgeName) {
+      if (w.edgeTypes) {
+        // Look for any profile on this stepout edge (search all keys that start with this edge name)
+        for (const [key, edgeType] of Object.entries(w.edgeTypes)) {
+          if (key.startsWith(edgeName + '_')) {
+            if (edgeType?.type === 'profile') {
+              const profileKey = edgeType.profileKey || 'chamfer';
+              const profile = EDGE_PROFILES[profileKey];
+              return { color: profile?.color || '#ff5722', lineWidth: 5, dash: [8, 4] };
+            } else if (edgeType?.type === 'mitred_edge') {
+              return { color: '#795548', lineWidth: 5, dash: [] };
+            } else if (edgeType?.type === 'dropdown') {
+              return { color: '#9c27b0', lineWidth: 6, dash: [] };
+            }
+          }
+        }
+      }
+      return { color: '#4CAF50', lineWidth: 4, dash: [] }; // Default free edge
+    }
     
-    // Draw the new edges created by the stepout
-    ctx.beginPath();
-    
+    // Draw each stepout edge separately with its style
     if (isVertical) {
       // VERTICAL WORKTOP - stepout extends LEFT/RIGHT
       if (stepout.corner === 'front-left') {
-        // Stepout extends LEFT from bottom-left
+        // Outer edge (vertical)
+        let style = getStepoutEdgeStyle('stepout_outer');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x - stepDepth, p.y + height - stepLen);
-        ctx.lineTo(p.x - stepDepth, p.y + height); // Outer left edge
+        ctx.lineTo(p.x - stepDepth, p.y + height);
+        ctx.stroke();
+        
+        // Bottom edge
+        style = getStepoutEdgeStyle('stepout_bottom');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x - stepDepth, p.y + height);
-        ctx.lineTo(p.x, p.y + height); // Bottom edge of stepout
+        ctx.lineTo(p.x, p.y + height);
+        ctx.stroke();
+        
+        // Inner edge
+        style = getStepoutEdgeStyle('stepout_inner');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x - stepDepth, p.y + height - stepLen);
-        ctx.lineTo(p.x, p.y + height - stepLen); // Inner top edge
+        ctx.lineTo(p.x, p.y + height - stepLen);
+        ctx.stroke();
+        
       } else if (stepout.corner === 'front-right') {
-        // Stepout extends RIGHT from bottom-right
+        let style = getStepoutEdgeStyle('stepout_outer');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width + stepDepth, p.y + height - stepLen);
-        ctx.lineTo(p.x + width + stepDepth, p.y + height); // Outer right edge
+        ctx.lineTo(p.x + width + stepDepth, p.y + height);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_bottom');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width, p.y + height);
-        ctx.lineTo(p.x + width + stepDepth, p.y + height); // Bottom edge of stepout
+        ctx.lineTo(p.x + width + stepDepth, p.y + height);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_inner');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width, p.y + height - stepLen);
-        ctx.lineTo(p.x + width + stepDepth, p.y + height - stepLen); // Inner top edge
+        ctx.lineTo(p.x + width + stepDepth, p.y + height - stepLen);
+        ctx.stroke();
+        
       } else if (stepout.corner === 'back-left') {
-        // Stepout extends LEFT from top-left
+        let style = getStepoutEdgeStyle('stepout_outer');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x - stepDepth, p.y);
-        ctx.lineTo(p.x - stepDepth, p.y + stepLen); // Outer left edge
+        ctx.lineTo(p.x - stepDepth, p.y + stepLen);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_top');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x - stepDepth, p.y);
-        ctx.lineTo(p.x, p.y); // Top edge of stepout
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_inner');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x - stepDepth, p.y + stepLen);
-        ctx.lineTo(p.x, p.y + stepLen); // Inner bottom edge
+        ctx.lineTo(p.x, p.y + stepLen);
+        ctx.stroke();
+        
       } else if (stepout.corner === 'back-right') {
-        // Stepout extends RIGHT from top-right
+        let style = getStepoutEdgeStyle('stepout_outer');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width + stepDepth, p.y);
-        ctx.lineTo(p.x + width + stepDepth, p.y + stepLen); // Outer right edge
+        ctx.lineTo(p.x + width + stepDepth, p.y + stepLen);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_top');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width, p.y);
-        ctx.lineTo(p.x + width + stepDepth, p.y); // Top edge of stepout
+        ctx.lineTo(p.x + width + stepDepth, p.y);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_inner');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width, p.y + stepLen);
-        ctx.lineTo(p.x + width + stepDepth, p.y + stepLen); // Inner bottom edge
+        ctx.lineTo(p.x + width + stepDepth, p.y + stepLen);
+        ctx.stroke();
       }
     } else {
       // HORIZONTAL WORKTOP - stepout extends DOWN/UP
       if (stepout.corner === 'front-left') {
-        // Stepout extends DOWN from front-left
+        let style = getStepoutEdgeStyle('stepout_left');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x, p.y + height);
-        ctx.lineTo(p.x, p.y + height + stepDepth); // Left edge extends down
+        ctx.lineTo(p.x, p.y + height + stepDepth);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_bottom');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x, p.y + height + stepDepth);
-        ctx.lineTo(p.x + stepLen, p.y + height + stepDepth); // Bottom edge
+        ctx.lineTo(p.x + stepLen, p.y + height + stepDepth);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_right');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + stepLen, p.y + height);
-        ctx.lineTo(p.x + stepLen, p.y + height + stepDepth); // Inner right edge
+        ctx.lineTo(p.x + stepLen, p.y + height + stepDepth);
+        ctx.stroke();
+        
       } else if (stepout.corner === 'front-right') {
-        // Stepout extends DOWN from front-right
+        let style = getStepoutEdgeStyle('stepout_right');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width, p.y + height);
-        ctx.lineTo(p.x + width, p.y + height + stepDepth); // Right edge extends down
+        ctx.lineTo(p.x + width, p.y + height + stepDepth);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_bottom');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width - stepLen, p.y + height + stepDepth);
-        ctx.lineTo(p.x + width, p.y + height + stepDepth); // Bottom edge
+        ctx.lineTo(p.x + width, p.y + height + stepDepth);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_left');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width - stepLen, p.y + height);
-        ctx.lineTo(p.x + width - stepLen, p.y + height + stepDepth); // Inner left edge
+        ctx.lineTo(p.x + width - stepLen, p.y + height + stepDepth);
+        ctx.stroke();
+        
       } else if (stepout.corner === 'back-left') {
-        // Stepout extends UP from back-left
+        let style = getStepoutEdgeStyle('stepout_left');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x, p.y - stepDepth);
-        ctx.lineTo(p.x, p.y); // Left edge extends up
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_top');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x, p.y - stepDepth);
-        ctx.lineTo(p.x + stepLen, p.y - stepDepth); // Top edge
+        ctx.lineTo(p.x + stepLen, p.y - stepDepth);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_right');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + stepLen, p.y - stepDepth);
-        ctx.lineTo(p.x + stepLen, p.y); // Inner right edge
+        ctx.lineTo(p.x + stepLen, p.y);
+        ctx.stroke();
+        
       } else if (stepout.corner === 'back-right') {
-        // Stepout extends UP from back-right
+        let style = getStepoutEdgeStyle('stepout_right');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width, p.y - stepDepth);
-        ctx.lineTo(p.x + width, p.y); // Right edge extends up
+        ctx.lineTo(p.x + width, p.y);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_top');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width - stepLen, p.y - stepDepth);
-        ctx.lineTo(p.x + width, p.y - stepDepth); // Top edge
+        ctx.lineTo(p.x + width, p.y - stepDepth);
+        ctx.stroke();
+        
+        style = getStepoutEdgeStyle('stepout_left');
+        ctx.strokeStyle = style.color; ctx.lineWidth = style.lineWidth; ctx.setLineDash(style.dash);
+        ctx.beginPath();
         ctx.moveTo(p.x + width - stepLen, p.y - stepDepth);
-        ctx.lineTo(p.x + width - stepLen, p.y); // Inner left edge
+        ctx.lineTo(p.x + width - stepLen, p.y);
+        ctx.stroke();
       }
     }
-    ctx.stroke();
+    ctx.setLineDash([]);
   }
   
   // Draw outline
@@ -6687,7 +7162,37 @@ function drawUpstand2D(u) {
     // For continuous upstands, use absolute position
     const edge = u.parentEdge || 'back';
     
-    if (edge === 'back') {
+    // Handle stepout edges first
+    if (edge.startsWith('stepout_')) {
+      // Determine offset direction based on edge type
+      let offsetX = 0, offsetY = 0;
+      
+      if (edge === 'stepout_bottom') {
+        offsetY = 0; // Draw below edge
+      } else if (edge === 'stepout_top') {
+        offsetY = -VISUAL_DEPTH; // Draw above edge
+      } else if (edge === 'stepout_left') {
+        offsetX = -VISUAL_DEPTH; // Draw left of edge
+      } else if (edge === 'stepout_right') {
+        offsetX = 0; // Draw right of edge
+      } else if (edge === 'stepout_outer') {
+        offsetX = -VISUAL_DEPTH;
+      } else if (edge === 'stepout_inner') {
+        offsetX = 0;
+      }
+      
+      const absX = u.absoluteX + offsetX;
+      const absY = u.absoluteY + offsetY;
+      p = mmToScreen(absX, absY);
+      
+      if (u.vertical) {
+        w = VISUAL_DEPTH * scale;
+        h = u.length * scale;
+      } else {
+        w = u.length * scale;
+        h = VISUAL_DEPTH * scale;
+      }
+    } else if (edge === 'back') {
       p = mmToScreen(u.absoluteX, u.absoluteY - VISUAL_DEPTH);
       w = u.length * scale;
       h = VISUAL_DEPTH * scale;
@@ -6713,7 +7218,38 @@ function drawUpstand2D(u) {
       const edgeStart = u.edgeStart || 0;
       const depth = VISUAL_DEPTH * scale;
       
-      if (edge === 'back') {
+      // Handle stepout edges - use absolute position with visual offset
+      if (edge.startsWith('stepout_')) {
+        const VISUAL_DEPTH = u.isSplash ? u.height : 80;
+        // Determine offset direction based on edge type
+        let offsetX = 0, offsetY = 0;
+        
+        if (edge === 'stepout_bottom') {
+          offsetY = 0; // Draw below edge
+        } else if (edge === 'stepout_top') {
+          offsetY = -VISUAL_DEPTH; // Draw above edge
+        } else if (edge === 'stepout_left') {
+          offsetX = -VISUAL_DEPTH; // Draw left of edge
+        } else if (edge === 'stepout_right') {
+          offsetX = 0; // Draw right of edge
+        } else if (edge === 'stepout_outer') {
+          offsetX = -VISUAL_DEPTH; // Draw outside (left for left corners, but drawing handles this)
+        } else if (edge === 'stepout_inner') {
+          offsetX = 0; // Draw inside
+        }
+        
+        const absX = (u.absoluteX || u.x) + offsetX;
+        const absY = (u.absoluteY || u.y) + offsetY;
+        p = mmToScreen(absX, absY);
+        
+        if (u.vertical) {
+          w = VISUAL_DEPTH * scale;
+          h = u.length * scale;
+        } else {
+          w = u.length * scale;
+          h = VISUAL_DEPTH * scale;
+        }
+      } else if (edge === 'back') {
         p = mmToScreen(parent.x + edgeStart, parent.y - VISUAL_DEPTH);
         w = u.length * scale;
         h = depth;
@@ -6773,7 +7309,38 @@ function drawUpstand2D(u) {
     ctx.setLineDash([4, 2]);
     
     const edge = u.parentEdge || 'back';
-    if (edge === 'back') {
+    
+    // Handle stepout edges
+    if (edge.startsWith('stepout_')) {
+      // Draw connection line based on whether upstand is vertical or horizontal
+      if (u.vertical) {
+        // For vertical stepout upstands, connect on the inner side
+        if (edge === 'stepout_left' || edge === 'stepout_outer') {
+          ctx.beginPath();
+          ctx.moveTo(p.x + w, p.y);
+          ctx.lineTo(p.x + w, p.y + h);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x, p.y + h);
+          ctx.stroke();
+        }
+      } else {
+        // For horizontal stepout upstands, connect on top
+        if (edge === 'stepout_top') {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y + h);
+          ctx.lineTo(p.x + w, p.y + h);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x + w, p.y);
+          ctx.stroke();
+        }
+      }
+    } else if (edge === 'back') {
       ctx.beginPath();
       ctx.moveTo(p.x, p.y + h);
       ctx.lineTo(p.x + w, p.y + h);
@@ -8626,8 +9193,18 @@ function updateSummary() {
     ['back', 'front', 'left', 'right'].forEach(e => jc += (w.joints[e] || []).length);
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([k, v]) => {
-        const [, s, en] = k.split('_');
-        const len = (parseInt(en) - parseInt(s)) / 1000;
+        // Parse key - format is "edge_start_end" or "stepout_edgename_start_end"
+        const parts = k.split('_');
+        let start, end;
+        if (parts.length >= 3) {
+          // Last two parts are always start and end
+          end = parseInt(parts[parts.length - 1]);
+          start = parseInt(parts[parts.length - 2]);
+        } else {
+          start = 0;
+          end = 0;
+        }
+        const len = (end - start) / 1000;
         if (v.type === 'profile') {
           pl += len;
           // Track profile types and keys
@@ -9087,6 +9664,11 @@ let materialTextures = {};  // Cache loaded textures
 
 // Helper function to get crop settings for a material
 function getTextureCropConfig(materialKey) {
+  // Check for material-specific override first
+  if (MATERIAL_CROP_OVERRIDE && MATERIAL_CROP_OVERRIDE[materialKey]) {
+    return MATERIAL_CROP_OVERRIDE[materialKey];
+  }
+  // Fall back to brand default
   const mat = MATERIAL_COLORS[materialKey];
   if (mat && mat.brand && TEXTURE_CROP_CONFIG[mat.brand]) {
     return TEXTURE_CROP_CONFIG[mat.brand];
@@ -9816,7 +10398,19 @@ function render3D() {
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([k, v]) => {
         if (v.type === 'dropdown' || v.type === 'mitred_edge') {
-          const [edge, s, e] = k.split('_');
+          // Parse key - handle both normal edges (front_0_3000) and stepout edges (stepout_bottom_0_620)
+          const parts = k.split('_');
+          let edge, s, e;
+          if (parts[0] === 'stepout') {
+            edge = parts[0] + '_' + parts[1]; // e.g., 'stepout_bottom'
+            s = parts[2];
+            e = parts[3];
+          } else {
+            edge = parts[0];
+            s = parts[1];
+            e = parts[2];
+          }
+          
           const segLen = parseInt(e) - parseInt(s);
           const dropH = v.height;
           const dropThickness = WORKTOP_THICKNESS;
@@ -9836,28 +10430,60 @@ function render3D() {
           } else if (edge === 'left') {
             dx = w.x + dropThickness/2 - cx;
             dz = w.y + parseInt(s) + segLen/2 - cz;
-          } else {
+          } else if (edge === 'right') {
             dx = w.x + w.length - dropThickness/2 - cx;
             dz = w.y + parseInt(s) + segLen/2 - cz;
+          } else if (edge === 'stepout_bottom') {
+            // Bottom of stepout
+            const stepout = w.stepout;
+            if (stepout) {
+              if (stepout.corner === 'front-left') {
+                dx = w.x + parseInt(s) + segLen/2 - cx;
+                dz = w.y + w.depth + stepout.depth - dropThickness/2 - cz;
+              } else if (stepout.corner === 'front-right') {
+                dx = w.x + w.length - stepout.length + parseInt(s) + segLen/2 - cx;
+                dz = w.y + w.depth + stepout.depth - dropThickness/2 - cz;
+              }
+            }
+          } else if (edge === 'stepout_left') {
+            const stepout = w.stepout;
+            if (stepout && stepout.corner === 'front-left') {
+              dx = w.x + dropThickness/2 - cx;
+              dz = w.y + w.depth + parseInt(s) + segLen/2 - cz;
+            }
+          } else if (edge === 'stepout_right') {
+            const stepout = w.stepout;
+            if (stepout) {
+              if (stepout.corner === 'front-left') {
+                dx = w.x + stepout.length - dropThickness/2 - cx;
+                dz = w.y + w.depth + parseInt(s) + segLen/2 - cz;
+              } else if (stepout.corner === 'front-right') {
+                dx = w.x + w.length - dropThickness/2 - cx;
+                dz = w.y + w.depth + parseInt(s) + segLen/2 - cz;
+              }
+            }
           }
           
-          // Create dropdown panel with proper material
-          // Make it slightly taller to overlap into worktop
-          const dGeo = (edge === 'back' || edge === 'front') 
-            ? new THREE.BoxGeometry(segLen, dropH + OVERLAP, dropThickness)
-            : new THREE.BoxGeometry(dropThickness, dropH + OVERLAP, segLen);
-          
-          const dropdownMat = getMaterial3DForDropdown(segLen, dropH);
-          const dMesh = new THREE.Mesh(dGeo, dropdownMat);
-          
-          // Position: dropdown hangs from bottom of worktop
-          // Worktop bottom is at Y = -WORKTOP_THICKNESS
-          // Dropdown center should be at: worktop_bottom - dropH/2 + OVERLAP/2
-          // This makes dropdown top extend OVERLAP into the worktop
-          const dropdownCenterY = -WORKTOP_THICKNESS - dropH/2 + OVERLAP/2;
-          dMesh.position.set(dx, dropdownCenterY, dz);
-          dMesh.castShadow = true;
-          scene.add(dMesh);
+          if (dx !== undefined && dz !== undefined) {
+            // Create dropdown panel with proper material
+            // Make it slightly taller to overlap into worktop
+            const isHorizontalEdge = edge === 'back' || edge === 'front' || edge === 'stepout_bottom' || edge === 'stepout_top';
+            const dGeo = isHorizontalEdge
+              ? new THREE.BoxGeometry(segLen, dropH + OVERLAP, dropThickness)
+              : new THREE.BoxGeometry(dropThickness, dropH + OVERLAP, segLen);
+            
+            const dropdownMat = getMaterial3DForDropdown(segLen, dropH);
+            const dMesh = new THREE.Mesh(dGeo, dropdownMat);
+            
+            // Position: dropdown hangs from bottom of worktop
+            // Worktop bottom is at Y = -WORKTOP_THICKNESS
+            // Dropdown center should be at: worktop_bottom - dropH/2 + OVERLAP/2
+            // This makes dropdown top extend OVERLAP into the worktop
+            const dropdownCenterY = -WORKTOP_THICKNESS - dropH/2 + OVERLAP/2;
+            dMesh.position.set(dx, dropdownCenterY, dz);
+            dMesh.castShadow = true;
+            scene.add(dMesh);
+          }
         }
       });
     }
@@ -9963,6 +10589,36 @@ function render3D() {
         } else { // right
           px = u.absoluteX - UPSTAND_DEPTH_3D/2 - cx;  // Sit ON right edge
           pz = u.absoluteY + u.length/2 - cz;
+        }
+      } else if (parent && u.parentEdge && u.parentEdge.startsWith('stepout_')) {
+        // Stepout edge upstands - use absolute position
+        const edge = u.parentEdge;
+        const absX = u.absoluteX || u.x;
+        const absY = u.absoluteY || u.y;
+        
+        console.log(`  Stepout upstand: edge=${edge}, absX=${absX}, absY=${absY}, vertical=${u.vertical}`);
+        
+        if (edge === 'stepout_bottom') {
+          // Bottom of stepout - horizontal upstand
+          px = absX + u.length/2 - cx;
+          pz = absY - UPSTAND_DEPTH_3D/2 - cz;  // Behind the edge
+        } else if (edge === 'stepout_top') {
+          px = absX + u.length/2 - cx;
+          pz = absY + UPSTAND_DEPTH_3D/2 - cz;
+        } else if (edge === 'stepout_left') {
+          // Left side of stepout - vertical upstand
+          px = absX + UPSTAND_DEPTH_3D/2 - cx;
+          pz = absY + u.length/2 - cz;
+        } else if (edge === 'stepout_right') {
+          px = absX - UPSTAND_DEPTH_3D/2 - cx;
+          pz = absY + u.length/2 - cz;
+        } else if (edge === 'stepout_outer') {
+          // Outer edge of vertical worktop stepout
+          px = absX + UPSTAND_DEPTH_3D/2 - cx;
+          pz = absY + u.length/2 - cz;
+        } else if (edge === 'stepout_inner') {
+          px = absX - UPSTAND_DEPTH_3D/2 - cx;
+          pz = absY + u.length/2 - cz;
         }
       } else if (parent && u.parentEdge) {
         // Position based on parent worktop edge
@@ -10716,20 +11372,29 @@ function renderSlabLayout() {
   worktops.forEach(w => {
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([k, v]) => {
-        if (v.type === 'dropdown') {
-          const [edge, s, e] = k.split('_');
+        if (v.type === 'dropdown' || v.type === 'mitred_edge') {
+          // Parse key - handle both normal edges (front_0_3000) and stepout edges (stepout_bottom_0_620)
+          const parts = k.split('_');
+          let s, e;
+          if (parts[0] === 'stepout') {
+            s = parts[2];
+            e = parts[3];
+          } else {
+            s = parts[1];
+            e = parts[2];
+          }
+          
           const pw = parseInt(e) - parseInt(s);
           const ph = v.height;
           const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
-          pieces.push({ name: 'Dropdown (Mitre)', width: pw, height: ph, type: 'dropdown', color: '#f3e5f5', error: !fits });
-          if (!fits) oversizedPieces.push(`Dropdown (${pw}×${ph}mm)`);
-        } else if (v.type === 'mitred_edge') {
-          const [edge, s, e] = k.split('_');
-          const pw = parseInt(e) - parseInt(s);
-          const ph = v.height;
-          const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
-          pieces.push({ name: 'Mitred Edge', width: pw, height: ph, type: 'mitred_edge', color: '#d7ccc8', error: !fits });
-          if (!fits) oversizedPieces.push(`Mitred Edge (${pw}×${ph}mm)`);
+          
+          if (v.type === 'dropdown') {
+            pieces.push({ name: 'Dropdown (Mitre)', width: pw, height: ph, type: 'dropdown', color: '#f3e5f5', error: !fits });
+            if (!fits) oversizedPieces.push(`Dropdown (${pw}×${ph}mm)`);
+          } else {
+            pieces.push({ name: 'Mitred Edge', width: pw, height: ph, type: 'mitred_edge', color: '#d7ccc8', error: !fits });
+            if (!fits) oversizedPieces.push(`Mitred Edge (${pw}×${ph}mm)`);
+          }
         }
       });
     }
@@ -10976,7 +11641,117 @@ function renderSlabLayout() {
       rotated: placed.rotated
     });
     
+    // For L-shapes with LARGER stepouts, add the empty corner back as usable space
+    // Small stepouts (<=150mm) are cut as simple rectangles, no corner recovery needed
+    // Need 100mm gap from L-shape for cutting separation
+    const MIN_STEPOUT_FOR_LSHAPE = 150; // Only recover corner for stepouts larger than this
+    const CUTTING_GAP = 100; // Gap needed between L-shape and other pieces
+    
+    if (piece.isLShape && piece.stepout && piece.stepout.depth > MIN_STEPOUT_FOR_LSHAPE) {
+      const s = piece.stepout;
+      
+      // Check if piece was rotated on slab (in addition to preRotation)
+      const totalRotation = (piece.preRotated ? 1 : 0) + (placed.rotated ? 1 : 0);
+      const effectivelyRotated = totalRotation % 2 === 1;
+      
+      console.log(`L-SHAPE: corner=${s.corner}, preRotated=${piece.preRotated}, slabRotated=${placed.rotated}, effectivelyRotated=${effectivelyRotated}`);
+      console.log(`  Placed at (${placed.x}, ${placed.y}) size ${placed.w}×${placed.h}`);
+      console.log(`  Stepout: length=${s.length}, depth=${s.depth}`);
+      
+      let cornerX, cornerY, cornerW, cornerH;
+      
+      if (!effectivelyRotated) {
+        // No effective rotation - standard orientation
+        // L-shape: main worktop on top, stepout extends down on one side
+        // Gap needs to be between main worktop edge and the recovered corner
+        if (s.corner === 'front-left') {
+          // Stepout at bottom-left, empty corner at bottom-right of main worktop level
+          // Main worktop bottom edge is at placed.y + (placed.h - s.depth)
+          // Gap goes between main worktop and corner area
+          cornerX = placed.x + s.length + CUTTING_GAP;  // Gap from stepout right edge
+          cornerY = placed.y + placed.h - s.depth + CUTTING_GAP;  // Gap from main worktop bottom
+          cornerW = placed.w - s.length - CUTTING_GAP;
+          cornerH = s.depth - CUTTING_GAP;
+        } else if (s.corner === 'front-right') {
+          // Stepout at bottom-right
+          cornerX = placed.x;
+          cornerY = placed.y + placed.h - s.depth + CUTTING_GAP;
+          cornerW = placed.w - s.length - CUTTING_GAP;
+          cornerH = s.depth - CUTTING_GAP;
+        } else if (s.corner === 'back-left') {
+          // Stepout at top-left, corner at top-right
+          cornerX = placed.x + s.length + CUTTING_GAP;
+          cornerY = placed.y;
+          cornerW = placed.w - s.length - CUTTING_GAP;
+          cornerH = s.depth - CUTTING_GAP;
+        } else if (s.corner === 'back-right') {
+          // Stepout at top-right, corner at top-left
+          cornerX = placed.x;
+          cornerY = placed.y;
+          cornerW = placed.w - s.length - CUTTING_GAP;
+          cornerH = s.depth - CUTTING_GAP;
+        }
+      } else {
+        // Effectively rotated 90°
+        if (s.corner === 'front-left') {
+          cornerX = placed.x + placed.w - s.depth + CUTTING_GAP;
+          cornerY = placed.y + s.length + CUTTING_GAP;
+          cornerW = s.depth - CUTTING_GAP;
+          cornerH = placed.h - s.length - CUTTING_GAP;
+        } else if (s.corner === 'front-right') {
+          cornerX = placed.x + placed.w - s.depth + CUTTING_GAP;
+          cornerY = placed.y;
+          cornerW = s.depth - CUTTING_GAP;
+          cornerH = placed.h - s.length - CUTTING_GAP;
+        } else if (s.corner === 'back-left') {
+          cornerX = placed.x;
+          cornerY = placed.y + s.length + CUTTING_GAP;
+          cornerW = s.depth - CUTTING_GAP;
+          cornerH = placed.h - s.length - CUTTING_GAP;
+        } else if (s.corner === 'back-right') {
+          cornerX = placed.x;
+          cornerY = placed.y;
+          cornerW = s.depth - CUTTING_GAP;
+          cornerH = placed.h - s.length - CUTTING_GAP;
+        }
+      }
+      
+      // Add the empty corner as a free rectangle
+      if (cornerW > 50 && cornerH > 50) {
+        placedSlab.freeRects.push({
+          x: cornerX,
+          y: cornerY,
+          w: cornerW,
+          h: cornerH
+        });
+        console.log(`  L-SHAPE CORNER RECOVERED: ${cornerW}×${cornerH} at (${cornerX},${cornerY})`);
+        
+        // IMPORTANT: Also create a MERGED rectangle that extends from the corner
+        // down to the bottom of the slab (or to existing free space below)
+        // This captures the large area the user highlighted in red
+        
+        const spaceBelow = SLAB_H - (cornerY + cornerH);
+        if (spaceBelow > 50) {
+          // Create merged rectangle from corner top to slab bottom
+          const mergedH = cornerH + spaceBelow;
+          placedSlab.freeRects.push({
+            x: cornerX,
+            y: cornerY,
+            w: cornerW,
+            h: mergedH
+          });
+          console.log(`  L-SHAPE MERGED SPACE: ${cornerW}×${mergedH} at (${cornerX},${cornerY})`);
+        }
+        
+        // Prune and merge free rectangles
+        placedSlab.freeRects = pruneRects(placedSlab.freeRects);
+      } else {
+        console.log(`  L-SHAPE CORNER TOO SMALL: ${cornerW}×${cornerH}`);
+      }
+    }
+    
     console.log(`PLACED: ${piece.name} (${piece.width}×${piece.height}) at (${placed.x},${placed.y}) as ${placed.w}×${placed.h} rotated=${placed.rotated} on slab ${slabs.indexOf(placedSlab) + 1}`);
+    console.log(`  Free rects remaining:`, placedSlab.freeRects.length);
   });
   
   // Calculate canvas size for scrolling - use FIXED height per slab
@@ -12099,7 +12874,18 @@ async function generateQuote() {
   worktops.forEach(w => {
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([key, val]) => {
-        const [edge, start, end] = key.split('_');
+        // Parse key - handle both normal edges (front_0_3000) and stepout edges (stepout_bottom_0_620)
+        const parts = key.split('_');
+        let edge, start, end;
+        if (parts[0] === 'stepout') {
+          edge = parts[0] + '_' + parts[1]; // e.g., 'stepout_bottom'
+          start = parts[2];
+          end = parts[3];
+        } else {
+          edge = parts[0];
+          start = parts[1];
+          end = parts[2];
+        }
         const length = (parseInt(end) - parseInt(start)) / 1000;
         
         if (val.type === 'profile') {
@@ -12120,7 +12906,6 @@ async function generateQuote() {
             included: false
           });
         } else if (val.type === 'dropdown') {
-          const [edgeName, start, end] = key.split('_');
           edgesList.push({
             type: 'dropdown',
             name: 'Dropdown',
@@ -12129,13 +12914,14 @@ async function generateQuote() {
             price: 0,
             included: true,
             // Position data for 3D
-            edge: edgeName,
+            edge: edge,
             startMm: parseInt(start),
             endMm: parseInt(end),
             worktopX: w.x,
             worktopY: w.y,
             worktopLength: w.length,
-            worktopDepth: w.depth
+            worktopDepth: w.depth,
+            stepout: w.stepout || null
           });
         }
       });
