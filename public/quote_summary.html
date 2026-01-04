@@ -686,6 +686,28 @@
         page-break-inside: avoid !important;
       }
       
+      /* Admin Slab Layout */
+      #slabLayoutSection {
+        page-break-inside: avoid !important;
+      }
+      
+      /* Force page break before slab layout when class is applied */
+      .slab-page-break {
+        page-break-before: always !important;
+        break-before: page !important;
+      }
+      
+      #slabCanvas {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+      
+      #slabCanvasContainer {
+        overflow: visible !important;
+        max-height: none !important;
+      }
+      
       .summary-table {
         page-break-inside: avoid !important;
       }
@@ -787,6 +809,12 @@
     .notes-print-text {
       display: none;
     }
+    
+    /* Page break class for PDF generation */
+    .slab-page-break {
+      page-break-before: always !important;
+      break-before: page !important;
+    }
   </style>
 </head>
 <body>
@@ -804,6 +832,12 @@
       </button>
       <button class="btn btn-secondary" onclick="saveAndNewQuote()" style="background:#e8f5e9;border-color:#4CAF50;color:#2e7d32;">
         💾+ Save & New Material Quote
+      </button>
+      <button id="adminModeBtn" class="btn btn-secondary" onclick="toggleAdminMode()" style="margin-left:auto;">
+        🔒 Admin
+      </button>
+      <button id="pdfLockBtn" class="btn btn-secondary" onclick="togglePdfLock()" style="display:none;background:#ffebee;">
+        🔒 Exclude Admin from PDF
       </button>
       <button class="btn btn-secondary" onclick="goBack()">
         ← Back to Designer
@@ -996,6 +1030,23 @@
         </div>
       </div>
       
+      <!-- Admin: Slab Layout Section (hidden by default) -->
+      <div class="card" id="slabLayoutSection" style="display:none;background:#fff8e1;border:2px solid #ff9800;">
+        <div class="card-title" style="color:#e65100;">📦 Slab Layout (Admin Only)</div>
+        <div id="slabLayoutContent" style="padding:10px;">
+          <div style="display:flex;gap:15px;flex-wrap:wrap;margin-bottom:10px;font-size:13px;">
+            <div><strong>Slab Size:</strong> <span id="slabSizeDisplay">3200 × 1600 mm</span></div>
+            <div><strong>Slabs Required:</strong> <span id="slabCountDisplay">0</span></div>
+            <div><strong>Material Cost:</strong> £<span id="materialCostDisplay">0.00</span></div>
+            <div><strong>Fabrication:</strong> £<span id="fabricationCostDisplay">0.00</span></div>
+          </div>
+          <div id="slabCanvasContainer" style="overflow:auto;max-height:450px;">
+            <canvas id="slabCanvas" width="620" height="200" style="border:1px solid #ccc;background:#f9f9f9;max-width:100%;"></canvas>
+          </div>
+          <div id="slabPiecesList" style="margin-top:10px;font-size:11px;"></div>
+        </div>
+      </div>
+      
       <!-- Accept Quote Section -->
       <div class="accept-section" id="acceptSection">
         <div class="accept-title">Ready to proceed?</div>
@@ -1028,6 +1079,82 @@
       customTerms: null
     };
     
+    // ========== ADMIN SETTINGS ==========
+    const ADMIN_PIN = '1414';
+    let adminUnlocked = sessionStorage.getItem('adminUnlocked') === 'true';
+    let includeAdminInPdf = false;
+    
+    function toggleAdminMode() {
+      if (adminUnlocked) {
+        // Already unlocked - toggle slab layout visibility
+        const slabSection = document.getElementById('slabLayoutSection');
+        if (slabSection) {
+          slabSection.style.display = slabSection.style.display === 'none' ? 'block' : 'none';
+        }
+        return;
+      }
+      
+      const pin = prompt('Enter Admin PIN:');
+      if (pin === ADMIN_PIN) {
+        adminUnlocked = true;
+        sessionStorage.setItem('adminUnlocked', 'true');
+        
+        // Update admin button
+        const adminBtn = document.getElementById('adminModeBtn');
+        if (adminBtn) {
+          adminBtn.textContent = '🔓 Admin ✓';
+          adminBtn.style.background = '#e8f5e9';
+          adminBtn.style.borderColor = '#1e4d3a';
+        }
+        
+        // Show PDF lock button
+        const pdfLockBtn = document.getElementById('pdfLockBtn');
+        if (pdfLockBtn) pdfLockBtn.style.display = 'inline-block';
+        
+        // Show slab layout section
+        const slabSection = document.getElementById('slabLayoutSection');
+        if (slabSection) {
+          slabSection.style.display = 'block';
+          renderSlabLayoutSummary();
+        }
+        
+        alert('Admin mode unlocked! Slab layout is now visible.');
+      } else if (pin !== null) {
+        alert('Incorrect PIN');
+      }
+    }
+    
+    function togglePdfLock() {
+      includeAdminInPdf = !includeAdminInPdf;
+      const btn = document.getElementById('pdfLockBtn');
+      if (btn) {
+        if (includeAdminInPdf) {
+          btn.textContent = '🔓 Include Admin in PDF';
+          btn.style.background = '#e8f5e9';
+        } else {
+          btn.textContent = '🔒 Exclude Admin from PDF';
+          btn.style.background = '#ffebee';
+        }
+      }
+    }
+    
+    function initAdminState() {
+      if (adminUnlocked) {
+        const adminBtn = document.getElementById('adminModeBtn');
+        if (adminBtn) {
+          adminBtn.textContent = '🔓 Admin ✓';
+          adminBtn.style.background = '#e8f5e9';
+          adminBtn.style.borderColor = '#1e4d3a';
+        }
+        
+        const pdfLockBtn = document.getElementById('pdfLockBtn');
+        if (pdfLockBtn) pdfLockBtn.style.display = 'inline-block';
+        
+        const slabSection = document.getElementById('slabLayoutSection');
+        if (slabSection) slabSection.style.display = 'block';
+      }
+    }
+    
     // ══════════════════════════════════════════════════════════════════════════════
     // PRICING CONFIGURATION - Must match designer.html
     // ══════════════════════════════════════════════════════════════════════════════
@@ -1054,7 +1181,7 @@
       undermount_sink: { name: 'Undermount Sink', price: 110, credit: 55 },
       overmount_sink: { name: 'Overmount Sink', price: 55, credit: 27.50 },
       hob: { name: 'Hob Cutout', price: 55, credit: 27.50 },
-      recess_hob: { name: 'Recess Hob', price: 150, credit: 75 },
+      recess_hob: { name: 'Recess Hob', price: 125, credit: 62.50 },
       tap: { name: 'Tap Hole', price: 9.17, credit: 4.58 },
       drainer: { name: 'Drainer Grooves', price: 110, credit: 55 },
       recess_drainer: { name: 'Recess Drainer', price: 330, credit: 165 },
@@ -1189,8 +1316,9 @@
           } else {
             quoteData.render3dViews = imageData.render3dViews || [];
             quoteData.render2dView = imageData.render2dView || null;
+            quoteData.slabLayoutImage = imageData.slabLayoutImage || null;
           }
-          console.log('✓ Loaded views from sessionStorage - 3D:', quoteData.render3dViews?.length || 0, ', 2D:', quoteData.render2dView ? 'yes' : 'no');
+          console.log('✓ Loaded views from sessionStorage - 3D:', quoteData.render3dViews?.length || 0, ', 2D:', quoteData.render2dView ? 'yes' : 'no', ', Slab:', quoteData.slabLayoutImage ? 'yes' : 'no');
         }
       } catch (e) {
         console.warn('Could not load images from sessionStorage:', e);
@@ -1309,12 +1437,25 @@
         document.getElementById('materialThickness').textContent = (quoteData.material?.thickness || 20) + 'mm';
         
         const tierEl = document.getElementById('materialTier');
-        tierEl.textContent = '£'.repeat(quoteData.material?.tier || 1);
-        tierEl.className = 'tier-badge tier-' + (quoteData.material?.tier || 1);
+        if (quoteData.material?.isCustom) {
+          tierEl.textContent = 'Custom';
+          tierEl.className = 'tier-badge';
+          tierEl.style.background = '#fff8e1';
+          tierEl.style.color = '#f57c00';
+        } else {
+          tierEl.textContent = '£'.repeat(quoteData.material?.tier || 1);
+          tierEl.className = 'tier-badge tier-' + (quoteData.material?.tier || 1);
+        }
         
-        // Set material swatch - use texture if available, fallback to CSS color
+        // Set material swatch - use custom image, texture, or CSS color
         const swatchEl = document.getElementById('materialSwatch');
-        if (quoteData.material?.textureId) {
+        if (quoteData.material?.isCustom && quoteData.material?.customImage) {
+          // Use custom material image
+          swatchEl.style.backgroundImage = `url('${quoteData.material.customImage}')`;
+          swatchEl.style.backgroundSize = 'cover';
+          swatchEl.style.backgroundPosition = 'center';
+          console.log('Using custom material image for swatch');
+        } else if (quoteData.material?.textureId) {
           swatchEl.style.backgroundImage = 
             `url('https://lh3.googleusercontent.com/d/${quoteData.material.textureId}=s400')`;
           
@@ -1327,17 +1468,77 @@
         // Always set background color as fallback
         swatchEl.style.backgroundColor = quoteData.material?.css || '#e8e8e8';
         
-        // Worktop pieces
+        // Worktop pieces (handling splits)
         const piecesGrid = document.getElementById('piecesGrid');
         if (quoteData.worktops && quoteData.worktops.length > 0) {
-          piecesGrid.innerHTML = quoteData.worktops.map(w => `
+          let worktopPieces = [];
+          
+          quoteData.worktops.forEach(w => {
+            // Check if worktop has splits
+            if (w.splits && w.splits.length > 0) {
+              const verticalSplits = w.splits.filter(s => s.direction === 'vertical').sort((a, b) => a.position - b.position);
+              const horizontalSplits = w.splits.filter(s => s.direction === 'horizontal').sort((a, b) => a.position - b.position);
+              
+              if (verticalSplits.length > 0) {
+                // Vertical splits divide the length
+                let prevPos = 0;
+                verticalSplits.forEach((split, i) => {
+                  const pieceLength = split.position - prevPos;
+                  worktopPieces.push({
+                    name: `${w.name || 'Worktop'} (${i + 1})`,
+                    length: pieceLength,
+                    depth: w.depth
+                  });
+                  prevPos = split.position;
+                });
+                // Last piece
+                worktopPieces.push({
+                  name: `${w.name || 'Worktop'} (${verticalSplits.length + 1})`,
+                  length: w.length - prevPos,
+                  depth: w.depth
+                });
+              } else if (horizontalSplits.length > 0) {
+                // Horizontal splits divide the depth
+                let prevPos = 0;
+                horizontalSplits.forEach((split, i) => {
+                  worktopPieces.push({
+                    name: `${w.name || 'Worktop'} (${i + 1})`,
+                    length: w.length,
+                    depth: split.position - prevPos
+                  });
+                  prevPos = split.position;
+                });
+                // Last piece
+                worktopPieces.push({
+                  name: `${w.name || 'Worktop'} (${horizontalSplits.length + 1})`,
+                  length: w.length,
+                  depth: w.depth - prevPos
+                });
+              }
+            } else {
+              // No splits - add whole worktop
+              worktopPieces.push({
+                name: w.name,
+                length: w.length,
+                depth: w.depth,
+                stepout: w.stepout
+              });
+            }
+            
+            // Add stepout as a note on the worktop (it's part of the same piece)
+            if (w.stepout) {
+              // Stepout is already indicated on the main piece
+            }
+          });
+          
+          piecesGrid.innerHTML = worktopPieces.map(w => `
             <div class="piece-card">
               <div class="piece-drawing">
-                ${createPieceSVG(w.length, w.depth, 'worktop')}
+                ${w.stepout ? createLShapeSVG(w.length, w.depth, w.stepout) : createPieceSVG(w.length, w.depth, 'worktop')}
               </div>
               <div class="piece-name">${w.name}</div>
-              <div class="piece-dims">${w.length} × ${w.depth} mm</div>
-              <div class="piece-type">Worktop</div>
+              <div class="piece-dims">${w.length} × ${w.depth} mm${w.stepout ? ` + ${w.stepout.length}×${w.stepout.depth} stepout` : ''}</div>
+              <div class="piece-type">Worktop${w.stepout ? ' (L-Shape)' : ''}</div>
             </div>
           `).join('');
         }
@@ -1460,6 +1661,14 @@
         
         // Pricing
         populatePricing();
+        
+        // Initialize admin state (check if unlocked from designer)
+        initAdminState();
+        
+        // Render slab layout if admin unlocked
+        if (adminUnlocked) {
+          renderSlabLayoutSummary();
+        }
         
         // 3D Render - use captured images if available
         if (quoteData.render3dViews && quoteData.render3dViews.length > 0) {
@@ -1619,6 +1828,72 @@
       `;
     }
     
+    function createLShapeSVG(mainW, mainH, stepout) {
+      // Create L-shape SVG - always display horizontally for better visibility
+      const isVertical = mainH > mainW;
+      const sLen = stepout.length;
+      const sDepth = stepout.depth;
+      const corner = stepout.corner || 'front-left';
+      
+      // For display, always orient so the longest dimension is horizontal
+      let dispMainW, dispMainH, dispStepL, dispStepD, dispCorner;
+      
+      if (isVertical) {
+        // Rotate 90° for display: swap main dimensions
+        dispMainW = mainH;  // Original depth becomes display width
+        dispMainH = mainW;  // Original width becomes display height
+        dispStepL = sLen;
+        dispStepD = sDepth;
+        // Remap corner for rotated display
+        if (corner === 'front-left') dispCorner = 'front-left';
+        else if (corner === 'front-right') dispCorner = 'front-right';
+        else if (corner === 'back-left') dispCorner = 'back-left';
+        else dispCorner = 'back-right';
+      } else {
+        dispMainW = mainW;
+        dispMainH = mainH;
+        dispStepL = sLen;
+        dispStepD = sDepth;
+        dispCorner = corner;
+      }
+      
+      // Calculate bounding box for display
+      const totalW = dispMainW;
+      const totalH = dispMainH + dispStepD;
+      
+      // Scale to fit in box
+      const maxW = 150, maxH = 60;
+      const ratio = Math.min(maxW / totalW, maxH / totalH);
+      const w = dispMainW * ratio;
+      const h = dispMainH * ratio;
+      const stepL = dispStepL * ratio;
+      const stepD = dispStepD * ratio;
+      
+      // Draw L-shape with stepout at bottom
+      let path;
+      if (dispCorner === 'front-left' || dispCorner === 'back-left') {
+        // Stepout on left side
+        path = `M ${10} ${10} L ${10 + w} ${10} L ${10 + w} ${10 + h} L ${10 + stepL} ${10 + h} L ${10 + stepL} ${10 + h + stepD} L ${10} ${10 + h + stepD} Z`;
+      } else {
+        // Stepout on right side
+        path = `M ${10} ${10} L ${10 + w} ${10} L ${10 + w} ${10 + h + stepD} L ${10 + w - stepL} ${10 + h + stepD} L ${10 + w - stepL} ${10 + h} L ${10} ${10 + h} Z`;
+      }
+      
+      return `
+        <svg width="${totalW * ratio + 20}" height="${totalH * ratio + 20}" viewBox="0 0 ${totalW * ratio + 20} ${totalH * ratio + 20}">
+          <path d="${path}" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+          <text x="${10 + w/2}" y="${10 + h/2}" 
+                text-anchor="middle" font-size="9" fill="#333">
+            ${mainW} × ${mainH}
+          </text>
+          <text x="${10 + w/2}" y="${10 + h/2 + 10}" 
+                text-anchor="middle" font-size="8" fill="#666">
+            +${sLen}×${sDepth}
+          </text>
+        </svg>
+      `;
+    }
+    
     function populatePricing() {
       const body = document.getElementById('priceBody');
       let rows = '';
@@ -1627,13 +1902,24 @@
       // Get correct pricing based on material brand
       const slabs = quoteData.pricing?.slabsUsed || 1;
       const brandCode = quoteData.material?.brandCode || 'MOD';
-      const fabPrices = getFabricationPrices(brandCode);
+      // Use custom profit values from quoteData if set, otherwise fallback to brand defaults
+      const defaultFabPrices = getFabricationPrices(brandCode);
+      const fabPrices = {
+        firstSlab: quoteData.pricing?.firstSlab || defaultFabPrices.firstSlab,
+        additionalSlab: quoteData.pricing?.additionalSlab || defaultFabPrices.additionalSlab
+      };
+      
+      console.log('=== FABRICATION PRICING ===');
+      console.log('quoteData.pricing.firstSlab:', quoteData.pricing?.firstSlab);
+      console.log('quoteData.pricing.additionalSlab:', quoteData.pricing?.additionalSlab);
+      console.log('Using firstSlab:', fabPrices.firstSlab);
+      console.log('Using additionalSlab:', fabPrices.additionalSlab);
       
       // Material cost (supplier slab price)
       const slabPrice = quoteData.material?.slabPrice || quoteData.pricing?.materialPerSlab || 0;
       const materialCost = slabs * slabPrice;
       
-      // Fabrication cost (our charges)
+      // Fabrication cost (our charges) - uses custom values from designer
       const fabricationCost = fabPrices.firstSlab + (slabs - 1) * fabPrices.additionalSlab;
       
       // Total worktop cost = material + fabrication
@@ -2566,6 +2852,28 @@
       const acceptSection = document.getElementById('acceptSection');
       if (acceptSection) acceptSection.style.display = 'none';
       
+      // Handle admin slab layout section for PDF
+      const slabLayoutSection = document.getElementById('slabLayoutSection');
+      const slabCanvas = document.getElementById('slabCanvas');
+      const originalSlabDisplay = slabLayoutSection?.style.display;
+      const originalCanvasWidth = slabCanvas?.style.width;
+      const originalCanvasMaxWidth = slabCanvas?.style.maxWidth;
+      
+      if (!includeAdminInPdf || !adminUnlocked) {
+        // Hide slab layout completely
+        if (slabLayoutSection) slabLayoutSection.style.display = 'none';
+      } else {
+        // Include admin in PDF - add page break class and scale canvas
+        if (slabLayoutSection) {
+          slabLayoutSection.classList.add('slab-page-break');
+        }
+        if (slabCanvas) {
+          slabCanvas.style.maxWidth = '100%';
+          slabCanvas.style.width = '100%';
+          slabCanvas.style.height = 'auto';
+        }
+      }
+      
       // Logo handling for PDF
       const logoImg = document.getElementById('logoImg');
       const logoPdfFallback = document.getElementById('logoPdfFallback');
@@ -2754,7 +3062,7 @@
           logging: false
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'], before: '.slab-page-break', avoid: '.card' }
       };
       
       html2pdf().set(opt).from(element).save().then(() => {
@@ -2766,6 +3074,19 @@
         if (thumbs) thumbs.style.display = 'flex';
         if (resetBtn) resetBtn.style.display = 'block';
         if (acceptSection) acceptSection.style.display = 'block';
+        
+        // Restore admin slab layout section
+        if (slabLayoutSection && adminUnlocked) {
+          slabLayoutSection.style.display = originalSlabDisplay || 'block';
+          slabLayoutSection.classList.remove('slab-page-break');
+        }
+        
+        // Restore canvas styles
+        if (slabCanvas) {
+          slabCanvas.style.width = originalCanvasWidth || '';
+          slabCanvas.style.maxWidth = originalCanvasMaxWidth || '';
+          slabCanvas.style.height = '';
+        }
         
         // Restore Use for PDF buttons
         document.querySelectorAll('.use-for-pdf-thumb').forEach(btn => btn.style.display = '');
@@ -2882,6 +3203,89 @@
     function saveQuote() {
       // Would send to database
       alert('Quote saved!\n\nQuote #' + quoteData.quoteNumber + ' has been saved.');
+    }
+    
+    // ========== SLAB LAYOUT RENDERING (Admin) ==========
+    function renderSlabLayoutSummary() {
+      const canvas = document.getElementById('slabCanvas');
+      const ctx = canvas?.getContext('2d');
+      if (!ctx || !quoteData) return;
+      
+      // Try to use captured image from designer first
+      if (quoteData.slabLayoutImage) {
+        console.log('Using captured slab layout image from designer, size:', (quoteData.slabLayoutImage.length / 1024).toFixed(1), 'KB');
+        const img = new Image();
+        img.onload = function() {
+          console.log('Slab image loaded, dimensions:', img.width, 'x', img.height);
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          
+          // Update display info
+          const SLAB_W = quoteData.slabLayoutData?.slabW || 3200;
+          const SLAB_H = quoteData.slabLayoutData?.slabH || 1600;
+          const slabCount = quoteData.pricing?.slabsUsed || 1;
+          
+          document.getElementById('slabSizeDisplay').textContent = `${SLAB_W} × ${SLAB_H} mm`;
+          document.getElementById('slabCountDisplay').textContent = slabCount;
+          
+          // Calculate costs - use custom values from quoteData
+          const fabPrices = {
+            firstSlab: quoteData.pricing?.firstSlab || 1300,
+            additionalSlab: quoteData.pricing?.additionalSlab || 500
+          };
+          const materialCost = quoteData.pricing?.materialCost || 0;
+          const fabrication = slabCount > 0 ? fabPrices.firstSlab + (slabCount - 1) * fabPrices.additionalSlab : 0;
+          
+          document.getElementById('materialCostDisplay').textContent = materialCost.toFixed(2);
+          document.getElementById('fabricationCostDisplay').textContent = fabrication.toFixed(2);
+        };
+        img.onerror = function() {
+          console.error('Failed to load slab layout image');
+          // Show fallback
+          showSlabPlaceholder();
+        };
+        img.src = quoteData.slabLayoutImage;
+        return;
+      }
+      
+      // Fallback function
+      function showSlabPlaceholder() {
+        console.log('Showing slab layout placeholder');
+        const SLAB_W = 3200;
+        const SLAB_H = 1600;
+        const slabCount = quoteData.pricing?.slabsUsed || 1;
+        
+        canvas.width = 600;
+        canvas.height = 200;
+        
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#666';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Slab layout: ${slabCount} slab(s) required`, canvas.width/2, canvas.height/2);
+        ctx.font = '12px sans-serif';
+        ctx.fillText('(View in designer for detailed layout)', canvas.width/2, canvas.height/2 + 20);
+        
+        document.getElementById('slabSizeDisplay').textContent = `${SLAB_W} × ${SLAB_H} mm`;
+        document.getElementById('slabCountDisplay').textContent = slabCount;
+        
+        // Use custom values from quoteData
+        const fabPrices = {
+          firstSlab: quoteData.pricing?.firstSlab || 1300,
+          additionalSlab: quoteData.pricing?.additionalSlab || 500
+        };
+        const materialCost = quoteData.pricing?.materialCost || 0;
+        const fabrication = slabCount > 0 ? fabPrices.firstSlab + (slabCount - 1) * fabPrices.additionalSlab : 0;
+        
+        document.getElementById('materialCostDisplay').textContent = materialCost.toFixed(2);
+        document.getElementById('fabricationCostDisplay').textContent = fabrication.toFixed(2);
+      }
+      
+      // No captured image - show placeholder
+      showSlabPlaceholder();
     }
     
     function saveAndNewQuote() {

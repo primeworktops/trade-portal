@@ -248,8 +248,8 @@
   <div class="view-tabs">
     <div class="view-tab active" onclick="switchView('2d')">📐 2D Layout</div>
     <div class="view-tab" onclick="switchView('3d')">🎬 3D Preview</div>
-    <div class="view-tab" onclick="switchView('slab')" style="background:#fff3e0;">📦 Slab Layout</div>
-    <button id="adminTabBtn" onclick="toggleAdminPanel()" style="display:none;padding:6px 12px;margin-left:8px;background:#f5f5f5;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:12px;">⚙️ Admin</button>
+    <div class="view-tab" id="slabLayoutTab" onclick="tryOpenSlabLayout()" style="background:#fff3e0;display:none;">📦 Slab Layout</div>
+    <button id="adminTabBtn" onclick="promptAdminUnlock()" style="padding:6px 12px;margin-left:8px;background:#f5f5f5;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:12px;">🔒 Admin</button>
     
     <div style="flex:1;"></div>
     
@@ -311,7 +311,10 @@
         
         <!-- Custom Material Section -->
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee;background:#fff8e1;padding:10px;border-radius:6px;margin:-4px -4px 10px -4px;">
-          <div style="font-size:10px;font-weight:600;color:#f57c00;margin-bottom:6px;">📦 CUSTOM MATERIAL (Granite/Marble)</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:10px;font-weight:600;color:#f57c00;">📦 CUSTOM MATERIAL</div>
+            <div id="customMaterialStatus" style="font-size:9px;padding:2px 6px;border-radius:10px;background:#eee;color:#666;">Inactive</div>
+          </div>
           <div style="margin-bottom:6px;">
             <label style="font-size:10px;color:#666;">Material Name</label>
             <input type="text" id="customMaterialName" placeholder="e.g. Nero Marquina Marble" style="width:100%;padding:4px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;">
@@ -329,23 +332,32 @@
             <div style="flex:1;">
               <label style="font-size:10px;color:#666;">Type</label>
               <select id="customMaterialType" style="width:100%;padding:4px;border:1px solid #ccc;border-radius:4px;">
+                <option value="quartz">Quartz</option>
                 <option value="granite">Granite</option>
                 <option value="marble">Marble</option>
                 <option value="quartzite">Quartzite</option>
                 <option value="porcelain">Porcelain</option>
+                <option value="dekton">Dekton/Sintered</option>
                 <option value="other">Other</option>
               </select>
             </div>
           </div>
           <div style="margin-bottom:6px;">
-            <label style="font-size:10px;color:#666;">Material Image (for 3D preview)</label>
+            <label style="font-size:10px;color:#666;">Slab Price (£) - Cost per slab</label>
+            <input type="number" id="customSlabPrice" placeholder="e.g. 450" style="width:100%;padding:4px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:6px;">
+            <label style="font-size:10px;color:#666;">Material Image (for 3D preview & quote)</label>
             <input type="file" id="customMaterialImage" accept="image/*" onchange="loadCustomMaterialImage(this)" style="width:100%;font-size:10px;">
           </div>
           <div id="customMaterialPreview" style="display:none;margin-top:6px;text-align:center;">
             <img id="customMaterialPreviewImg" style="max-width:100%;max-height:60px;border-radius:4px;border:1px solid #ddd;">
             <div id="customMaterialPreviewName" style="font-size:10px;color:#666;margin-top:2px;"></div>
           </div>
-          <button onclick="applyCustomMaterial()" style="width:100%;padding:6px;background:#f57c00;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;margin-top:6px;">Apply Custom Material</button>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button onclick="applyCustomMaterial()" style="flex:1;padding:6px;background:#f57c00;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">Apply Custom Material</button>
+            <button onclick="clearCustomMaterial()" style="padding:6px 10px;background:#eee;color:#666;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:11px;">Clear</button>
+          </div>
         </div>
         
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee;">
@@ -436,6 +448,13 @@
           <div class="summary-row"><span>Cutouts</span><span id="sumCutouts">None</span></div>
           <div class="summary-row"><span>Joints</span><span id="sumJoints">0</span></div>
           <div class="summary-row total"><span>Slabs Required</span><span id="sumSlabs">0</span></div>
+          
+          <!-- Slab Optimization Warning -->
+          <div id="slabWarning" style="display:none;background:#fff3e0;border:1px solid #ffb74d;border-radius:6px;padding:8px;margin-top:8px;font-size:11px;">
+            <div style="font-weight:600;color:#e65100;margin-bottom:4px;">💡 Optimization Tips:</div>
+            <div id="slabWarningText" style="color:#bf360c;"></div>
+          </div>
+          
           <div class="summary-row" style="border-top:1px solid #eee;padding-top:6px;margin-top:6px;">
             <span>Thickness</span>
             <select id="thicknessSelect" onchange="setWorktopThickness(+this.value)" style="padding:2px 4px;border-radius:4px;border:1px solid #ccc;">
@@ -474,12 +493,19 @@
     <div class="edge-menu-item" onclick="setEdgeType('profile')"><div class="dot" style="background:#ff5722;"></div> Profile Edge</div>
     <div class="edge-menu-item" onclick="setEdgeType('dropdown')"><div class="dot" style="background:#9c27b0;"></div> Dropdown (Full)</div>
     <div class="edge-menu-item" onclick="setEdgeType('none')"><div class="dot" style="background:#ccc;"></div> Clear Edge</div>
+    
+    <div style="font-size:10px;font-weight:600;color:#666;padding:6px 12px;border-bottom:1px solid #eee;border-top:1px solid #eee;margin-top:4px;">WORKTOP SPLITS</div>
+    <div class="edge-menu-item" onclick="addWorktopSplit()"><div class="dot" style="background:#ff9800;"></div> Add Split/Join Here</div>
+    <div class="edge-menu-item" id="removeSplitOption" style="display:none;" onclick="removeWorktopSplit()"><div class="dot" style="background:#f44336;"></div> Remove Split</div>
   </div>
   
   <!-- Corner Menu for radius -->
   <div class="edge-menu" id="cornerMenu" style="display:none;" onclick="event.stopPropagation();" onmousedown="event.stopPropagation();">
-    <div style="font-size:10px;font-weight:600;color:#666;padding:6px 12px;border-bottom:1px solid #eee;">CORNER OPTIONS</div>
-    <div id="cornerMenuTitle" style="font-size:11px;padding:6px 12px;color:#333;background:#f5f5f5;"></div>
+    <div id="cornerMenuTitle" style="font-size:11px;padding:8px 12px;color:#333;background:#f5f5f5;border-bottom:1px solid #eee;"></div>
+    <div class="edge-menu-item" id="cornerAddStepout" onclick="showStepoutModalFromCorner()"><div class="dot" style="background:#9c27b0;"></div> Add Stepout (L-Shape)...</div>
+    <div class="edge-menu-item" id="cornerEditStepout" style="display:none;" onclick="editStepoutFromCorner()"><div class="dot" style="background:#ff9800;"></div> Edit Stepout...</div>
+    <div class="edge-menu-item" id="cornerRemoveStepout" style="display:none;" onclick="removeStepoutFromCorner()"><div class="dot" style="background:#f44336;"></div> Remove Stepout</div>
+    <div style="border-top:1px solid #eee;margin-top:4px;"></div>
     <div class="edge-menu-item" id="cornerAddRadius" onclick="addCornerRadius()"><div class="dot" style="background:#2196F3;"></div> Add Radius...</div>
     <div class="edge-menu-item" id="cornerEditRadius" style="display:none;" onclick="editCornerRadius()"><div class="dot" style="background:#ff9800;"></div> Edit Radius...</div>
     <div class="edge-menu-item" id="cornerRemoveRadius" style="display:none;" onclick="removeCornerRadius()"><div class="dot" style="background:#f44336;"></div> Remove Radius</div>
@@ -508,6 +534,24 @@
     </div>
   </div>
   
+  <!-- Modal Dialog for Slab Optimization Warning -->
+  <div class="modal-overlay" id="slabOptimizationModal" style="display:none;">
+    <div class="modal-dialog" style="max-width:450px;">
+      <div class="modal-title" style="background:#fff3e0;color:#e65100;margin:-20px -20px 15px -20px;padding:15px 20px;border-radius:8px 8px 0 0;">
+        💡 Save Material Costs!
+      </div>
+      <div id="slabOptimizationContent" style="margin-bottom:15px;font-size:13px;line-height:1.5;">
+        <!-- Content populated by JS -->
+      </div>
+      <div style="background:#f5f5f5;padding:12px;border-radius:6px;margin-bottom:15px;font-size:12px;">
+        <strong>Tip:</strong> Click on the worktop edge and select "Add Split/Join Here" to divide a piece into smaller parts that fit better on the slab.
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn primary" onclick="closeSlabOptimizationModal()" style="background:#ff9800;border-color:#e65100;color:white;">Got it!</button>
+      </div>
+    </div>
+  </div>
+  
   <!-- Modal Dialog for Socket Size Selection -->
   <div class="modal-overlay" id="socketModal" style="display:none;">
     <div class="modal-dialog">
@@ -525,6 +569,34 @@
       </div>
       <div class="modal-buttons" style="margin-top:12px;">
         <button class="modal-btn" onclick="cancelSocketModal()" style="background:#ffebee;border-color:#c62828;color:#c62828;">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal Dialog for Stepout Configuration -->
+  <div class="modal-overlay" id="stepoutModal" style="display:none;">
+    <div class="modal-dialog" style="min-width:340px;">
+      <div class="modal-title">Add Stepout (L-Shape)</div>
+      <p style="font-size:12px;color:#666;margin-bottom:15px;">Create an L-shaped extension on <strong id="stepoutCornerLabel">this corner</strong></p>
+      <input type="hidden" id="stepoutCorner" value="front-left">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Stepout Length (mm)</label>
+          <input type="number" id="stepoutLength" value="620" min="100" max="2000" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+          <span style="font-size:10px;color:#999;">How far along the edge</span>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Stepout Depth (mm)</label>
+          <input type="number" id="stepoutDepth" value="100" min="50" max="600" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+          <span style="font-size:10px;color:#999;">How far it extends outward</span>
+        </div>
+      </div>
+      <div style="background:#e3f2fd;padding:10px;border-radius:6px;margin-top:15px;font-size:11px;color:#1565c0;">
+        <strong>ℹ️ Result:</strong> One L-shaped piece with no joint line
+      </div>
+      <div class="modal-buttons" style="margin-top:15px;">
+        <button class="modal-btn" onclick="cancelStepoutModal()" style="background:#ffebee;border-color:#c62828;color:#c62828;">Cancel</button>
+        <button class="modal-btn" onclick="confirmStepout()" style="background:#4caf50;border-color:#388e3c;color:white;">Add Stepout</button>
       </div>
     </div>
   </div>
@@ -825,7 +897,7 @@ const CUTOUT_PRICES = {
   undermount_sink: { name: 'Undermount Sink Cutout', price: 110, credit: 55 },   // Full price to add, half back if removed
   overmount_sink: { name: 'Overmount Sink Cutout', price: 55, credit: 27.50 },
   hob: { name: 'Hob Cutout', price: 55, credit: 27.50 },
-  recess_hob: { name: 'Recess Hob', price: 150, credit: 75 },
+  recess_hob: { name: 'Recess Hob', price: 125, credit: 62.50 },
   tap: { name: 'Tap Hole', price: 9.17, credit: 4.58 },
   drainer: { name: 'Drainer Grooves', price: 110, credit: 55 },
   recess_drainer: { name: 'Recess Drainer', price: 330, credit: 165 },
@@ -846,6 +918,22 @@ const EDGE_PROFILES = {
 
 // Helper function to get fabrication price based on material brand
 function getFabricationPrices(brandCode) {
+  // Check for admin overrides first
+  const profit1stEl = document.getElementById('profit1stSlab');
+  const profitAddEl = document.getElementById('profitAddSlab');
+  
+  // If admin has set custom values, use those
+  if (profit1stEl && profitAddEl) {
+    const customFirst = parseFloat(profit1stEl.value);
+    const customAdd = parseFloat(profitAddEl.value);
+    
+    // Check if values differ from defaults (meaning admin changed them)
+    // We'll use a flag to track if admin has manually edited
+    if (profit1stEl.dataset.manuallySet === 'true' || profitAddEl.dataset.manuallySet === 'true') {
+      return { firstSlab: customFirst || 1300, additionalSlab: customAdd || 500, type: 'custom' };
+    }
+  }
+  
   for (const [type, config] of Object.entries(FABRICATION_PRICES)) {
     if (config.brands.includes(brandCode)) {
       return { firstSlab: config.firstSlab, additionalSlab: config.additionalSlab, type: type };
@@ -854,6 +942,26 @@ function getFabricationPrices(brandCode) {
   // Default to quartz if brand not found
   return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlab: FABRICATION_PRICES.quartz.additionalSlab, type: 'quartz' };
 }
+
+// Track when admin manually edits profit settings
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    const profit1stEl = document.getElementById('profit1stSlab');
+    const profitAddEl = document.getElementById('profitAddSlab');
+    if (profit1stEl) {
+      profit1stEl.addEventListener('input', function() {
+        this.dataset.manuallySet = 'true';
+        renderSlabLayout();
+      });
+    }
+    if (profitAddEl) {
+      profitAddEl.addEventListener('input', function() {
+        this.dataset.manuallySet = 'true';
+        renderSlabLayout();
+      });
+    }
+  }, 100);
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // END OF PRICING CONFIGURATION
@@ -1082,7 +1190,7 @@ let selectedMaterial = null; // Currently confirmed material
 
 // Material filter state
 let currentBrandFilter = 'all';
-let adminUnlocked = false;
+let adminUnlocked = sessionStorage.getItem('adminUnlocked') === 'true';
 const ADMIN_PIN = '1414';
 let currentTierFilter = 'all';
 let currentThicknessFilter = '20';
@@ -1150,13 +1258,21 @@ let history = [];
 let edgeMenuTarget = null;
 let currentView = '2d';
 
+// Slab optimization warning state
+let slabOptimizationSuggestions = [];
+let hasShownSlabWarning = false;
+let isPageLoading = true;  // Skip popup during initial load
+let lastKnownSlabCount = 0;
+
 // Custom material for granite/marble quotes
 let customMaterial = {
   name: '',
-  type: 'granite',
+  type: 'quartz',
   thickness: 30,
+  slabPrice: 0,
   imageData: null,
-  texture: null
+  texture: null,
+  active: false  // Track if custom material is being used
 };
 
 // ========== CUSTOM MATERIAL FUNCTIONS ==========
@@ -1165,6 +1281,7 @@ function loadCustomMaterialImage(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
       customMaterial.imageData = e.target.result;
+      customMaterial.imageName = input.files[0].name;
       
       // Show preview
       const preview = document.getElementById('customMaterialPreview');
@@ -1174,8 +1291,132 @@ function loadCustomMaterialImage(input) {
       preview.style.display = 'block';
       previewImg.src = e.target.result;
       previewName.textContent = input.files[0].name;
+      
+      // Save to sessionStorage
+      saveCustomMaterial();
     };
     reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function saveCustomMaterial() {
+  try {
+    const data = {
+      name: customMaterial.name,
+      type: customMaterial.type,
+      thickness: customMaterial.thickness,
+      slabPrice: customMaterial.slabPrice,
+      imageData: customMaterial.imageData,
+      imageName: customMaterial.imageName,
+      active: customMaterial.active
+    };
+    sessionStorage.setItem('customMaterial', JSON.stringify(data));
+    console.log('Custom material saved');
+  } catch (e) {
+    console.warn('Could not save custom material:', e);
+  }
+}
+
+function clearCustomMaterial() {
+  customMaterial = {
+    name: '',
+    type: 'quartz',
+    thickness: 30,
+    slabPrice: 0,
+    imageData: null,
+    imageName: '',
+    texture: null,
+    active: false
+  };
+  
+  // Clear form fields
+  document.getElementById('customMaterialName').value = '';
+  document.getElementById('customMaterialType').value = 'quartz';
+  document.getElementById('customMaterialThickness').value = '30';
+  document.getElementById('customSlabPrice').value = '';
+  document.getElementById('customMaterialImage').value = '';
+  document.getElementById('customMaterialPreview').style.display = 'none';
+  
+  // Clear sessionStorage
+  sessionStorage.removeItem('customMaterial');
+  
+  // Update status
+  updateCustomMaterialStatus();
+  
+  // Re-render
+  if (currentView === '3d') render3D();
+  if (currentView === 'slab') renderSlabLayout();
+  
+  console.log('Custom material cleared');
+}
+
+function updateCustomMaterialStatus() {
+  const statusEl = document.getElementById('customMaterialStatus');
+  if (statusEl) {
+    if (customMaterial.active && customMaterial.name) {
+      statusEl.textContent = '✓ Active';
+      statusEl.style.background = '#c8e6c9';
+      statusEl.style.color = '#2e7d32';
+    } else {
+      statusEl.textContent = 'Inactive';
+      statusEl.style.background = '#eee';
+      statusEl.style.color = '#666';
+    }
+  }
+}
+
+function restoreCustomMaterial() {
+  try {
+    const stored = sessionStorage.getItem('customMaterial');
+    if (stored) {
+      const data = JSON.parse(stored);
+      customMaterial.name = data.name || '';
+      customMaterial.type = data.type || 'quartz';
+      customMaterial.thickness = data.thickness || 30;
+      customMaterial.slabPrice = data.slabPrice || 0;
+      customMaterial.imageData = data.imageData || null;
+      customMaterial.imageName = data.imageName || '';
+      customMaterial.active = data.active || false;
+      
+      // Restore form fields
+      const nameEl = document.getElementById('customMaterialName');
+      const typeEl = document.getElementById('customMaterialType');
+      const thicknessEl = document.getElementById('customMaterialThickness');
+      const slabPriceEl = document.getElementById('customSlabPrice');
+      
+      if (nameEl) nameEl.value = customMaterial.name;
+      if (typeEl) typeEl.value = customMaterial.type;
+      if (thicknessEl) thicknessEl.value = customMaterial.thickness;
+      if (slabPriceEl) slabPriceEl.value = customMaterial.slabPrice || '';
+      
+      // Restore image preview
+      if (customMaterial.imageData) {
+        const preview = document.getElementById('customMaterialPreview');
+        const previewImg = document.getElementById('customMaterialPreviewImg');
+        const previewName = document.getElementById('customMaterialPreviewName');
+        
+        if (preview) preview.style.display = 'block';
+        if (previewImg) previewImg.src = customMaterial.imageData;
+        if (previewName) previewName.textContent = customMaterial.imageName || 'Restored image';
+      }
+      
+      // Restore texture for 3D if active
+      if (customMaterial.active && customMaterial.imageData && renderer) {
+        const loader = new THREE.TextureLoader();
+        loader.load(customMaterial.imageData, function(texture) {
+          customMaterial.texture = texture;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+        });
+      }
+      
+      console.log('Custom material restored:', customMaterial.name, customMaterial.active ? '(active)' : '(inactive)');
+      
+      // Update status indicator
+      updateCustomMaterialStatus();
+    }
+  } catch (e) {
+    console.warn('Could not restore custom material:', e);
   }
 }
 
@@ -1183,6 +1424,7 @@ function applyCustomMaterial() {
   const name = document.getElementById('customMaterialName').value;
   const type = document.getElementById('customMaterialType').value;
   const thickness = parseInt(document.getElementById('customMaterialThickness').value) || 30;
+  const slabPrice = parseFloat(document.getElementById('customSlabPrice').value) || 0;
   
   if (!name) {
     alert('Please enter a material name');
@@ -1192,7 +1434,15 @@ function applyCustomMaterial() {
   customMaterial.name = name;
   customMaterial.type = type;
   customMaterial.thickness = thickness;
+  customMaterial.slabPrice = slabPrice;
+  customMaterial.active = true;  // Mark as active
   worktopThickness = thickness;
+  
+  // Save to sessionStorage for persistence
+  saveCustomMaterial();
+  
+  // Update status indicator
+  updateCustomMaterialStatus();
   
   // Update thickness dropdown
   const thicknessSelect = document.getElementById('thicknessSelect');
@@ -1209,21 +1459,27 @@ function applyCustomMaterial() {
   }
   
   // Create texture for 3D if image loaded
-  if (customMaterial.imageData && renderer) {
+  if (customMaterial.imageData) {
     const loader = new THREE.TextureLoader();
     loader.load(customMaterial.imageData, function(texture) {
+      console.log('Custom material texture loaded successfully');
       customMaterial.texture = texture;
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
+      // Render 3D after texture is loaded
       if (currentView === '3d') render3D();
+    }, undefined, function(err) {
+      console.error('Failed to load custom material texture:', err);
     });
   }
   
-  alert(`Custom material applied:\n${name}\n${type}, ${thickness}mm\n\nThis will be used for this quote.`);
+  const priceMsg = slabPrice > 0 ? `\nSlab price: £${slabPrice}` : '';
+  const imageMsg = customMaterial.imageData ? '\n✓ Image uploaded for 3D view' : '\n(No image - using solid color)';
+  alert(`Custom material applied:\n${name}\n${type}, ${thickness}mm${priceMsg}${imageMsg}\n\nThis will be used for this quote.`);
   
-  // Re-render slab layout with new info
+  // Re-render views (3D will re-render again when texture loads)
   if (currentView === 'slab') renderSlabLayout();
-  if (currentView === '3d') render3D();
+  // Don't render 3D here - wait for texture to load
 }
 
 // ========== 2D CANVAS ==========
@@ -1566,9 +1822,68 @@ function findClickedEdge(mx, my) {
       { name: 'right', x1: w.x + w.length, y1: w.y, x2: w.x + w.length, y2: w.y + w.depth }
     ];
     
+    // Add stepout edges if present
+    if (w.stepout) {
+      const s = w.stepout;
+      const isVert = w.depth > w.length; // Vertical if taller than wide
+      
+      if (isVert) {
+        // VERTICAL WORKTOP - stepout extends LEFT/RIGHT
+        if (s.corner === 'front-left') {
+          // Stepout extends LEFT from bottom-left
+          edges.push({ name: 'stepout_outer', x1: w.x - s.depth, y1: w.y + w.depth - s.length, x2: w.x - s.depth, y2: w.y + w.depth, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_bottom', x1: w.x - s.depth, y1: w.y + w.depth, x2: w.x, y2: w.y + w.depth, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_inner', x1: w.x - s.depth, y1: w.y + w.depth - s.length, x2: w.x, y2: w.y + w.depth - s.length, stepoutEdge: true, len: s.depth });
+        } else if (s.corner === 'front-right') {
+          // Stepout extends RIGHT from bottom-right
+          edges.push({ name: 'stepout_outer', x1: w.x + w.length + s.depth, y1: w.y + w.depth - s.length, x2: w.x + w.length + s.depth, y2: w.y + w.depth, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_bottom', x1: w.x + w.length, y1: w.y + w.depth, x2: w.x + w.length + s.depth, y2: w.y + w.depth, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_inner', x1: w.x + w.length, y1: w.y + w.depth - s.length, x2: w.x + w.length + s.depth, y2: w.y + w.depth - s.length, stepoutEdge: true, len: s.depth });
+        } else if (s.corner === 'back-left') {
+          // Stepout extends LEFT from top-left
+          edges.push({ name: 'stepout_outer', x1: w.x - s.depth, y1: w.y, x2: w.x - s.depth, y2: w.y + s.length, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_top', x1: w.x - s.depth, y1: w.y, x2: w.x, y2: w.y, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_inner', x1: w.x - s.depth, y1: w.y + s.length, x2: w.x, y2: w.y + s.length, stepoutEdge: true, len: s.depth });
+        } else if (s.corner === 'back-right') {
+          // Stepout extends RIGHT from top-right
+          edges.push({ name: 'stepout_outer', x1: w.x + w.length + s.depth, y1: w.y, x2: w.x + w.length + s.depth, y2: w.y + s.length, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_top', x1: w.x + w.length, y1: w.y, x2: w.x + w.length + s.depth, y2: w.y, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_inner', x1: w.x + w.length, y1: w.y + s.length, x2: w.x + w.length + s.depth, y2: w.y + s.length, stepoutEdge: true, len: s.depth });
+        }
+      } else {
+        // HORIZONTAL WORKTOP - stepout extends DOWN/UP
+        if (s.corner === 'front-left') {
+          // Stepout extends DOWN from front-left
+          edges.push({ name: 'stepout_left', x1: w.x, y1: w.y + w.depth, x2: w.x, y2: w.y + w.depth + s.depth, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_bottom', x1: w.x, y1: w.y + w.depth + s.depth, x2: w.x + s.length, y2: w.y + w.depth + s.depth, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_right', x1: w.x + s.length, y1: w.y + w.depth, x2: w.x + s.length, y2: w.y + w.depth + s.depth, stepoutEdge: true, len: s.depth });
+        } else if (s.corner === 'front-right') {
+          // Stepout extends DOWN from front-right
+          edges.push({ name: 'stepout_right', x1: w.x + w.length, y1: w.y + w.depth, x2: w.x + w.length, y2: w.y + w.depth + s.depth, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_bottom', x1: w.x + w.length - s.length, y1: w.y + w.depth + s.depth, x2: w.x + w.length, y2: w.y + w.depth + s.depth, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_left', x1: w.x + w.length - s.length, y1: w.y + w.depth, x2: w.x + w.length - s.length, y2: w.y + w.depth + s.depth, stepoutEdge: true, len: s.depth });
+        } else if (s.corner === 'back-left') {
+          // Stepout extends UP from back-left
+          edges.push({ name: 'stepout_left', x1: w.x, y1: w.y - s.depth, x2: w.x, y2: w.y, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_top', x1: w.x, y1: w.y - s.depth, x2: w.x + s.length, y2: w.y - s.depth, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_right', x1: w.x + s.length, y1: w.y - s.depth, x2: w.x + s.length, y2: w.y, stepoutEdge: true, len: s.depth });
+        } else if (s.corner === 'back-right') {
+          // Stepout extends UP from back-right
+          edges.push({ name: 'stepout_right', x1: w.x + w.length, y1: w.y - s.depth, x2: w.x + w.length, y2: w.y, stepoutEdge: true, len: s.depth });
+          edges.push({ name: 'stepout_top', x1: w.x + w.length - s.length, y1: w.y - s.depth, x2: w.x + w.length, y2: w.y - s.depth, stepoutEdge: true, len: s.length });
+          edges.push({ name: 'stepout_left', x1: w.x + w.length - s.length, y1: w.y - s.depth, x2: w.x + w.length - s.length, y2: w.y, stepoutEdge: true, len: s.depth });
+        }
+      }
+    }
+    
     for (const edge of edges) {
       const dist = pointToLineDist(mx, my, edge.x1, edge.y1, edge.x2, edge.y2);
       if (dist < EDGE_CLICK_DIST) {
+        // For stepout edges, return full edge as segment
+        if (edge.stepoutEdge) {
+          return { worktop: w, edge: edge.name, segment: { start: 0, end: edge.len }, isJoined: false, isStepout: true };
+        }
+        
         const edgeLen = (edge.name === 'back' || edge.name === 'front') ? w.length : w.depth;
         const posAlong = (edge.name === 'back' || edge.name === 'front') ? mx - w.x : my - w.y;
         
@@ -1649,6 +1964,12 @@ function showEdgeMenu(sx, sy, wId, edge, seg) {
   // Update status bar to show which edge
   document.getElementById('statusHint').textContent = `Selected ${edgeDesc} edge of ${w ? w.name : 'worktop'}`;
   
+  // Show/hide remove split option based on whether worktop has splits
+  const removeSplitOption = document.getElementById('removeSplitOption');
+  if (removeSplitOption) {
+    removeSplitOption.style.display = (w && w.splits && w.splits.length > 0) ? 'flex' : 'none';
+  }
+  
   // Set initial position before showing (will be adjusted after)
   menu.style.left = sx + 'px';
   menu.style.top = sy + 'px';
@@ -1706,7 +2027,7 @@ function showCornerMenu(sx, sy, wId, corner, label) {
   const radii = w?.cornerRadii || {};
   const hasRadius = radii[corner] > 0;
   
-  // Show/hide appropriate menu items
+  // Show/hide appropriate menu items for radius
   document.getElementById('cornerAddRadius').style.display = hasRadius ? 'none' : 'flex';
   document.getElementById('cornerEditRadius').style.display = hasRadius ? 'flex' : 'none';
   document.getElementById('cornerRemoveRadius').style.display = hasRadius ? 'flex' : 'none';
@@ -1714,6 +2035,21 @@ function showCornerMenu(sx, sy, wId, corner, label) {
   // Update edit text with current value
   if (hasRadius) {
     document.getElementById('cornerEditRadius').innerHTML = `<div class="dot" style="background:#ff9800;"></div> Edit Radius (${radii[corner]}mm)`;
+  }
+  
+  // Check if this worktop has a stepout at this corner
+  const hasStepout = w?.stepout && w.stepout.corner === corner;
+  const hasAnyStepout = w?.stepout;
+  
+  // Show/hide stepout options
+  // Can only add stepout if worktop doesn't have one, or edit/remove if this corner has one
+  document.getElementById('cornerAddStepout').style.display = hasAnyStepout ? 'none' : 'flex';
+  document.getElementById('cornerEditStepout').style.display = hasStepout ? 'flex' : 'none';
+  document.getElementById('cornerRemoveStepout').style.display = hasStepout ? 'flex' : 'none';
+  
+  // Update edit text with current stepout values
+  if (hasStepout) {
+    document.getElementById('cornerEditStepout').innerHTML = `<div class="dot" style="background:#ff9800;"></div> Edit Stepout (${w.stepout.length}×${w.stepout.depth}mm)`;
   }
   
   // Position menu
@@ -2281,6 +2617,143 @@ function selectSocketSize(size) {
 function cancelSocketModal() {
   document.getElementById('socketModal').style.display = 'none';
   pendingSocketData = null;
+}
+
+// ========== STEPOUT (L-SHAPE) FUNCTIONS ==========
+let stepoutTargetWorktopId = null;
+
+function showStepoutModal(worktopId) {
+  const w = worktops.find(wt => wt.id === worktopId);
+  if (!w) return;
+  
+  stepoutTargetWorktopId = worktopId;
+  
+  // Set default values based on orientation
+  const isVertical = w.depth > w.length;
+  const maxStepLen = isVertical ? w.depth - 100 : w.length - 100;
+  document.getElementById('stepoutLength').value = Math.min(620, maxStepLen);
+  document.getElementById('stepoutDepth').value = 100;
+  document.getElementById('stepoutCorner').value = 'front-left';
+  
+  document.getElementById('stepoutModal').style.display = 'flex';
+}
+
+function cancelStepoutModal() {
+  document.getElementById('stepoutModal').style.display = 'none';
+  stepoutTargetWorktopId = null;
+}
+
+function confirmStepout() {
+  if (!stepoutTargetWorktopId) return;
+  
+  const w = worktops.find(wt => wt.id === stepoutTargetWorktopId);
+  if (!w) return;
+  
+  const corner = document.getElementById('stepoutCorner').value;
+  const length = parseInt(document.getElementById('stepoutLength').value) || 620;
+  const depth = parseInt(document.getElementById('stepoutDepth').value) || 100;
+  
+  const isVertical = w.depth > w.length;
+  
+  // Validate stepout fits within worktop
+  // For vertical worktops, stepout extends along depth; for horizontal, along length
+  if (isVertical) {
+    if (length > w.depth - 50) {
+      alert('Stepout length cannot exceed worktop depth minus 50mm');
+      return;
+    }
+    if (depth > w.length) {
+      alert('Stepout depth cannot exceed worktop width');
+      return;
+    }
+  } else {
+    if (length > w.length - 50) {
+      alert('Stepout length cannot exceed worktop length minus 50mm');
+      return;
+    }
+  }
+  
+  // Add stepout to worktop
+  w.stepout = {
+    corner: corner,
+    length: length,
+    depth: depth
+  };
+  
+  cancelStepoutModal();
+  render();
+  if (currentView === '3d') render3D();
+  renderLists();
+  saveDesignState();
+  
+  document.getElementById('statusHint').textContent = `Stepout added to ${w.name} (${corner})`;
+}
+
+function removeStepout(worktopId) {
+  const w = worktops.find(wt => wt.id === worktopId);
+  if (w && w.stepout) {
+    delete w.stepout;
+    render();
+    if (currentView === '3d') render3D();
+    renderLists();
+    saveDesignState();
+    document.getElementById('statusHint').textContent = `Stepout removed from ${w.name}`;
+  }
+}
+
+// Corner menu stepout functions
+function showStepoutModalFromCorner() {
+  if (!cornerMenuTarget) return;
+  
+  const w = worktops.find(wt => wt.id === cornerMenuTarget.wId);
+  if (!w) return;
+  
+  // Map tl/tr/bl/br to front-left etc
+  const cornerMap = {
+    'tl': 'back-left', 'tr': 'back-right',
+    'bl': 'front-left', 'br': 'front-right'
+  };
+  const corner = cornerMap[cornerMenuTarget.corner] || cornerMenuTarget.corner;
+  document.getElementById('stepoutCorner').value = corner;
+  
+  // Show human-readable corner name
+  const cornerNames = {
+    'back-left': 'Back Left', 'back-right': 'Back Right',
+    'front-left': 'Front Left', 'front-right': 'Front Right'
+  };
+  document.getElementById('stepoutCornerLabel').textContent = cornerNames[corner] || corner;
+  
+  // Set sensible defaults based on orientation
+  const isVertical = w.depth > w.length;
+  const maxStepLen = isVertical ? w.depth - 100 : w.length - 100;
+  document.getElementById('stepoutLength').value = Math.min(620, maxStepLen);
+  document.getElementById('stepoutDepth').value = 100;
+  
+  stepoutTargetWorktopId = cornerMenuTarget.wId;
+  document.getElementById('cornerMenu').style.display = 'none';
+  document.getElementById('stepoutModal').style.display = 'flex';
+}
+
+function editStepoutFromCorner() {
+  if (!cornerMenuTarget) return;
+  
+  const w = worktops.find(wt => wt.id === cornerMenuTarget.wId);
+  if (!w || !w.stepout) return;
+  
+  // Pre-fill with current values
+  document.getElementById('stepoutCorner').value = w.stepout.corner;
+  document.getElementById('stepoutLength').value = w.stepout.length;
+  document.getElementById('stepoutDepth').value = w.stepout.depth;
+  
+  stepoutTargetWorktopId = cornerMenuTarget.wId;
+  document.getElementById('cornerMenu').style.display = 'none';
+  document.getElementById('stepoutModal').style.display = 'flex';
+}
+
+function removeStepoutFromCorner() {
+  if (!cornerMenuTarget) return;
+  removeStepout(cornerMenuTarget.wId);
+  document.getElementById('cornerMenu').style.display = 'none';
 }
 
 // ========== WORKTOP DOUBLE-CLICK EDIT ==========
@@ -4441,6 +4914,94 @@ function setEdgeType(type) {
   updateSummary();
 }
 
+// ========== WORKTOP SPLITS ==========
+function addWorktopSplit() {
+  if (!edgeMenuTarget) return;
+  
+  const w = worktops.find(w => w.id === edgeMenuTarget.wId);
+  if (!w) return;
+  
+  const { edge, start, end } = edgeMenuTarget;
+  
+  // Determine split direction based on edge clicked
+  // For back/front edges, split is perpendicular (across the length)
+  // For left/right edges, split is perpendicular (across the depth)
+  const isHorizontalEdge = (edge === 'back' || edge === 'front');
+  
+  // Ask where to place the split
+  const maxPos = isHorizontalEdge ? w.length : w.depth;
+  const direction = isHorizontalEdge ? 'length' : 'depth';
+  const defaultPos = Math.round(maxPos / 2);
+  
+  const posStr = prompt(
+    `Add split/join across worktop.\n\n` +
+    `Enter position from ${isHorizontalEdge ? 'left' : 'back'} edge (mm):\n` +
+    `(Worktop ${direction}: ${maxPos}mm)`,
+    defaultPos
+  );
+  
+  if (!posStr) return;
+  
+  const pos = parseInt(posStr);
+  if (isNaN(pos) || pos <= 100 || pos >= maxPos - 100) {
+    alert('Invalid position. Must be at least 100mm from each end.');
+    return;
+  }
+  
+  saveHistory();
+  
+  // Initialize splits array if needed
+  if (!w.splits) w.splits = [];
+  
+  // Add split
+  w.splits.push({
+    position: pos,
+    direction: isHorizontalEdge ? 'vertical' : 'horizontal'  // Split line direction
+  });
+  
+  // Sort splits by position
+  w.splits.sort((a, b) => a.position - b.position);
+  
+  hideEdgeMenu();
+  render();
+  updateSummary();
+  
+  alert(`Split added at ${pos}mm. This worktop will now be cut as ${w.splits.length + 1} pieces.`);
+}
+
+function removeWorktopSplit() {
+  if (!edgeMenuTarget) return;
+  
+  const w = worktops.find(w => w.id === edgeMenuTarget.wId);
+  if (!w || !w.splits || w.splits.length === 0) return;
+  
+  saveHistory();
+  
+  // If multiple splits, ask which to remove
+  if (w.splits.length === 1) {
+    w.splits = [];
+  } else {
+    const splitList = w.splits.map((s, i) => `${i + 1}: ${s.position}mm (${s.direction})`).join('\n');
+    const choice = prompt(
+      `Which split do you want to remove?\n\n${splitList}\n\nEnter number (or 0 to remove all):`,
+      '1'
+    );
+    
+    if (choice === null) return;
+    
+    const idx = parseInt(choice);
+    if (idx === 0) {
+      w.splits = [];
+    } else if (idx >= 1 && idx <= w.splits.length) {
+      w.splits.splice(idx - 1, 1);
+    }
+  }
+  
+  hideEdgeMenu();
+  render();
+  updateSummary();
+}
+
 // ========== FIND ITEM ==========
 function findItemAt(mx, my) {
   // Check cutouts first (they're on top of worktops)
@@ -5518,10 +6079,22 @@ function drawWorktop2D(w) {
   const rBR = (radii.br || 0) * scale;  // Bottom-right (front-right)
   const rBL = (radii.bl || 0) * scale;  // Bottom-left (front-left)
   
-  // Draw worktop fill with rounded corners
+  // Check for stepout
+  const stepout = w.stepout;
+  const isVertical = w.depth > w.length; // Vertical if taller than wide
+  
+  // Draw worktop fill
   ctx.fillStyle = sel ? '#c8e6c9' : '#f5f5f5';
   ctx.beginPath();
-  drawRoundedRectPath(ctx, p.x, p.y, width, height, rTL, rTR, rBR, rBL);
+  
+  if (stepout) {
+    // Draw L-shape for stepout
+    const stepLen = stepout.length * scale;
+    const stepDepth = stepout.depth * scale;
+    drawLShapePath(ctx, p.x, p.y, width, height, stepLen, stepDepth, stepout.corner, isVertical);
+  } else {
+    drawRoundedRectPath(ctx, p.x, p.y, width, height, rTL, rTR, rBR, rBL);
+  }
   ctx.fill();
   
   // Draw edges with radius awareness
@@ -5532,15 +6105,117 @@ function drawWorktop2D(w) {
     bl: rBL
   };
   
+  // Adjust edge segments based on stepout
+  // When stepout exists, some edges are shortened or repositioned
   ['back', 'front', 'left', 'right'].forEach(edge => {
-    const free = getFreeSegments(w, edge);
+    let free = getFreeSegments(w, edge);
     const joints = w.joints[edge] || [];
-    const len = (edge === 'back' || edge === 'front') ? w.length : w.depth;
+    let len = (edge === 'back' || edge === 'front') ? w.length : w.depth;
+    
+    // Modify segments based on stepout
+    if (stepout) {
+      if (isVertical) {
+        // VERTICAL WORKTOP - stepout extends LEFT/RIGHT, affects left/right edges
+        if (stepout.corner === 'front-left') {
+          if (edge === 'left') {
+            // Left edge ends before stepout (at depth - stepLen)
+            free = free.map(seg => ({
+              start: seg.start,
+              end: Math.min(seg.end, w.depth - stepout.length)
+            })).filter(seg => seg.end > seg.start);
+          }
+        } else if (stepout.corner === 'front-right') {
+          if (edge === 'right') {
+            // Right edge ends before stepout
+            free = free.map(seg => ({
+              start: seg.start,
+              end: Math.min(seg.end, w.depth - stepout.length)
+            })).filter(seg => seg.end > seg.start);
+          }
+        } else if (stepout.corner === 'back-left') {
+          if (edge === 'left') {
+            // Left edge starts after stepout
+            free = free.map(seg => ({
+              start: Math.max(seg.start, stepout.length),
+              end: seg.end
+            })).filter(seg => seg.end > seg.start);
+          }
+        } else if (stepout.corner === 'back-right') {
+          if (edge === 'right') {
+            // Right edge starts after stepout
+            free = free.map(seg => ({
+              start: Math.max(seg.start, stepout.length),
+              end: seg.end
+            })).filter(seg => seg.end > seg.start);
+          }
+        }
+      } else {
+        // HORIZONTAL WORKTOP - stepout extends DOWN/UP, affects front/back edges
+        if (stepout.corner === 'front-left') {
+          if (edge === 'front') {
+            // Front edge starts after stepout (stepLen from left)
+            free = free.map(seg => ({
+              start: Math.max(seg.start, stepout.length),
+              end: seg.end
+            })).filter(seg => seg.end > seg.start);
+          }
+        } else if (stepout.corner === 'front-right') {
+          if (edge === 'front') {
+            // Front edge ends before stepout
+            free = free.map(seg => ({
+              start: seg.start,
+              end: Math.min(seg.end, w.length - stepout.length)
+            })).filter(seg => seg.end > seg.start);
+          }
+        } else if (stepout.corner === 'back-left') {
+          if (edge === 'back') {
+            // Back edge starts after stepout
+            free = free.map(seg => ({
+              start: Math.max(seg.start, stepout.length),
+              end: seg.end
+            })).filter(seg => seg.end > seg.start);
+          }
+        } else if (stepout.corner === 'back-right') {
+          if (edge === 'back') {
+            // Back edge ends before stepout
+            free = free.map(seg => ({
+              start: seg.start,
+              end: Math.min(seg.end, w.length - stepout.length)
+            })).filter(seg => seg.end > seg.start);
+          }
+        }
+      }
+    }
     
     // Joined (gray)
     ctx.strokeStyle = '#999';
     ctx.lineWidth = 4;
-    joints.forEach(j => drawEdgeSeg(edge, p, width, height, j.start / len, j.end / len));
+    joints.forEach(j => {
+      let jStart = j.start, jEnd = j.end;
+      // Adjust joint segments for stepout too
+      if (stepout) {
+        if (isVertical) {
+          if ((stepout.corner === 'front-left' && edge === 'left') ||
+              (stepout.corner === 'front-right' && edge === 'right')) {
+            jEnd = Math.min(jEnd, w.depth - stepout.length);
+          } else if ((stepout.corner === 'back-left' && edge === 'left') ||
+                     (stepout.corner === 'back-right' && edge === 'right')) {
+            jStart = Math.max(jStart, stepout.length);
+          }
+        } else {
+          if ((stepout.corner === 'front-left' && edge === 'front') ||
+              (stepout.corner === 'back-left' && edge === 'back')) {
+            jStart = Math.max(jStart, stepout.length);
+          } else if ((stepout.corner === 'front-right' && edge === 'front') ||
+                     (stepout.corner === 'back-right' && edge === 'back')) {
+            jEnd = Math.min(jEnd, w.length - stepout.length);
+          }
+        }
+      }
+      if (jEnd > jStart) {
+        drawEdgeSeg(edge, p, width, height, jStart / len, jEnd / len);
+      }
+    });
     
     // Free segments - use radius-aware drawing
     free.forEach(seg => {
@@ -5586,15 +6261,107 @@ function drawWorktop2D(w) {
     });
   });
   
-  // Draw outline with rounded corners
+  // Draw stepout edges if present (green free edges)
+  if (stepout) {
+    const stepLen = stepout.length * scale;
+    const stepDepth = stepout.depth * scale;
+    
+    ctx.strokeStyle = '#4CAF50';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([]);
+    
+    // Draw the new edges created by the stepout
+    ctx.beginPath();
+    
+    if (isVertical) {
+      // VERTICAL WORKTOP - stepout extends LEFT/RIGHT
+      if (stepout.corner === 'front-left') {
+        // Stepout extends LEFT from bottom-left
+        ctx.moveTo(p.x - stepDepth, p.y + height - stepLen);
+        ctx.lineTo(p.x - stepDepth, p.y + height); // Outer left edge
+        ctx.moveTo(p.x - stepDepth, p.y + height);
+        ctx.lineTo(p.x, p.y + height); // Bottom edge of stepout
+        ctx.moveTo(p.x - stepDepth, p.y + height - stepLen);
+        ctx.lineTo(p.x, p.y + height - stepLen); // Inner top edge
+      } else if (stepout.corner === 'front-right') {
+        // Stepout extends RIGHT from bottom-right
+        ctx.moveTo(p.x + width + stepDepth, p.y + height - stepLen);
+        ctx.lineTo(p.x + width + stepDepth, p.y + height); // Outer right edge
+        ctx.moveTo(p.x + width, p.y + height);
+        ctx.lineTo(p.x + width + stepDepth, p.y + height); // Bottom edge of stepout
+        ctx.moveTo(p.x + width, p.y + height - stepLen);
+        ctx.lineTo(p.x + width + stepDepth, p.y + height - stepLen); // Inner top edge
+      } else if (stepout.corner === 'back-left') {
+        // Stepout extends LEFT from top-left
+        ctx.moveTo(p.x - stepDepth, p.y);
+        ctx.lineTo(p.x - stepDepth, p.y + stepLen); // Outer left edge
+        ctx.moveTo(p.x - stepDepth, p.y);
+        ctx.lineTo(p.x, p.y); // Top edge of stepout
+        ctx.moveTo(p.x - stepDepth, p.y + stepLen);
+        ctx.lineTo(p.x, p.y + stepLen); // Inner bottom edge
+      } else if (stepout.corner === 'back-right') {
+        // Stepout extends RIGHT from top-right
+        ctx.moveTo(p.x + width + stepDepth, p.y);
+        ctx.lineTo(p.x + width + stepDepth, p.y + stepLen); // Outer right edge
+        ctx.moveTo(p.x + width, p.y);
+        ctx.lineTo(p.x + width + stepDepth, p.y); // Top edge of stepout
+        ctx.moveTo(p.x + width, p.y + stepLen);
+        ctx.lineTo(p.x + width + stepDepth, p.y + stepLen); // Inner bottom edge
+      }
+    } else {
+      // HORIZONTAL WORKTOP - stepout extends DOWN/UP
+      if (stepout.corner === 'front-left') {
+        // Stepout extends DOWN from front-left
+        ctx.moveTo(p.x, p.y + height);
+        ctx.lineTo(p.x, p.y + height + stepDepth); // Left edge extends down
+        ctx.moveTo(p.x, p.y + height + stepDepth);
+        ctx.lineTo(p.x + stepLen, p.y + height + stepDepth); // Bottom edge
+        ctx.moveTo(p.x + stepLen, p.y + height);
+        ctx.lineTo(p.x + stepLen, p.y + height + stepDepth); // Inner right edge
+      } else if (stepout.corner === 'front-right') {
+        // Stepout extends DOWN from front-right
+        ctx.moveTo(p.x + width, p.y + height);
+        ctx.lineTo(p.x + width, p.y + height + stepDepth); // Right edge extends down
+        ctx.moveTo(p.x + width - stepLen, p.y + height + stepDepth);
+        ctx.lineTo(p.x + width, p.y + height + stepDepth); // Bottom edge
+        ctx.moveTo(p.x + width - stepLen, p.y + height);
+        ctx.lineTo(p.x + width - stepLen, p.y + height + stepDepth); // Inner left edge
+      } else if (stepout.corner === 'back-left') {
+        // Stepout extends UP from back-left
+        ctx.moveTo(p.x, p.y - stepDepth);
+        ctx.lineTo(p.x, p.y); // Left edge extends up
+        ctx.moveTo(p.x, p.y - stepDepth);
+        ctx.lineTo(p.x + stepLen, p.y - stepDepth); // Top edge
+        ctx.moveTo(p.x + stepLen, p.y - stepDepth);
+        ctx.lineTo(p.x + stepLen, p.y); // Inner right edge
+      } else if (stepout.corner === 'back-right') {
+        // Stepout extends UP from back-right
+        ctx.moveTo(p.x + width, p.y - stepDepth);
+        ctx.lineTo(p.x + width, p.y); // Right edge extends up
+        ctx.moveTo(p.x + width - stepLen, p.y - stepDepth);
+        ctx.lineTo(p.x + width, p.y - stepDepth); // Top edge
+        ctx.moveTo(p.x + width - stepLen, p.y - stepDepth);
+        ctx.lineTo(p.x + width - stepLen, p.y); // Inner left edge
+      }
+    }
+    ctx.stroke();
+  }
+  
+  // Draw outline
   ctx.strokeStyle = sel ? '#1e4d3a' : '#999';
   ctx.lineWidth = sel ? 2 : 1;
   ctx.beginPath();
-  drawRoundedRectPath(ctx, p.x, p.y, width, height, rTL, rTR, rBR, rBL);
+  if (stepout) {
+    const stepLen = stepout.length * scale;
+    const stepDepth = stepout.depth * scale;
+    drawLShapePath(ctx, p.x, p.y, width, height, stepLen, stepDepth, stepout.corner, isVertical);
+  } else {
+    drawRoundedRectPath(ctx, p.x, p.y, width, height, rTL, rTR, rBR, rBL);
+  }
   ctx.stroke();
   
   // Draw corner radius indicators when selected
-  if (sel) {
+  if (sel && !stepout) {
     ctx.fillStyle = '#1e4d3a';
     ctx.font = '9px sans-serif';
     ctx.textAlign = 'center';
@@ -5614,13 +6381,151 @@ function drawWorktop2D(w) {
     }
   }
   
+  // Draw split lines (joins)
+  if (w.splits && w.splits.length > 0) {
+    ctx.strokeStyle = '#ff9800';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    
+    w.splits.forEach(split => {
+      ctx.beginPath();
+      if (split.direction === 'vertical') {
+        // Vertical line across the depth at position along length
+        const splitX = p.x + split.position * scale;
+        ctx.moveTo(splitX, p.y);
+        ctx.lineTo(splitX, p.y + height);
+      } else {
+        // Horizontal line across the length at position along depth
+        const splitY = p.y + split.position * scale;
+        ctx.moveTo(p.x, splitY);
+        ctx.lineTo(p.x + width, splitY);
+      }
+      ctx.stroke();
+      
+      // Draw "JOIN" label
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ff9800';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      if (split.direction === 'vertical') {
+        const splitX = p.x + split.position * scale;
+        ctx.save();
+        ctx.translate(splitX, p.y + height/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.fillText('JOIN', 0, -8);
+        ctx.restore();
+      } else {
+        const splitY = p.y + split.position * scale;
+        ctx.fillText('JOIN', p.x + width/2, splitY - 8);
+      }
+    });
+    ctx.setLineDash([]);
+  }
+  
   ctx.fillStyle = '#333';
   ctx.font = 'bold 11px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(w.name || 'Worktop', p.x + width/2, p.y + height/2 - 7);
+  ctx.fillText(w.name || 'Worktop', p.x + width/2, p.y + height/2 - 14);
   ctx.font = '10px sans-serif';
-  ctx.fillText(`${w.length} × ${w.depth}`, p.x + width/2, p.y + height/2 + 7);
+  ctx.fillText(`${w.length} × ${w.depth}`, p.x + width/2, p.y + height/2);
+  if (stepout) {
+    ctx.fillStyle = '#9c27b0';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(`+ ${stepout.length} × ${stepout.depth} stepout`, p.x + width/2, p.y + height/2 + 14);
+  }
+}
+
+// Draw L-shape path for stepout worktops
+function drawLShapePath(ctx, x, y, w, h, stepLen, stepDepth, corner, isVertical) {
+  ctx.beginPath();
+  
+  // For vertical worktops (depth > length), stepout extends LEFT/RIGHT
+  // For horizontal worktops, stepout extends DOWN/UP
+  
+  if (isVertical) {
+    // VERTICAL WORKTOP - stepout extends sideways
+    if (corner === 'front-left') {
+      // Stepout extends LEFT from bottom-left corner
+      ctx.moveTo(x, y);                     // Top-left
+      ctx.lineTo(x + w, y);                 // Top-right
+      ctx.lineTo(x + w, y + h);             // Bottom-right
+      ctx.lineTo(x, y + h);                 // Bottom-left of main
+      ctx.lineTo(x - stepDepth, y + h);     // Left to stepout outer
+      ctx.lineTo(x - stepDepth, y + h - stepLen); // Up along stepout left
+      ctx.lineTo(x, y + h - stepLen);       // Right to where stepout meets main
+      ctx.closePath();
+    } else if (corner === 'front-right') {
+      // Stepout extends RIGHT from bottom-right corner
+      ctx.moveTo(x, y);                     // Top-left
+      ctx.lineTo(x + w, y);                 // Top-right
+      ctx.lineTo(x + w, y + h - stepLen);   // Down right side to stepout
+      ctx.lineTo(x + w + stepDepth, y + h - stepLen); // Right to stepout outer
+      ctx.lineTo(x + w + stepDepth, y + h); // Down along stepout right
+      ctx.lineTo(x, y + h);                 // Left to bottom-left
+      ctx.closePath();
+    } else if (corner === 'back-left') {
+      // Stepout extends LEFT from top-left corner
+      ctx.moveTo(x - stepDepth, y);         // Top-left of stepout
+      ctx.lineTo(x - stepDepth, y + stepLen); // Down along stepout left
+      ctx.lineTo(x, y + stepLen);           // Right to where stepout meets main
+      ctx.lineTo(x, y + h);                 // Down to bottom-left
+      ctx.lineTo(x + w, y + h);             // Right to bottom-right
+      ctx.lineTo(x + w, y);                 // Up to top-right
+      ctx.closePath();
+    } else if (corner === 'back-right') {
+      // Stepout extends RIGHT from top-right corner
+      ctx.moveTo(x, y);                     // Top-left
+      ctx.lineTo(x + w, y);                 // Top-right of main
+      ctx.lineTo(x + w + stepDepth, y);     // Right to stepout outer
+      ctx.lineTo(x + w + stepDepth, y + stepLen); // Down along stepout right
+      ctx.lineTo(x + w, y + stepLen);       // Left to where stepout meets main
+      ctx.lineTo(x + w, y + h);             // Down to bottom-right
+      ctx.lineTo(x, y + h);                 // Left to bottom-left
+      ctx.closePath();
+    }
+  } else {
+    // HORIZONTAL WORKTOP - stepout extends down/up
+    if (corner === 'front-left') {
+      // Stepout extends DOWN from front edge at the LEFT end
+      ctx.moveTo(x, y);                     // Top-left
+      ctx.lineTo(x + w, y);                 // Top-right
+      ctx.lineTo(x + w, y + h);             // Bottom-right
+      ctx.lineTo(x + stepLen, y + h);       // Along front to where stepout starts
+      ctx.lineTo(x + stepLen, y + h + stepDepth); // Down the stepout right edge
+      ctx.lineTo(x, y + h + stepDepth);     // Along stepout bottom
+      ctx.closePath();
+    } else if (corner === 'front-right') {
+      // Stepout extends DOWN from front edge at the RIGHT end
+      ctx.moveTo(x, y);                     // Top-left
+      ctx.lineTo(x + w, y);                 // Top-right
+      ctx.lineTo(x + w, y + h + stepDepth); // Down right side including stepout
+      ctx.lineTo(x + w - stepLen, y + h + stepDepth); // Along stepout bottom
+      ctx.lineTo(x + w - stepLen, y + h);   // Up stepout left edge
+      ctx.lineTo(x, y + h);                 // Along front to left
+      ctx.closePath();
+    } else if (corner === 'back-left') {
+      // Stepout extends UP from back edge at the LEFT end
+      ctx.moveTo(x, y - stepDepth);         // Top of stepout
+      ctx.lineTo(x + stepLen, y - stepDepth); // Along stepout top
+      ctx.lineTo(x + stepLen, y);           // Down stepout right edge
+      ctx.lineTo(x + w, y);                 // Along back to right
+      ctx.lineTo(x + w, y + h);             // Down right side
+      ctx.lineTo(x, y + h);                 // Along front to left
+      ctx.closePath();
+    } else if (corner === 'back-right') {
+      // Stepout extends UP from back edge at the RIGHT end
+      ctx.moveTo(x, y);                     // Top-left of main
+      ctx.lineTo(x + w - stepLen, y);       // Along back to stepout
+      ctx.lineTo(x + w - stepLen, y - stepDepth); // Up stepout left edge
+      ctx.lineTo(x + w, y - stepDepth);     // Along stepout top
+      ctx.lineTo(x + w, y + h);             // Down right side
+      ctx.lineTo(x, y + h);                 // Along front
+      ctx.closePath();
+    }
+  }
 }
 
 // Draw a rectangle path with individual corner radii
@@ -6286,13 +7191,18 @@ function drawPreview() {
 
 // ========== LISTS ==========
 function renderLists() {
-  document.getElementById('worktopsList').innerHTML = worktops.map(w => `
+  document.getElementById('worktopsList').innerHTML = worktops.map(w => {
+    const splitCount = w.splits ? w.splits.length + 1 : 0;
+    const splitBadge = splitCount > 1 ? `<span style="background:#ff9800;color:white;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px;">${splitCount} pcs</span>` : '';
+    const stepoutBadge = w.stepout ? `<span style="background:#9c27b0;color:white;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px;">L-shape</span>` : '';
+    const dimsText = w.stepout ? `${w.length}×${w.depth} + ${w.stepout.length}×${w.stepout.depth}` : `${w.length}×${w.depth}`;
+    return `
     <div class="item-row ${selectedType === 'worktop' && selectedId === w.id ? 'selected' : ''}" onclick="selectItem('worktop',${w.id})">
-      <div class="item-icon worktop">▭</div>
-      <div class="item-info"><div class="item-name">${w.name}</div><div class="item-dims">${w.length}×${w.depth}</div></div>
+      <div class="item-icon worktop">${w.stepout ? '⌐' : '▭'}</div>
+      <div class="item-info"><div class="item-name">${w.name}${splitBadge}${stepoutBadge}</div><div class="item-dims">${dimsText}</div></div>
       <button class="item-delete" onclick="event.stopPropagation();deleteWorktop(${w.id})">×</button>
     </div>
-  `).join('') || '<div style="color:#999;padding:6px;font-size:11px;">No worktops</div>';
+  `}).join('') || '<div style="color:#999;padding:6px;font-size:11px;">No worktops</div>';
   
   document.getElementById('upstandsList').innerHTML = upstands.map(u => {
     let icon, name, dims;
@@ -7775,8 +8685,8 @@ function updateSummary() {
   // Calculate total material
   const total = wa + ua + sa + ca + da;
   
-  // Calculate actual slab count using packing algorithm
-  const slabs = calculateActualSlabCount();
+  // Get quick estimate first for display
+  let slabs = calculateActualSlabCount();
   
   // Combine upstands + splashbacks + cills for display
   const upstandTotal = ua + sa + ca;
@@ -7788,6 +8698,22 @@ function updateSummary() {
   document.getElementById('sumProfile').textContent = pl.toFixed(2) + ' m';
   document.getElementById('sumJoints').textContent = jc;
   document.getElementById('sumSlabs').textContent = slabs;
+  
+  // Run accurate slab packing and check for popup (only if not loading and have pieces)
+  if (!isPageLoading && worktops.length > 0) {
+    const accurateSlabs = getAccurateSlabCount();
+    document.getElementById('sumSlabs').textContent = accurateSlabs;
+    
+    // Trigger popup when slab count INCREASES and we have suggestions
+    if (accurateSlabs > lastKnownSlabCount && slabOptimizationSuggestions.length > 0) {
+      setTimeout(() => {
+        showSlabOptimizationPopup(accurateSlabs);
+      }, 200);
+    }
+    
+    // Always update lastKnownSlabCount
+    lastKnownSlabCount = accurateSlabs;
+  }
   
   // Show profile types
   const sumProfileType = document.getElementById('sumProfileType');
@@ -7813,86 +8739,346 @@ function updateSummary() {
 }
 
 // Calculate actual slab count using simplified bin packing
+// Simplified slab count for quick estimate
 function calculateActualSlabCount() {
   const slabWInput = document.getElementById('slabWidthInput');
   const slabHInput = document.getElementById('slabHeightInput');
   const SLAB_W = slabWInput ? parseInt(slabWInput.value) || 3200 : 3200;
   const SLAB_H = slabHInput ? parseInt(slabHInput.value) || 1600 : 1600;
   
-  // Collect all pieces with types
-  const bulkPieces = [];
-  const thinPieces = [];
-  
+  // Quick area-based estimate
+  let totalArea = 0;
   worktops.forEach(w => {
-    bulkPieces.push({ width: w.length, height: w.depth });
+    totalArea += w.length * w.depth;
+    // Add stepout area if present
+    if (w.stepout) {
+      totalArea += w.stepout.length * w.stepout.depth;
+    }
+  });
+  upstands.forEach(u => {
+    const h = u.isWindowCill ? (u.depth || 200) : u.height;
+    totalArea += u.length * h;
   });
   
+  const slabArea = SLAB_W * SLAB_H;
+  return Math.max(1, Math.ceil(totalArea / (slabArea * 0.7)));
+}
+
+// Accurate slab count using EXACT same algorithm as renderSlabLayout
+function getAccurateSlabCount() {
+  const slabWInput = document.getElementById('slabWidthInput');
+  const slabHInput = document.getElementById('slabHeightInput');
+  const SLAB_W = slabWInput ? parseInt(slabWInput.value) || 3200 : 3200;
+  const SLAB_H = slabHInput ? parseInt(slabHInput.value) || 1600 : 1600;
+  
+  // Clear suggestions
+  slabOptimizationSuggestions = [];
+  
+  // Collect all pieces with names (same as renderSlabLayout)
+  const pieces = [];
+  
   worktops.forEach(w => {
+    if (w.splits && w.splits.length > 0) {
+      const verticalSplits = w.splits.filter(s => s.direction === 'vertical').sort((a, b) => a.position - b.position);
+      const horizontalSplits = w.splits.filter(s => s.direction === 'horizontal').sort((a, b) => a.position - b.position);
+      
+      if (verticalSplits.length > 0) {
+        let prevPos = 0;
+        verticalSplits.forEach((split, i) => {
+          pieces.push({ width: split.position - prevPos, height: w.depth, type: 'worktop', name: `${w.name || 'Worktop'} (${i+1})` });
+          prevPos = split.position;
+        });
+        pieces.push({ width: w.length - prevPos, height: w.depth, type: 'worktop', name: `${w.name || 'Worktop'} (${verticalSplits.length+1})` });
+      } else if (horizontalSplits.length > 0) {
+        let prevPos = 0;
+        horizontalSplits.forEach((split, i) => {
+          pieces.push({ width: w.length, height: split.position - prevPos, type: 'worktop', name: `${w.name || 'Worktop'} (${i+1})` });
+          prevPos = split.position;
+        });
+        pieces.push({ width: w.length, height: w.depth - prevPos, type: 'worktop', name: `${w.name || 'Worktop'} (${horizontalSplits.length+1})` });
+      }
+    } else {
+      // No splits - if stepout, use bounding box
+      let pw = w.length;
+      let ph = w.depth;
+      if (w.stepout) {
+        const isVertical = w.depth > w.length;
+        if (isVertical) {
+          pw = w.length + w.stepout.depth;
+        } else {
+          ph = w.depth + w.stepout.depth;
+        }
+      }
+      pieces.push({ width: pw, height: ph, type: 'worktop', name: w.name || 'Worktop' });
+    }
+    
+    // DON'T add stepout as separate piece - included in bounding box
+    
+    // Add dropdowns
     if (w.edgeTypes) {
       Object.entries(w.edgeTypes).forEach(([k, v]) => {
-        if (v.type === 'dropdown') {
-          const [edge, s, e] = k.split('_');
-          bulkPieces.push({ width: parseInt(e) - parseInt(s), height: v.height });
+        if (v.type === 'dropdown' || v.type === 'mitred_edge') {
+          const [, s, e] = k.split('_');
+          pieces.push({ width: parseInt(e) - parseInt(s), height: v.height, type: 'dropdown', name: 'Dropdown' });
         }
       });
     }
   });
   
+  // Add upstands, splashbacks, cills
   upstands.forEach(u => {
     const ph = u.isWindowCill ? (u.depth || 200) : u.height;
     if (u.length >= 10 && ph >= 10) {
-      thinPieces.push({ width: u.length, height: ph });
+      const typeName = u.isWindowCill ? 'Window Cill' : (u.isSplash ? 'Splashback' : 'Upstand');
+      pieces.push({ width: u.length, height: ph, type: u.isSplash ? 'splash' : (u.isWindowCill ? 'cill' : 'upstand'), name: typeName });
     }
   });
   
-  if (bulkPieces.length === 0 && thinPieces.length === 0) return 0;
+  if (pieces.length === 0) return 0;
   
-  // Sort bulk by area (largest first), thin by area (smallest first)
-  bulkPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
-  thinPieces.sort((a, b) => (a.width * a.height) - (b.width * b.height));
+  // Sort by area descending (same as renderSlabLayout)
+  const sortedPieces = [...pieces].sort((a, b) => (b.width * b.height) - (a.width * a.height));
   
-  // Combine: bulk first, then thin
-  const allPieces = [...bulkPieces, ...thinPieces];
-  
-  // Simple First Fit Decreasing bin packing
+  // === EXACT COPY of renderSlabLayout algorithm ===
   const slabs = [];
   
-  allPieces.forEach(piece => {
+  function createSlab() {
+    return { freeRects: [{ x: 0, y: 0, w: SLAB_W, h: SLAB_H }], pieces: [] };
+  }
+  
+  function rectsOverlap(a, b) {
+    return !(a.x >= b.x + b.w || a.x + a.w <= b.x || 
+             a.y >= b.y + b.h || a.y + a.h <= b.y);
+  }
+  
+  function isContained(inner, outer) {
+    return inner.x >= outer.x && inner.y >= outer.y &&
+           inner.x + inner.w <= outer.x + outer.w &&
+           inner.y + inner.h <= outer.y + outer.h;
+  }
+  
+  function pruneRects(rects) {
+    const result = [];
+    for (let i = 0; i < rects.length; i++) {
+      let dominated = false;
+      for (let j = 0; j < rects.length; j++) {
+        if (i !== j && isContained(rects[i], rects[j])) {
+          dominated = true;
+          break;
+        }
+      }
+      if (!dominated && rects[i].w > 0 && rects[i].h > 0) {
+        result.push(rects[i]);
+      }
+    }
+    return result;
+  }
+  
+  function findBestRect(slab, pw, ph) {
+    let bestScore = Infinity;
+    let bestRect = null;
+    let bestRotated = false;
+    
+    for (const rect of slab.freeRects) {
+      // Normal orientation
+      if (pw <= rect.w && ph <= rect.h) {
+        let score = (rect.w - pw) + (rect.h - ph);
+        if (ph > pw) score += 500000; // Penalty for vertical
+        if (score < bestScore) {
+          bestScore = score;
+          bestRect = rect;
+          bestRotated = false;
+        }
+      }
+      
+      // Rotated
+      if (pw !== ph && ph <= rect.w && pw <= rect.h) {
+        let score = (rect.w - ph) + (rect.h - pw);
+        if (pw > ph) score += 500000; // Penalty for vertical after rotation
+        if (score < bestScore) {
+          bestScore = score;
+          bestRect = rect;
+          bestRotated = true;
+        }
+      }
+    }
+    
+    return bestRect ? { rect: bestRect, rotated: bestRotated } : null;
+  }
+  
+  function placePiece(slab, rect, pw, ph, rotated) {
+    const actualW = rotated ? ph : pw;
+    const actualH = rotated ? pw : ph;
+    
+    const placed = { x: rect.x, y: rect.y, w: actualW, h: actualH };
+    
+    const newRects = [];
+    
+    for (const freeRect of slab.freeRects) {
+      if (rectsOverlap(freeRect, placed)) {
+        // Right of placed
+        if (placed.x + placed.w < freeRect.x + freeRect.w) {
+          newRects.push({
+            x: placed.x + placed.w,
+            y: freeRect.y,
+            w: freeRect.x + freeRect.w - (placed.x + placed.w),
+            h: freeRect.h
+          });
+        }
+        // Left of placed
+        if (placed.x > freeRect.x) {
+          newRects.push({
+            x: freeRect.x,
+            y: freeRect.y,
+            w: placed.x - freeRect.x,
+            h: freeRect.h
+          });
+        }
+        // Below placed
+        if (placed.y + placed.h < freeRect.y + freeRect.h) {
+          newRects.push({
+            x: freeRect.x,
+            y: placed.y + placed.h,
+            w: freeRect.w,
+            h: freeRect.y + freeRect.h - (placed.y + placed.h)
+          });
+        }
+        // Above placed
+        if (placed.y > freeRect.y) {
+          newRects.push({
+            x: freeRect.x,
+            y: freeRect.y,
+            w: freeRect.w,
+            h: placed.y - freeRect.y
+          });
+        }
+      } else {
+        newRects.push(freeRect);
+      }
+    }
+    
+    slab.freeRects = pruneRects(newRects);
+    return placed;
+  }
+  
+  function tryPlacePiece(slab, pw, ph) {
+    const best = findBestRect(slab, pw, ph);
+    if (!best) return null;
+    return placePiece(slab, best.rect, pw, ph, best.rotated);
+  }
+  
+  // Place all pieces and track which cause new slabs
+  sortedPieces.forEach(piece => {
     const pw = piece.width;
     const ph = piece.height;
     
-    // Check if piece can fit in slab at all
+    // Check if fits
     const fitsNormal = (pw <= SLAB_W && ph <= SLAB_H);
     const fitsRotated = (ph <= SLAB_W && pw <= SLAB_H);
     
     if (!fitsNormal && !fitsRotated) {
-      // Oversized - needs own slab
-      slabs.push({ usedArea: pw * ph, pieces: [piece] });
+      slabs.push(createSlab()); // Oversized
       return;
     }
     
-    let placed = false;
-    
-    // Try to fit in existing slabs using simple area check
-    for (let slab of slabs) {
-      const remainingArea = (SLAB_W * SLAB_H) - slab.usedArea;
-      const pieceArea = pw * ph;
-      
-      // Simple heuristic: if area fits with 20% margin, place it
-      if (pieceArea <= remainingArea * 0.95) {
-        slab.usedArea += pieceArea;
-        slab.pieces.push(piece);
-        placed = true;
-        break;
-      }
+    // Try existing slabs
+    let placed = null;
+    for (const slab of slabs) {
+      placed = tryPlacePiece(slab, pw, ph);
+      if (placed) break;
     }
     
+    // Need new slab - this piece caused it!
     if (!placed) {
-      slabs.push({ usedArea: pw * ph, pieces: [piece] });
+      const newSlabNum = slabs.length + 1;
+      const newSlab = createSlab();
+      placed = tryPlacePiece(newSlab, pw, ph);
+      if (placed) {
+        slabs.push(newSlab);
+        
+        // Generate suggestion for upstands/splashbacks/cills that cause new slabs
+        // (worktops have their own split feature via edge menu)
+        const maxDim = Math.max(pw, ph);
+        if (newSlabNum >= 2 && maxDim > 1500 && ['upstand', 'splash', 'cill'].includes(piece.type)) {
+          slabOptimizationSuggestions.push({
+            piece: piece,
+            message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Splitting it could save a slab.`,
+            type: piece.type
+          });
+        }
+      }
     }
   });
   
+  // Update the warning display
+  updateSlabWarning(slabs.length);
+  
   return slabs.length;
+}
+
+// Enable slab warnings after page load
+function enableSlabWarnings() {
+  isPageLoading = false;
+  console.log('Slab warnings enabled');
+}
+
+// Reset warning flag if user reduced slabs (so warning can show again)
+function resetSlabWarningIfNeeded(currentSlabCount) {
+  if (currentSlabCount < lastKnownSlabCount) {
+    hasShownSlabWarning = false;
+  }
+  lastKnownSlabCount = currentSlabCount;
+}
+
+function updateSlabWarning(currentSlabCount) {
+  const warningDiv = document.getElementById('slabWarning');
+  const warningText = document.getElementById('slabWarningText');
+  
+  // Update sidebar warning only
+  if (warningDiv && warningText) {
+    if (slabOptimizationSuggestions.length > 0 && currentSlabCount >= 2) {
+      warningDiv.style.display = 'block';
+      let html = '';
+      slabOptimizationSuggestions.forEach(s => {
+        html += `<div style="margin-bottom:4px;">• ${s.message}</div>`;
+      });
+      warningText.innerHTML = html;
+    } else {
+      warningDiv.style.display = 'none';
+    }
+  }
+}
+
+function showSlabOptimizationPopup(slabCount) {
+  const modal = document.getElementById('slabOptimizationModal');
+  const content = document.getElementById('slabOptimizationContent');
+  
+  if (!modal || !content) {
+    // Fallback to alert if modal not found
+    alert('💡 Your design now requires ' + slabCount + ' slabs.\n\nConsider adding joins to long pieces to reduce material costs.\n\nClick on a worktop edge and select "Add Split/Join Here".');
+    return;
+  }
+  
+  let html = `<p style="margin-bottom:12px;"><strong>Your design now requires ${slabCount} slabs.</strong></p>`;
+  
+  if (slabOptimizationSuggestions.length > 0) {
+    html += '<p style="margin-bottom:8px;">These pieces may benefit from splitting:</p>';
+    html += '<ul style="margin:0;padding-left:20px;">';
+    slabOptimizationSuggestions.forEach(s => {
+      html += `<li style="margin-bottom:6px;">${s.message}</li>`;
+    });
+    html += '</ul>';
+  } else {
+    html += '<p>Consider adding joins to long pieces (worktops, upstands, splashbacks) to fit more on each slab and reduce material costs.</p>';
+  }
+  
+  content.innerHTML = html;
+  modal.style.display = 'flex';
+}
+
+function closeSlabOptimizationModal() {
+  const modal = document.getElementById('slabOptimizationModal');
+  if (modal) modal.style.display = 'none';
 }
 
 // ========== 3D VIEW ==========
@@ -7976,6 +9162,29 @@ function loadMaterialTexture(materialKey, callback) {
 
 // Get material for 3D rendering - creates new material each time but uses cached texture
 function getMaterial3D() {
+  // Check for custom material first
+  if (customMaterial.active && customMaterial.texture) {
+    console.log('getMaterial3D using custom material texture:', customMaterial.name);
+    // Clone the texture for this material
+    const newTexture = customMaterial.texture.clone();
+    newTexture.wrapS = THREE.RepeatWrapping;
+    newTexture.wrapT = THREE.RepeatWrapping;
+    newTexture.repeat.set(0.0003, 0.0003);  // Scale for mm dimensions
+    newTexture.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ 
+      map: newTexture,
+      roughness: 0.3,
+      side: THREE.DoubleSide
+    });
+  } else if (customMaterial.active) {
+    console.log('Custom material active but texture not loaded yet, using fallback color');
+    return new THREE.MeshStandardMaterial({ 
+      color: 0xd4a574,  // Brown stone color
+      roughness: 0.3,
+      side: THREE.DoubleSide
+    });
+  }
+  
   const matColor = MATERIAL_COLORS[selectedMaterial] || MATERIAL_COLORS.white_storm;
   const texture = materialTextures[selectedMaterial];
   const cropConfig = getTextureCropConfig(selectedMaterial);
@@ -8014,6 +9223,32 @@ function getMaterial3D() {
 
 // Get material for upstands/splashbacks - scale texture appropriately
 function getMaterial3DForUpstand(upstandLength, upstandHeight) {
+  // Check for custom material first
+  if (customMaterial.active && customMaterial.texture) {
+    const newTexture = customMaterial.texture.clone();
+    newTexture.wrapS = THREE.RepeatWrapping;
+    newTexture.wrapT = THREE.RepeatWrapping;
+    const scaleX = (upstandLength || 1000) / 3200;
+    const scaleY = (upstandHeight || 100) / 1600;
+    newTexture.repeat.set(scaleX, scaleY);
+    newTexture.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ 
+      map: newTexture,
+      roughness: 0.3,
+      emissive: 0x222222,
+      emissiveIntensity: 0.3,
+      side: THREE.DoubleSide
+    });
+  } else if (customMaterial.active) {
+    return new THREE.MeshStandardMaterial({ 
+      color: 0xd4a574,
+      roughness: 0.3,
+      emissive: 0x222222,
+      emissiveIntensity: 0.3,
+      side: THREE.DoubleSide
+    });
+  }
+  
   const matColor = MATERIAL_COLORS[selectedMaterial] || MATERIAL_COLORS.white_storm;
   const texture = materialTextures[selectedMaterial];
   const cropConfig = getTextureCropConfig(selectedMaterial);
@@ -8058,6 +9293,28 @@ function getMaterial3DForUpstand(upstandLength, upstandHeight) {
 
 // Get material for window cills - horizontal surface like worktop
 function getMaterial3DForCill(cillLength, cillDepth) {
+  // Check for custom material first
+  if (customMaterial.active && customMaterial.texture) {
+    const newTexture = customMaterial.texture.clone();
+    newTexture.wrapS = THREE.RepeatWrapping;
+    newTexture.wrapT = THREE.RepeatWrapping;
+    const scaleX = (cillLength || 1000) / 3200;
+    const scaleY = (cillDepth || 200) / 1600;
+    newTexture.repeat.set(scaleX, scaleY);
+    newTexture.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ 
+      map: newTexture,
+      roughness: 0.3,
+      side: THREE.DoubleSide
+    });
+  } else if (customMaterial.active) {
+    return new THREE.MeshStandardMaterial({ 
+      color: 0xd4a574,
+      roughness: 0.3,
+      side: THREE.DoubleSide
+    });
+  }
+  
   const matColor = MATERIAL_COLORS[selectedMaterial] || MATERIAL_COLORS.white_storm;
   const texture = materialTextures[selectedMaterial];
   const cropConfig = getTextureCropConfig(selectedMaterial);
@@ -8097,6 +9354,28 @@ function getMaterial3DForCill(cillLength, cillDepth) {
 
 // Get material for dropdowns - vertical surface
 function getMaterial3DForDropdown(dropdownLength, dropdownHeight) {
+  // Check for custom material first
+  if (customMaterial.active && customMaterial.texture) {
+    const newTexture = customMaterial.texture.clone();
+    newTexture.wrapS = THREE.RepeatWrapping;
+    newTexture.wrapT = THREE.RepeatWrapping;
+    const scaleX = (dropdownLength || 1000) / 3200;
+    const scaleY = (dropdownHeight || 100) / 1600;
+    newTexture.repeat.set(scaleX, scaleY);
+    newTexture.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ 
+      map: newTexture,
+      roughness: 0.3,
+      side: THREE.DoubleSide
+    });
+  } else if (customMaterial.active) {
+    return new THREE.MeshStandardMaterial({ 
+      color: 0xd4a574,
+      roughness: 0.3,
+      side: THREE.DoubleSide
+    });
+  }
+  
   const matColor = MATERIAL_COLORS[selectedMaterial] || MATERIAL_COLORS.white_storm;
   const texture = materialTextures[selectedMaterial];
   const cropConfig = getTextureCropConfig(selectedMaterial);
@@ -8197,6 +9476,23 @@ function init3D() {
 function render3D() {
   console.log('render3D called, worktops:', worktops.length, 'upstands:', upstands.length, 'cutouts:', cutouts.length);
   
+  // Load custom material texture if active but not yet loaded
+  if (customMaterial.active && customMaterial.imageData && !customMaterial.texture) {
+    console.log('Loading custom material texture for 3D...');
+    const loader = new THREE.TextureLoader();
+    loader.load(customMaterial.imageData, function(texture) {
+      console.log('Custom material texture loaded in render3D');
+      customMaterial.texture = texture;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      // Re-render with texture now loaded
+      render3D();
+    }, undefined, function(err) {
+      console.error('Failed to load custom material texture:', err);
+    });
+    return; // Wait for texture to load
+  }
+  
   // Clear old meshes (keep lights and floor)
   while (scene.children.length > 3) scene.remove(scene.children[3]);
   
@@ -8250,29 +9546,125 @@ function render3D() {
     // Shape coords: X = length, Y = depth
     const shape = new THREE.Shape();
     
-    // Start at bottom-left corner
-    shape.moveTo(rShapeBL, 0);
-    // Bottom edge to bottom-right
-    shape.lineTo(w.length - rShapeBR, 0);
-    // Bottom-right corner
-    if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, -Math.PI/2, 0, false);
-    else shape.lineTo(w.length, 0);
-    // Right edge to top-right
-    shape.lineTo(w.length, w.depth - rShapeTR);
-    // Top-right corner
-    if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, 0, Math.PI/2, false);
-    else shape.lineTo(w.length, w.depth);
-    // Top edge to top-left
-    shape.lineTo(rShapeTL, w.depth);
-    // Top-left corner
-    if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI/2, Math.PI, false);
-    else shape.lineTo(0, w.depth);
-    // Left edge to bottom-left
-    shape.lineTo(0, rShapeBL);
-    // Bottom-left corner
-    if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, Math.PI, Math.PI * 1.5, false);
-    else shape.lineTo(0, 0);
-    shape.closePath();
+    // Check for stepout
+    const stepout = w.stepout;
+    const isVertical = w.depth > w.length;
+    
+    if (stepout) {
+      // Create L-shape for stepout
+      // In 3D shape: X = length, Y = depth
+      // After rotation (-PI/2): high Y becomes 3D back (far), low Y becomes 3D front
+      // So 2D front = Shape bottom, 2D back = Shape top
+      
+      const sLen = stepout.length;
+      const sDepth = stepout.depth;
+      
+      if (isVertical) {
+        // VERTICAL worktop - stepout extends left/right (X direction in shape)
+        if (stepout.corner === 'front-left') {
+          // Stepout extends LEFT from bottom-left (2D front-left = Shape bottom-left)
+          shape.moveTo(-sDepth, 0);                    // Stepout outer left
+          shape.lineTo(-sDepth, sLen);                 // Up stepout left edge
+          shape.lineTo(0, sLen);                       // Right to main
+          shape.lineTo(0, w.depth);                    // Up to top
+          shape.lineTo(w.length, w.depth);             // Right to top-right
+          shape.lineTo(w.length, 0);                   // Down to bottom-right
+          shape.closePath();
+        } else if (stepout.corner === 'front-right') {
+          // Stepout extends RIGHT from bottom-right
+          shape.moveTo(0, 0);                          // Bottom-left
+          shape.lineTo(0, w.depth);                    // Up to top-left
+          shape.lineTo(w.length, w.depth);             // Right to top-right
+          shape.lineTo(w.length, sLen);                // Down to stepout
+          shape.lineTo(w.length + sDepth, sLen);       // Right to stepout outer
+          shape.lineTo(w.length + sDepth, 0);          // Down stepout right edge
+          shape.closePath();
+        } else if (stepout.corner === 'back-left') {
+          // Stepout extends LEFT from top-left (2D back-left = Shape top-left)
+          shape.moveTo(0, 0);                          // Bottom-left
+          shape.lineTo(0, w.depth - sLen);             // Up to where stepout starts
+          shape.lineTo(-sDepth, w.depth - sLen);       // Left to stepout outer
+          shape.lineTo(-sDepth, w.depth);              // Up stepout left edge
+          shape.lineTo(w.length, w.depth);             // Right to top-right
+          shape.lineTo(w.length, 0);                   // Down to bottom-right
+          shape.closePath();
+        } else if (stepout.corner === 'back-right') {
+          // Stepout extends RIGHT from top-right
+          shape.moveTo(0, 0);                          // Bottom-left
+          shape.lineTo(0, w.depth);                    // Up to top-left
+          shape.lineTo(w.length, w.depth);             // Right to top-right of main
+          shape.lineTo(w.length + sDepth, w.depth);    // Right to stepout outer
+          shape.lineTo(w.length + sDepth, w.depth - sLen); // Down stepout right edge
+          shape.lineTo(w.length, w.depth - sLen);      // Left to main
+          shape.lineTo(w.length, 0);                   // Down to bottom-right
+          shape.closePath();
+        }
+      } else {
+        // HORIZONTAL worktop - stepout extends down/up (Y direction in shape)
+        if (stepout.corner === 'front-left') {
+          // Stepout extends DOWN from front-left (2D front = Shape bottom)
+          shape.moveTo(0, -sDepth);                    // Stepout outer bottom-left
+          shape.lineTo(sLen, -sDepth);                 // Right along stepout bottom
+          shape.lineTo(sLen, 0);                       // Up to main front
+          shape.lineTo(w.length, 0);                   // Right to front-right
+          shape.lineTo(w.length, w.depth);             // Up to back-right
+          shape.lineTo(0, w.depth);                    // Left to back-left
+          shape.closePath();
+        } else if (stepout.corner === 'front-right') {
+          // Stepout extends DOWN from front-right
+          shape.moveTo(0, 0);                          // Front-left
+          shape.lineTo(w.length - sLen, 0);            // Right to stepout inner
+          shape.lineTo(w.length - sLen, -sDepth);      // Down to stepout outer
+          shape.lineTo(w.length, -sDepth);             // Right along stepout bottom
+          shape.lineTo(w.length, w.depth);             // Up to back-right
+          shape.lineTo(0, w.depth);                    // Left to back-left
+          shape.closePath();
+        } else if (stepout.corner === 'back-left') {
+          // Stepout extends UP from back-left (2D back = Shape top)
+          shape.moveTo(0, 0);                          // Front-left
+          shape.lineTo(w.length, 0);                   // Right to front-right
+          shape.lineTo(w.length, w.depth);             // Up to back-right
+          shape.lineTo(sLen, w.depth);                 // Left to stepout inner
+          shape.lineTo(sLen, w.depth + sDepth);        // Up to stepout outer
+          shape.lineTo(0, w.depth + sDepth);           // Left along stepout top
+          shape.closePath();
+        } else if (stepout.corner === 'back-right') {
+          // Stepout extends UP from back-right
+          shape.moveTo(0, 0);                          // Front-left
+          shape.lineTo(w.length, 0);                   // Right to front-right
+          shape.lineTo(w.length, w.depth + sDepth);    // Up to stepout outer
+          shape.lineTo(w.length - sLen, w.depth + sDepth); // Left along stepout top
+          shape.lineTo(w.length - sLen, w.depth);      // Down to main back
+          shape.lineTo(0, w.depth);                    // Left to back-left
+          shape.closePath();
+        }
+      }
+    } else {
+      // Standard rectangle with rounded corners
+      // Start at bottom-left corner
+      shape.moveTo(rShapeBL, 0);
+      // Bottom edge to bottom-right
+      shape.lineTo(w.length - rShapeBR, 0);
+      // Bottom-right corner
+      if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, -Math.PI/2, 0, false);
+      else shape.lineTo(w.length, 0);
+      // Right edge to top-right
+      shape.lineTo(w.length, w.depth - rShapeTR);
+      // Top-right corner
+      if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, 0, Math.PI/2, false);
+      else shape.lineTo(w.length, w.depth);
+      // Top edge to top-left
+      shape.lineTo(rShapeTL, w.depth);
+      // Top-left corner
+      if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI/2, Math.PI, false);
+      else shape.lineTo(0, w.depth);
+      // Left edge to bottom-left
+      shape.lineTo(0, rShapeBL);
+      // Bottom-left corner
+      if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, Math.PI, Math.PI * 1.5, false);
+      else shape.lineTo(0, 0);
+      shape.closePath();
+    };
     
     // Add cutout holes to the shape
     // NOTE: The Shape is created with X = w.length, Y = w.depth
@@ -8954,36 +10346,49 @@ function render3D() {
   renderer.render(scene, camera);
 }
 
-function toggleAdminPanel() {
+function promptAdminUnlock() {
   if (adminUnlocked) {
-    // Toggle visibility
-    const panel = document.getElementById('slabConfig');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    // Already unlocked - just show confirmation
+    alert('Admin mode is already unlocked!');
+    return;
+  }
+  
+  const pin = prompt('Enter Admin PIN:');
+  if (pin === ADMIN_PIN) {
+    adminUnlocked = true;
+    sessionStorage.setItem('adminUnlocked', 'true');
     
-    // Update button style
+    // Show slab layout tab
+    const slabTab = document.getElementById('slabLayoutTab');
+    if (slabTab) slabTab.style.display = 'block';
+    
+    // Update admin button
     const btn = document.getElementById('adminTabBtn');
     if (btn) {
-      btn.style.background = panel.style.display === 'block' ? '#e8f5e9' : '#f5f5f5';
-      btn.style.borderColor = panel.style.display === 'block' ? '#1e4d3a' : '#ccc';
+      btn.textContent = '🔓 Admin ✓';
+      btn.style.background = '#e8f5e9';
+      btn.style.borderColor = '#1e4d3a';
     }
-  } else {
-    // Request PIN
-    const pin = prompt('Enter Admin PIN:');
-    if (pin === ADMIN_PIN) {
-      adminUnlocked = true;
-      document.getElementById('slabConfig').style.display = 'block';
-      
-      const btn = document.getElementById('adminTabBtn');
-      if (btn) {
-        btn.style.background = '#e8f5e9';
-        btn.style.borderColor = '#1e4d3a';
-        btn.textContent = '⚙️ Admin ✓';
-      }
-      
-      alert('Admin panel unlocked!');
-    } else if (pin !== null) {
-      alert('Incorrect PIN');
-    }
+    
+    alert('Admin mode unlocked! Slab Layout tab is now visible.');
+  } else if (pin !== null) {
+    alert('Incorrect PIN');
+  }
+}
+
+function tryOpenSlabLayout() {
+  if (!adminUnlocked) {
+    promptAdminUnlock();
+    if (!adminUnlocked) return; // Still not unlocked
+  }
+  switchView('slab');
+}
+
+function toggleAdminPanel() {
+  // Legacy function - just toggle slab config visibility
+  const panel = document.getElementById('slabConfig');
+  if (panel) {
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   }
 }
 
@@ -9002,14 +10407,9 @@ function switchView(view) {
   document.getElementById('legend2d').style.display = view === '2d' ? 'block' : 'none';
   document.getElementById('nav2d').style.display = view === '2d' ? 'flex' : 'none';
   document.getElementById('nav3d').style.display = view === '3d' ? 'flex' : 'none';
-  // Admin panel only shows in slab view AND if unlocked
+  // Admin panel shows in slab view if unlocked
   document.getElementById('slabConfig').style.display = (view === 'slab' && adminUnlocked) ? 'block' : 'none';
   
-  // Show admin tab button in slab view
-  const adminTabBtn = document.getElementById('adminTabBtn');
-  if (adminTabBtn) {
-    adminTabBtn.style.display = view === 'slab' ? 'inline-block' : 'none';
-  }
   document.getElementById('disclaimer3d').style.display = view === '3d' ? 'block' : 'none';
   
   // Show Generate Quote button only in 2D view
@@ -9156,38 +10556,138 @@ function renderSlabLayout() {
   
   console.log('SLAB PACKING: Using slab size', SLAB_W, '×', SLAB_H);
   
-  // Get fabrication prices based on selected material
+  // Get fabrication prices - check admin inputs first, then fall back to material defaults
   const materialBrand = selectedMaterial ? (MATERIAL_COLORS[selectedMaterial]?.brand || 'MOD') : 'MOD';
-  const fabPrices = getFabricationPrices(materialBrand);
-  const profit1st = fabPrices.firstSlab;
-  const profitAdd = fabPrices.additionalSlab;
+  const defaultFabPrices = FABRICATION_PRICES[materialBrand] || FABRICATION_PRICES.quartz;
   
-  // Update the input fields to show current pricing
   const profit1stEl = document.getElementById('profit1stSlab');
   const profitAddEl = document.getElementById('profitAddSlab');
-  if (profit1stEl) profit1stEl.value = profit1st;
-  if (profitAddEl) profitAddEl.value = profitAdd;
+  
+  // Use admin input values if set, otherwise use material defaults
+  let profit1st, profitAdd;
+  if (profit1stEl && profit1stEl.dataset.manuallySet === 'true') {
+    profit1st = parseFloat(profit1stEl.value) || 1300;
+  } else {
+    profit1st = getFabricationPrices(materialBrand).firstSlab;
+    if (profit1stEl) profit1stEl.value = profit1st;
+  }
+  
+  if (profitAddEl && profitAddEl.dataset.manuallySet === 'true') {
+    profitAdd = parseFloat(profitAddEl.value) || 500;
+  } else {
+    profitAdd = getFabricationPrices(materialBrand).additionalSlab;
+    if (profitAddEl) profitAddEl.value = profitAdd;
+  }
   
   // Collect all pieces
   const pieces = [];
   let oversizedPieces = [];
   
   worktops.forEach(w => {
-    const pw = w.length;
-    const ph = w.depth;
-    // Check if piece fits in slab (either orientation)
-    const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
-    if (!fits) {
-      oversizedPieces.push(`${w.name} (${pw}×${ph}mm)`);
+    // Check if worktop has splits
+    if (w.splits && w.splits.length > 0) {
+      // Split worktop into pieces
+      const verticalSplits = w.splits.filter(s => s.direction === 'vertical').sort((a, b) => a.position - b.position);
+      const horizontalSplits = w.splits.filter(s => s.direction === 'horizontal').sort((a, b) => a.position - b.position);
+      
+      if (verticalSplits.length > 0) {
+        // Vertical splits divide the length
+        let prevPos = 0;
+        verticalSplits.forEach((split, i) => {
+          const pieceLength = split.position - prevPos;
+          const fits = (pieceLength <= SLAB_W && w.depth <= SLAB_H) || (w.depth <= SLAB_W && pieceLength <= SLAB_H);
+          pieces.push({
+            name: `${w.name || 'Worktop'} (${i + 1})`,
+            width: pieceLength,
+            height: w.depth,
+            type: 'worktop',
+            color: '#e3f2fd',
+            error: !fits
+          });
+          if (!fits) oversizedPieces.push(`${w.name} part ${i + 1} (${pieceLength}×${w.depth}mm)`);
+          prevPos = split.position;
+        });
+        // Last piece
+        const lastLength = w.length - prevPos;
+        const fits = (lastLength <= SLAB_W && w.depth <= SLAB_H) || (w.depth <= SLAB_W && lastLength <= SLAB_H);
+        pieces.push({
+          name: `${w.name || 'Worktop'} (${verticalSplits.length + 1})`,
+          width: lastLength,
+          height: w.depth,
+          type: 'worktop',
+          color: '#e3f2fd',
+          error: !fits
+        });
+        if (!fits) oversizedPieces.push(`${w.name} part ${verticalSplits.length + 1} (${lastLength}×${w.depth}mm)`);
+      } else if (horizontalSplits.length > 0) {
+        // Horizontal splits divide the depth
+        let prevPos = 0;
+        horizontalSplits.forEach((split, i) => {
+          const pieceDepth = split.position - prevPos;
+          const fits = (w.length <= SLAB_W && pieceDepth <= SLAB_H) || (pieceDepth <= SLAB_W && w.length <= SLAB_H);
+          pieces.push({
+            name: `${w.name || 'Worktop'} (${i + 1})`,
+            width: w.length,
+            height: pieceDepth,
+            type: 'worktop',
+            color: '#e3f2fd',
+            error: !fits
+          });
+          if (!fits) oversizedPieces.push(`${w.name} part ${i + 1} (${w.length}×${pieceDepth}mm)`);
+          prevPos = split.position;
+        });
+        // Last piece
+        const lastDepth = w.depth - prevPos;
+        const fits = (w.length <= SLAB_W && lastDepth <= SLAB_H) || (lastDepth <= SLAB_W && w.length <= SLAB_H);
+        pieces.push({
+          name: `${w.name || 'Worktop'} (${horizontalSplits.length + 1})`,
+          width: w.length,
+          height: lastDepth,
+          type: 'worktop',
+          color: '#e3f2fd',
+          error: !fits
+        });
+        if (!fits) oversizedPieces.push(`${w.name} part ${horizontalSplits.length + 1} (${w.length}×${lastDepth}mm)`);
+      }
+    } else {
+      // No splits - add whole worktop
+      const pw = w.length;
+      const ph = w.depth;
+      
+      // If worktop has stepout, use bounding box dimensions
+      let actualW = pw;
+      let actualH = ph;
+      let isLShape = false;
+      
+      if (w.stepout) {
+        isLShape = true;
+        const isVertical = w.depth > w.length;
+        if (isVertical) {
+          // Stepout extends left/right, adds to width
+          actualW = pw + w.stepout.depth;
+        } else {
+          // Stepout extends down/up, adds to height
+          actualH = ph + w.stepout.depth;
+        }
+      }
+      
+      const fits = (actualW <= SLAB_W && actualH <= SLAB_H) || (actualH <= SLAB_W && actualW <= SLAB_H);
+      if (!fits) {
+        oversizedPieces.push(`${w.name} (${actualW}×${actualH}mm)`);
+      }
+      pieces.push({
+        name: isLShape ? `${w.name} (L)` : w.name,
+        width: actualW,
+        height: actualH,
+        type: 'worktop',
+        color: isLShape ? '#d4e6f1' : '#e3f2fd', // Slightly different blue for L-shapes
+        error: !fits,
+        isLShape: isLShape,
+        stepout: w.stepout
+      });
     }
-    pieces.push({
-      name: w.name,
-      width: pw,
-      height: ph,
-      type: 'worktop',
-      color: '#e3f2fd',
-      error: !fits
-    });
+    
+    // DON'T add stepout as separate piece - it's part of the L-shape bounding box
   });
   
   upstands.forEach(u => {
@@ -9489,8 +10989,14 @@ function renderSlabLayout() {
   // Calculate total height needed
   const totalHeight = PADDING * 2 + slabs.length * (FIXED_SLAB_H + GAP_BETWEEN) + 60;
   
-  slabCanvas.width = container.clientWidth;
-  slabCanvas.height = Math.max(container.clientHeight, totalHeight);
+  // Use fixed width if container is hidden (tab not visible)
+  // Minimum width should fit the slab display plus padding
+  const minWidth = SLAB_DISPLAY_W + PADDING * 2 + 20;
+  const canvasWidth = container.clientWidth > 0 ? container.clientWidth : minWidth;
+  const canvasHeight = Math.max(container.clientHeight > 0 ? container.clientHeight : totalHeight, totalHeight);
+  
+  slabCanvas.width = canvasWidth;
+  slabCanvas.height = canvasHeight;
   slabCanvas.style.height = slabCanvas.height + 'px';
   
   const ctx = slabCanvas.getContext('2d');
@@ -9528,10 +11034,122 @@ function renderSlabLayout() {
       usedArea += p.width * p.height;
       
       ctx.fillStyle = p.error ? '#ffcdd2' : p.color;
-      ctx.fillRect(px, py, pw, ph);
       ctx.strokeStyle = p.error ? '#c00' : '#555';
       ctx.lineWidth = 1;
-      ctx.strokeRect(px, py, pw, ph);
+      
+      // Draw L-shape if this piece has stepout info
+      if (p.isLShape && p.stepout) {
+        const stepout = p.stepout;
+        const isVertical = (p.height - stepout.depth) > (p.width - stepout.depth); // Original was taller
+        const sLen = stepout.length * slabDisplayScale;
+        const sDepth = stepout.depth * slabDisplayScale;
+        
+        // Calculate main worktop dimensions (before stepout was added)
+        let mainW, mainH;
+        if (isVertical) {
+          mainW = pw - sDepth;
+          mainH = ph;
+        } else {
+          mainW = pw;
+          mainH = ph - sDepth;
+        }
+        
+        ctx.beginPath();
+        if (p.rotated) {
+          // When rotated, the L-shape orientation changes
+          if (isVertical) {
+            // Was vertical, now horizontal after rotation
+            // Stepout on bottom
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + ph, py); // top edge (was height, now width)
+            ctx.lineTo(px + ph, py + mainW); // right edge partial
+            ctx.lineTo(px + sLen, py + mainW); // step in
+            ctx.lineTo(px + sLen, py + pw); // down to bottom of stepout
+            ctx.lineTo(px, py + pw); // left along bottom
+            ctx.closePath();
+          } else {
+            // Was horizontal, now vertical after rotation
+            // Stepout on right
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + mainH, py); // top edge
+            ctx.lineTo(px + mainH, py + sLen); // right partial
+            ctx.lineTo(px + ph, py + sLen); // step out
+            ctx.lineTo(px + ph, py + pw); // down right edge
+            ctx.lineTo(px, py + pw); // bottom edge
+            ctx.closePath();
+          }
+        } else {
+          // Not rotated - draw based on corner
+          const corner = stepout.corner || 'front-left';
+          if (isVertical) {
+            // Vertical worktop - stepout extends left/right
+            if (corner === 'front-left' || corner === 'back-left') {
+              // Stepout on left side, at bottom
+              ctx.moveTo(px + sDepth, py);
+              ctx.lineTo(px + pw, py);
+              ctx.lineTo(px + pw, py + ph);
+              ctx.lineTo(px, py + ph);
+              ctx.lineTo(px, py + ph - sLen);
+              ctx.lineTo(px + sDepth, py + ph - sLen);
+              ctx.closePath();
+            } else {
+              // Stepout on right side, at bottom
+              ctx.moveTo(px, py);
+              ctx.lineTo(px + pw - sDepth, py);
+              ctx.lineTo(px + pw - sDepth, py + ph - sLen);
+              ctx.lineTo(px + pw, py + ph - sLen);
+              ctx.lineTo(px + pw, py + ph);
+              ctx.lineTo(px, py + ph);
+              ctx.closePath();
+            }
+          } else {
+            // Horizontal worktop - stepout extends down/up
+            if (corner === 'front-left') {
+              // Stepout at bottom-left
+              ctx.moveTo(px, py);
+              ctx.lineTo(px + pw, py);
+              ctx.lineTo(px + pw, py + mainH);
+              ctx.lineTo(px + sLen, py + mainH);
+              ctx.lineTo(px + sLen, py + ph);
+              ctx.lineTo(px, py + ph);
+              ctx.closePath();
+            } else if (corner === 'front-right') {
+              // Stepout at bottom-right
+              ctx.moveTo(px, py);
+              ctx.lineTo(px + pw, py);
+              ctx.lineTo(px + pw, py + ph);
+              ctx.lineTo(px + pw - sLen, py + ph);
+              ctx.lineTo(px + pw - sLen, py + mainH);
+              ctx.lineTo(px, py + mainH);
+              ctx.closePath();
+            } else if (corner === 'back-left') {
+              // Stepout at top-left
+              ctx.moveTo(px, py);
+              ctx.lineTo(px + sLen, py);
+              ctx.lineTo(px + sLen, py + sDepth);
+              ctx.lineTo(px + pw, py + sDepth);
+              ctx.lineTo(px + pw, py + ph);
+              ctx.lineTo(px, py + ph);
+              ctx.closePath();
+            } else {
+              // Stepout at top-right
+              ctx.moveTo(px, py + sDepth);
+              ctx.lineTo(px + pw - sLen, py + sDepth);
+              ctx.lineTo(px + pw - sLen, py);
+              ctx.lineTo(px + pw, py);
+              ctx.lineTo(px + pw, py + ph);
+              ctx.lineTo(px, py + ph);
+              ctx.closePath();
+            }
+          }
+        }
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        // Regular rectangle
+        ctx.fillRect(px, py, pw, ph);
+        ctx.strokeRect(px, py, pw, ph);
+      }
       
       // Label
       ctx.fillStyle = '#333';
@@ -9590,6 +11208,7 @@ function renderSlabLayout() {
   
   [
     { c: '#e3f2fd', l: 'Worktop' },
+    { c: '#d4e6f1', l: 'L-Shape Worktop' },
     { c: '#e8f5e9', l: 'Upstand' },
     { c: '#e0f7fa', l: 'Splashback' },
     { c: '#fff3e0', l: 'Window Cill' },
@@ -10343,7 +11962,7 @@ async function generateQuote() {
     'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
   };
   
-  // Collect worktop data WITH positions
+  // Collect worktop data WITH positions and splits
   const worktopData = worktops.map((w, i) => ({
     id: w.id,
     name: w.name || `Piece ${i + 1}`,
@@ -10353,7 +11972,9 @@ async function generateQuote() {
     y: w.y,
     edgeTypes: w.edgeTypes || {},
     joints: w.joints || {},
-    cornerRadii: w.cornerRadii || { tl: 0, tr: 0, br: 0, bl: 0 }
+    cornerRadii: w.cornerRadii || { tl: 0, tr: 0, br: 0, bl: 0 },
+    splits: w.splits || [],
+    stepout: w.stepout || null
   }));
   
   // Collect ALL upstands/splashbacks together (they render the same in 3D)
@@ -10527,21 +12148,51 @@ async function generateQuote() {
   
   // Get fabrication prices based on material type
   const fabPrices = getFabricationPrices(mat.brand);
-  const profit1st = fabPrices.firstSlab;
-  const profitAdd = fabPrices.additionalSlab;
   
-  // Get material pricing
+  // Get profit values from admin inputs if manually set
+  const profit1stEl = document.getElementById('profit1stSlab');
+  const profitAddEl = document.getElementById('profitAddSlab');
+  const profit1st = (profit1stEl && profit1stEl.dataset.manuallySet === 'true') 
+    ? parseFloat(profit1stEl.value) || fabPrices.firstSlab 
+    : fabPrices.firstSlab;
+  const profitAdd = (profitAddEl && profitAddEl.dataset.manuallySet === 'true') 
+    ? parseFloat(profitAddEl.value) || fabPrices.additionalSlab 
+    : fabPrices.additionalSlab;
+  
+  // Get material pricing - check custom slab price first
+  const customSlabPriceEl = document.getElementById('customSlabPrice');
+  const customSlabPrice = customSlabPriceEl ? parseFloat(customSlabPriceEl.value) || 0 : 0;
+  
   const matPricing = MATERIAL_PRICING[selectedMaterial];
-  const slabPrice = matPricing ? 
+  const slabPrice = customSlabPrice > 0 ? customSlabPrice : (matPricing ? 
     (worktopThickness === 30 && matPricing.price30slab ? matPricing.price30slab : matPricing.price20slab) || 0 
-    : 0;
+    : 0);
   const tier = matPricing ? matPricing.tier : (mat.tier || 1);
   
   // Build quote data object (images stored separately to avoid localStorage limits)
+  // Check if custom material is active
+  const useCustomMaterial = customMaterial.active && customMaterial.name;
+  
   const quoteData = {
     quoteNumber: 'PSW-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000),
     date: new Date().toISOString(),
-    material: {
+    material: useCustomMaterial ? {
+      key: 'custom',
+      name: customMaterial.name,
+      brand: 'Custom',
+      brandCode: 'CUS',
+      type: customMaterial.type.charAt(0).toUpperCase() + customMaterial.type.slice(1),  // Capitalize
+      materialType: customMaterial.type,
+      tier: 0,  // No tier for custom
+      thickness: customMaterial.thickness,
+      textureId: null,
+      css: '#d4a574',  // Default brown for custom stone
+      roughness: 0.3,
+      slabPrice: customMaterial.slabPrice || slabPrice,
+      isCustom: true,
+      customImage: customMaterial.imageData || null,  // Include image for summary page
+      customImageName: customMaterial.imageName || ''
+    } : {
       key: selectedMaterial,
       name: mat.name,
       brand: brandNames[mat.brand] || mat.brand,
@@ -10581,10 +12232,258 @@ async function generateQuote() {
       email: '',
       phone: '',
       address: ''
-    }
+    },
+    // Slab layout - pre-packed from designer for consistency
+    slabLayoutData: getPackedSlabLayout()
     // Note: render3dViews removed - images too large for localStorage
     // Quote summary will use interactive 3D instead
   };
+  
+  // Helper function to get fully packed slab layout (matches renderSlabLayout exactly)
+  function getPackedSlabLayout() {
+    const slabWInput = document.getElementById('slabWidthInput');
+    const slabHInput = document.getElementById('slabHeightInput');
+    const SLAB_W = slabWInput ? parseInt(slabWInput.value) || 3200 : 3200;
+    const SLAB_H = slabHInput ? parseInt(slabHInput.value) || 1600 : 1600;
+    
+    // Collect pieces (same as renderSlabLayout)
+    const pieces = [];
+    
+    worktops.forEach(w => {
+      if (w.splits && w.splits.length > 0) {
+        const verticalSplits = w.splits.filter(s => s.direction === 'vertical').sort((a, b) => a.position - b.position);
+        const horizontalSplits = w.splits.filter(s => s.direction === 'horizontal').sort((a, b) => a.position - b.position);
+        
+        if (verticalSplits.length > 0) {
+          let prevPos = 0;
+          verticalSplits.forEach((split, i) => {
+            pieces.push({ name: `${w.name || 'Worktop'} (${i+1})`, width: split.position - prevPos, height: w.depth, type: 'worktop', color: '#e3f2fd' });
+            prevPos = split.position;
+          });
+          pieces.push({ name: `${w.name || 'Worktop'} (${verticalSplits.length+1})`, width: w.length - prevPos, height: w.depth, type: 'worktop', color: '#e3f2fd' });
+        } else if (horizontalSplits.length > 0) {
+          let prevPos = 0;
+          horizontalSplits.forEach((split, i) => {
+            pieces.push({ name: `${w.name || 'Worktop'} (${i+1})`, width: w.length, height: split.position - prevPos, type: 'worktop', color: '#e3f2fd' });
+            prevPos = split.position;
+          });
+          pieces.push({ name: `${w.name || 'Worktop'} (${horizontalSplits.length+1})`, width: w.length, height: w.depth - prevPos, type: 'worktop', color: '#e3f2fd' });
+        }
+      } else {
+        let pw = w.length;
+        let ph = w.depth;
+        let isLShape = false;
+        
+        if (w.stepout) {
+          isLShape = true;
+          const isVertical = w.depth > w.length;
+          if (isVertical) {
+            pw = w.length + w.stepout.depth;
+          } else {
+            ph = w.depth + w.stepout.depth;
+          }
+        }
+        
+        const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
+        pieces.push({
+          name: isLShape ? `${w.name} (L)` : w.name,
+          width: pw,
+          height: ph,
+          type: 'worktop',
+          color: isLShape ? '#d4e6f1' : '#e3f2fd',
+          error: !fits,
+          isLShape: isLShape,
+          stepout: w.stepout || null
+        });
+      }
+    });
+    
+    upstands.forEach(u => {
+      const ph = u.isWindowCill ? (u.depth || 200) : u.height;
+      if (u.length >= 10 && ph >= 10) {
+        if (u.isWindowCill) {
+          pieces.push({ name: 'Cill', width: u.length, height: ph, type: 'cill', color: '#fff3e0' });
+        } else if (u.isSplash) {
+          pieces.push({ name: 'Splash', width: u.length, height: ph, type: 'splash', color: '#e0f7fa' });
+        } else {
+          pieces.push({ name: 'Upstand', width: u.length, height: ph, type: 'upstand', color: '#e8f5e9' });
+        }
+      }
+    });
+    
+    worktops.forEach(w => {
+      if (w.edgeTypes) {
+        Object.entries(w.edgeTypes).forEach(([k, v]) => {
+          if (v.type === 'dropdown') {
+            const [edge, s, e] = k.split('_');
+            pieces.push({ name: 'Dropdown', width: parseInt(e) - parseInt(s), height: v.height, type: 'dropdown', color: '#f3e5f5' });
+          } else if (v.type === 'mitred_edge') {
+            const [edge, s, e] = k.split('_');
+            pieces.push({ name: 'Mitred Edge', width: parseInt(e) - parseInt(s), height: v.height, type: 'mitred_edge', color: '#d7ccc8' });
+          }
+        });
+      }
+    });
+    
+    if (pieces.length === 0) return { slabs: [], slabW: SLAB_W, slabH: SLAB_H };
+    
+    // Sort by area descending
+    const sortedPieces = [...pieces].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    
+    // Pack into slabs (same algorithm as renderSlabLayout)
+    const slabs = [];
+    
+    function createSlab() {
+      return { freeRects: [{ x: 0, y: 0, w: SLAB_W, h: SLAB_H }], pieces: [] };
+    }
+    
+    function rectsOverlap(a, b) {
+      return !(a.x >= b.x + b.w || a.x + a.w <= b.x || a.y >= b.y + b.h || a.y + a.h <= b.y);
+    }
+    
+    function findBestRect(slab, pw, ph) {
+      let bestScore = Infinity;
+      let bestRect = null;
+      let bestRotated = false;
+      
+      for (const rect of slab.freeRects) {
+        // Try normal orientation
+        if (pw <= rect.w && ph <= rect.h) {
+          // Score = how much space is wasted, prefer tighter fits
+          let score = (rect.w - pw) + (rect.h - ph);
+          
+          // Strong penalty if piece would be taller than wide (vertical)
+          if (ph > pw) {
+            score += 500000;
+          }
+          
+          if (score < bestScore) {
+            bestScore = score;
+            bestRect = rect;
+            bestRotated = false;
+          }
+        }
+        // Try rotated
+        if (ph <= rect.w && pw <= rect.h && pw !== ph) {
+          // After rotation: width=ph, height=pw
+          let score = (rect.w - ph) + (rect.h - pw);
+          
+          // Strong penalty if rotated piece would be taller than wide
+          if (pw > ph) {
+            score += 500000;
+          }
+          
+          if (score < bestScore) {
+            bestScore = score;
+            bestRect = rect;
+            bestRotated = true;
+          }
+        }
+      }
+      return bestRect ? { rect: bestRect, rotated: bestRotated } : null;
+    }
+    
+    function pruneRects(rects) {
+      const result = [];
+      for (let i = 0; i < rects.length; i++) {
+        let dominated = false;
+        for (let j = 0; j < rects.length; j++) {
+          if (i !== j) {
+            const a = rects[i], b = rects[j];
+            if (b.x <= a.x && b.y <= a.y && b.x + b.w >= a.x + a.w && b.y + b.h >= a.y + a.h) {
+              dominated = true;
+              break;
+            }
+          }
+        }
+        if (!dominated && rects[i].w > 0 && rects[i].h > 0) result.push(rects[i]);
+      }
+      return result;
+    }
+    
+    function placePiece(slab, rect, pw, ph, rotated) {
+      const actualW = rotated ? ph : pw;
+      const actualH = rotated ? pw : ph;
+      const placed = { x: rect.x, y: rect.y, w: actualW, h: actualH, rotated: rotated };
+      
+      const newRects = [];
+      for (const freeRect of slab.freeRects) {
+        if (rectsOverlap(freeRect, placed)) {
+          if (placed.x + placed.w < freeRect.x + freeRect.w) {
+            newRects.push({ x: placed.x + placed.w, y: freeRect.y, w: freeRect.x + freeRect.w - (placed.x + placed.w), h: freeRect.h });
+          }
+          if (placed.x > freeRect.x) {
+            newRects.push({ x: freeRect.x, y: freeRect.y, w: placed.x - freeRect.x, h: freeRect.h });
+          }
+          if (placed.y + placed.h < freeRect.y + freeRect.h) {
+            newRects.push({ x: freeRect.x, y: placed.y + placed.h, w: freeRect.w, h: freeRect.y + freeRect.h - (placed.y + placed.h) });
+          }
+          if (placed.y > freeRect.y) {
+            newRects.push({ x: freeRect.x, y: freeRect.y, w: freeRect.w, h: placed.y - freeRect.y });
+          }
+        } else {
+          newRects.push(freeRect);
+        }
+      }
+      slab.freeRects = pruneRects(newRects);
+      return placed;
+    }
+    
+    function tryPlacePiece(slab, pw, ph) {
+      const best = findBestRect(slab, pw, ph);
+      if (!best) return null;
+      return placePiece(slab, best.rect, pw, ph, best.rotated);
+    }
+    
+    sortedPieces.forEach(piece => {
+      if (piece.error) {
+        const newSlab = createSlab();
+        newSlab.pieces.push({ ...piece, x: 0, y: 0, pw: piece.width, ph: piece.height, rotated: false });
+        slabs.push(newSlab);
+        return;
+      }
+      
+      let placed = null;
+      let placedSlab = null;
+      
+      for (let slab of slabs) {
+        placed = tryPlacePiece(slab, piece.width, piece.height);
+        if (placed) {
+          placedSlab = slab;
+          break;
+        }
+      }
+      
+      if (!placed) {
+        const newSlab = createSlab();
+        placed = tryPlacePiece(newSlab, piece.width, piece.height);
+        if (placed) {
+          placedSlab = newSlab;
+          slabs.push(newSlab);
+        } else {
+          newSlab.pieces.push({ ...piece, x: 0, y: 0, pw: piece.width, ph: piece.height, rotated: false, error: true });
+          slabs.push(newSlab);
+          return;
+        }
+      }
+      
+      placedSlab.pieces.push({
+        ...piece,
+        x: placed.x,
+        y: placed.y,
+        pw: placed.w,
+        ph: placed.h,
+        rotated: placed.rotated
+      });
+    });
+    
+    // Return slabs without freeRects (not needed for rendering)
+    return {
+      slabs: slabs.map(s => ({ pieces: s.pieces })),
+      slabW: SLAB_W,
+      slabH: SLAB_H
+    };
+  }
   
   // Store quote data in localStorage
   try {
@@ -10598,15 +12497,39 @@ async function generateQuote() {
     return;
   }
   
+  // Capture slab layout canvas as image
+  // First ensure it's rendered (even if tab not visible)
+  let slabLayoutImage = null;
+  const slabCanvas = document.getElementById('canvasSlab');  // Correct ID
+  if (slabCanvas) {
+    // Force render the slab layout
+    renderSlabLayout();
+    
+    // Check canvas has content
+    if (slabCanvas.width > 0 && slabCanvas.height > 0) {
+      try {
+        slabLayoutImage = slabCanvas.toDataURL('image/png');
+        console.log('Slab layout captured, size:', (slabLayoutImage.length / 1024).toFixed(1), 'KB', 'dimensions:', slabCanvas.width, 'x', slabCanvas.height);
+      } catch (e) {
+        console.warn('Could not capture slab layout:', e);
+      }
+    } else {
+      console.warn('Slab canvas has no dimensions:', slabCanvas.width, 'x', slabCanvas.height);
+    }
+  } else {
+    console.warn('Slab canvas element not found');
+  }
+  
   // Store images separately in sessionStorage (clears when tab closes)
   const imageData = {
     render3dViews: render3dViews || [],
-    render2dView: render2dView || null
+    render2dView: render2dView || null,
+    slabLayoutImage: slabLayoutImage
   };
   
   try {
     sessionStorage.setItem('primeWorktopsImages', JSON.stringify(imageData));
-    console.log('Images saved to sessionStorage: 3D views:', render3dViews?.length || 0, ', 2D:', render2dView ? 'yes' : 'no');
+    console.log('Images saved to sessionStorage: 3D views:', render3dViews?.length || 0, ', 2D:', render2dView ? 'yes' : 'no', ', Slab:', slabLayoutImage ? 'yes (' + (slabLayoutImage.length / 1024).toFixed(1) + 'KB)' : 'no');
   } catch (e) {
     console.warn('Could not save images to sessionStorage:', e);
   }
@@ -10765,6 +12688,16 @@ function clearDesignState() {
     selectedId = null;
     selectedType = null;
     nextId = 1;
+    
+    // Reset slab warning state
+    slabOptimizationSuggestions = [];
+    hasShownSlabWarning = false;
+    lastKnownSlabCount = 0;
+    
+    // Hide warning panel
+    const warningDiv = document.getElementById('slabWarning');
+    if (warningDiv) warningDiv.style.display = 'none';
+    
     renderLists();
     render();
     updateSummary();
@@ -10797,6 +12730,9 @@ saveHistory = function() {
   // Then load saved design (which may reference materials)
   loadDesignState();
   
+  // Restore custom material settings (persists across page navigation)
+  restoreCustomMaterial();
+  
   // Update UI
   updateCurrentMaterialDisplay();
   updateZoom();
@@ -10805,6 +12741,22 @@ saveHistory = function() {
   updateSummary();
   updateTierStylePreview();
   updateTierFilterButtons();
+  
+  // Enable slab warnings after page has loaded (prevents popup on initial load)
+  setTimeout(enableSlabWarnings, 1000);
+  
+  // Check if admin was previously unlocked (persists across page navigation)
+  if (adminUnlocked) {
+    const slabTab = document.getElementById('slabLayoutTab');
+    if (slabTab) slabTab.style.display = 'block';
+    
+    const btn = document.getElementById('adminTabBtn');
+    if (btn) {
+      btn.textContent = '🔓 Admin ✓';
+      btn.style.background = '#e8f5e9';
+      btn.style.borderColor = '#1e4d3a';
+    }
+  }
 })();
 </script>
 </body>
