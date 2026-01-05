@@ -855,7 +855,7 @@
 const SLAB_W = 3200, SLAB_H = 1600, EFFICIENCY = 0.70;
 let worktopThickness = 20; // Default 20mm, can be 20mm or 30mm
 const SNAP_DIST = 30;
-const EDGE_CLICK_DIST = 20; // More precise edge clicking
+const EDGE_CLICK_DIST = 30; // Edge clicking tolerance (mm)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ██████  PRICING CONFIGURATION - EASY TO UPDATE  ██████
@@ -1690,6 +1690,12 @@ function detectJointBetween(w1, w2) {
 
 function getFreeSegments(w, edge) {
   let len = (edge === 'back' || edge === 'front') ? w.length : w.depth;
+  
+  // Safety check - ensure joints exists
+  if (!w.joints) {
+    w.joints = { back: [], front: [], left: [], right: [] };
+  }
+  
   const joints = w.joints[edge] || [];
   
   // Adjust for stepout - the main edge is shortened where stepout exists
@@ -1966,7 +1972,7 @@ function pointToLineDist(px, py, x1, y1, x2, y2) {
 }
 
 // Detect if click is near a worktop corner
-const CORNER_CLICK_DIST = 80; // mm tolerance for corner click
+const CORNER_CLICK_DIST = 50; // mm tolerance for corner click (reduced from 80)
 let cornerMenuTarget = null; // { wId, corner }
 
 function findClickedCorner(mx, my) {
@@ -2557,16 +2563,16 @@ function addWindowCill() {
   updateSummary();
 }
 
-// Socket cutout for splashbacks
+// Socket cutout for upstands and splashbacks
 let pendingSocketData = null;
 
 function addSocketCutout() {
-  // First check if a splashback is selected - use that one
+  // First check if an upstand/splashback is selected - use that one
   if (selectedType === 'upstand' && selectedId) {
-    const selectedSplash = upstands.find(u => u.id === selectedId);
-    if (selectedSplash && selectedSplash.isSplash) {
-      console.log('Adding socket to SELECTED splashback:', selectedSplash.id);
-      pendingSocketData = { targetSplash: selectedSplash };
+    const selectedUpstand = upstands.find(u => u.id === selectedId);
+    if (selectedUpstand) {
+      console.log('Adding socket to SELECTED upstand/splashback:', selectedUpstand.id);
+      pendingSocketData = { targetUpstand: selectedUpstand };
       hideEdgeMenu();
       document.getElementById('socketModal').style.display = 'flex';
       return;
@@ -2575,7 +2581,7 @@ function addSocketCutout() {
   
   // Fallback: use edge menu target
   if (!edgeMenuTarget) {
-    alert('Please select a splashback or click on an edge first.');
+    alert('Please select an upstand/splashback or click on an edge first.');
     hideEdgeMenu();
     return;
   }
@@ -2584,30 +2590,29 @@ function addSocketCutout() {
   const w = worktops.find(wt => wt.id === wId);
   if (!w) { hideEdgeMenu(); return; }
   
-  // Find splashback on THIS edge - if multiple, warn user to select one
-  const splashbacks = upstands.filter(u => 
-    u.isSplash && 
+  // Find upstands/splashbacks on THIS edge - if multiple, warn user to select one
+  const edgeUpstands = upstands.filter(u => 
     u.parentId === wId && 
     u.parentEdge === edge
   );
   
-  if (splashbacks.length === 0) {
-    alert(`No splashback on the ${edge} edge of ${w.name || 'this worktop'}.\n\nPlease add a splashback first, then add socket cutouts to it.`);
+  if (edgeUpstands.length === 0) {
+    alert(`No upstand/splashback on the ${edge} edge of ${w.name || 'this worktop'}.\n\nPlease add an upstand or splashback first, then add socket cutouts to it.`);
     hideEdgeMenu();
     return;
   }
   
-  if (splashbacks.length > 1) {
-    alert(`Multiple splashbacks on this edge.\n\nPlease double-click the specific splashback you want to add the socket to, then use the "Add Socket" button.`);
+  if (edgeUpstands.length > 1) {
+    alert(`Multiple pieces on this edge.\n\nPlease double-click the specific upstand/splashback you want to add the socket to, then use the "Add Socket" button.`);
     hideEdgeMenu();
     return;
   }
   
-  const splashback = splashbacks[0];
-  console.log('Adding socket to splashback:', splashback.id, 'on', edge, 'edge');
+  const targetUpstand = edgeUpstands[0];
+  console.log('Adding socket to upstand/splashback:', targetUpstand.id, 'on', edge, 'edge');
   
-  // Store target splashback for the modal
-  pendingSocketData = { targetSplash: splashback };
+  // Store target for the modal
+  pendingSocketData = { targetUpstand: targetUpstand };
   hideEdgeMenu();
   document.getElementById('socketModal').style.display = 'flex';
 }
@@ -2615,8 +2620,29 @@ function addSocketCutout() {
 function selectSocketSize(size) {
   document.getElementById('socketModal').style.display = 'none';
   
-  if (!pendingSocketData) return;
-  const { targetSplash } = pendingSocketData;
+  if (!pendingSocketData || !pendingSocketData.targetUpstand) {
+    console.warn('No target upstand for socket');
+    pendingSocketData = null;
+    return;
+  }
+  
+  // Re-fetch the upstand in case it was recreated
+  let targetUpstand = upstands.find(u => u.id === pendingSocketData.targetUpstand.id);
+  if (!targetUpstand) {
+    // Upstand was deleted/recreated - try to find by position
+    const orig = pendingSocketData.targetUpstand;
+    targetUpstand = upstands.find(u => 
+      u.parentEdge === orig.parentEdge && 
+      u.absoluteX === orig.absoluteX && 
+      u.absoluteY === orig.absoluteY
+    );
+  }
+  
+  if (!targetUpstand) {
+    alert('The upstand was modified. Please select it again and add the socket.');
+    pendingSocketData = null;
+    return;
+  }
   
   let sw, sh;
   if (size === 'single') {
@@ -2633,9 +2659,9 @@ function selectSocketSize(size) {
     sh = parseInt(height) || 73;
   }
   
-  // Default position: center of splashback
-  const centerX = targetSplash.length / 2;
-  const centerY = targetSplash.height / 2;
+  // Default position: center of upstand/splashback
+  const centerX = targetUpstand.length / 2;
+  const centerY = targetUpstand.height / 2;
   
   saveHistory();
   
@@ -2643,16 +2669,16 @@ function selectSocketSize(size) {
   cutouts.push({
     id: nextId++,
     type: 'socket',
-    parentId: targetSplash.id,
-    parentType: 'splashback',
+    parentId: targetUpstand.id,
+    parentType: targetUpstand.isSplash ? 'splashback' : 'upstand',
     width: sw,
     height: sh,
-    centerX: centerX,    // Center position from left of splashback
-    centerY: centerY,    // Center position from bottom of splashback
+    centerX: centerX,    // Center position from left of upstand
+    centerY: centerY,    // Center position from bottom of upstand
     draggable: true
   });
   
-  console.log(`Socket added to splashback ${targetSplash.id} at center (${centerX}, ${centerY}) - drag to reposition`);
+  console.log(`Socket added to ${targetUpstand.isSplash ? 'splashback' : 'upstand'} ${targetUpstand.id} at center (${centerX}, ${centerY}) - drag to reposition`);
   
   pendingSocketData = null;
   renderLists();
@@ -5520,8 +5546,8 @@ function findItemAt(mx, my) {
         }
       }
     } else {
-      // Regular upstands and splashbacks
-      const VISUAL_DEPTH = u.isSplash ? u.height : 80;
+      // Regular upstands and splashbacks - use actual height
+      const VISUAL_DEPTH = u.height || 100;
     
     // For continuous upstands, use absolute position
     if (u.isContinuous && u.absoluteX !== undefined) {
@@ -7102,8 +7128,8 @@ function drawEdgeSeg(edge, p, w, h, s, e) {
 
 function drawUpstand2D(u) {
   // 2D drawing: upstands shown as rectangles on worktop edge
-  // Splashbacks show their ACTUAL height for socket placement
-  const VISUAL_DEPTH = u.isSplash ? u.height : 80; // Splashbacks use actual height
+  // Use actual height for visual representation
+  const VISUAL_DEPTH = u.height || 100; // Use actual upstand/splash height
   
   let p, w, h;
   
@@ -7727,6 +7753,37 @@ function checkAndSplitUpstands() {
   });
   
   if (toRemove.size > 0) {
+    // MIGRATE SOCKETS: Before removing old upstands, migrate any sockets to new upstands
+    const socketsToMigrate = cutouts.filter(c => c.type === 'socket' && toRemove.has(c.parentId));
+    
+    socketsToMigrate.forEach(socket => {
+      const oldParent = upstands.find(u => u.id === socket.parentId);
+      if (!oldParent) return;
+      
+      // Calculate socket's absolute position along the edge
+      const isHorizontal = oldParent.parentEdge === 'back' || oldParent.parentEdge === 'front';
+      const socketAbsPos = isHorizontal 
+        ? (oldParent.absoluteX || 0) + socket.centerX
+        : (oldParent.absoluteY || 0) + socket.centerX;
+      
+      // Find which new upstand contains this position
+      for (const newU of newUpstands) {
+        if (newU.isSplash) continue; // Don't migrate to splashback
+        
+        const newStart = isHorizontal ? newU.absoluteX : newU.absoluteY;
+        const newEnd = newStart + newU.length;
+        
+        if (socketAbsPos >= newStart && socketAbsPos <= newEnd) {
+          // This new upstand contains the socket
+          const newCenterX = socketAbsPos - newStart;
+          console.log(`Migrating socket ${socket.id} from upstand ${socket.parentId} to ${newU.id}, centerX: ${socket.centerX} -> ${newCenterX}`);
+          socket.parentId = newU.id;
+          socket.centerX = newCenterX;
+          break;
+        }
+      }
+    });
+    
     upstands = upstands.filter(u => !toRemove.has(u.id));
     upstands.push(...newUpstands);
     renderLists();
@@ -10132,6 +10189,14 @@ function render3D() {
     const stepout = w.stepout;
     const isVertical = w.depth > w.length;
     
+    // Debug corner radii
+    const hasRadii = radii.tl > 0 || radii.tr > 0 || radii.br > 0 || radii.bl > 0;
+    console.log('3D Worktop:', w.name || w.id, 'hasStepout:', !!stepout, 'hasRadii:', hasRadii);
+    if (hasRadii) {
+      console.log('  Radii:', JSON.stringify(radii));
+      console.log('  Shape radii: TL=', rShapeTL, 'TR=', rShapeTR, 'BR=', rShapeBR, 'BL=', rShapeBL);
+    }
+    
     if (stepout) {
       // Create L-shape for stepout
       // In 3D shape: X = length, Y = depth
@@ -10910,16 +10975,16 @@ function render3D() {
     }
   });
   
-  // Socket cutouts on splashbacks (rendered as rectangular openings)
+  // Socket cutouts on upstands and splashbacks (rendered as rectangular openings)
   const socketCutouts = cutouts.filter(c => c.type === 'socket');
   console.log('Socket cutouts found:', socketCutouts.length);
   
   socketCutouts.forEach(c => {
     const parent = upstands.find(u => u.id === c.parentId);
-    console.log('Socket parent:', c.parentId, 'found:', !!parent, 'isSplash:', parent?.isSplash);
-    if (!parent || !parent.isSplash) return;
+    console.log('Socket parent:', c.parentId, 'found:', !!parent);
+    if (!parent) return;
     
-    // Get splashback 3D position (must match upstand positioning exactly)
+    // Get upstand/splashback 3D position (must match upstand positioning exactly)
     const UPSTAND_DEPTH_3D = 20;
     const pw = worktops.find(w => w.id === parent.parentId);
     const edge = parent.parentEdge || 'back';
@@ -11250,65 +11315,65 @@ function renderSlabLayout() {
         // Vertical splits divide the length
         let prevPos = 0;
         verticalSplits.forEach((split, i) => {
-          const pieceLength = split.position - prevPos;
+          const pieceLength = Math.round(split.position - prevPos);
           const fits = (pieceLength <= SLAB_W && w.depth <= SLAB_H) || (w.depth <= SLAB_W && pieceLength <= SLAB_H);
           pieces.push({
             name: `${w.name || 'Worktop'} (${i + 1})`,
             width: pieceLength,
-            height: w.depth,
+            height: Math.round(w.depth),
             type: 'worktop',
             color: '#e3f2fd',
             error: !fits
           });
-          if (!fits) oversizedPieces.push(`${w.name} part ${i + 1} (${pieceLength}×${w.depth}mm)`);
+          if (!fits) oversizedPieces.push(`${w.name} part ${i + 1} (${pieceLength}×${Math.round(w.depth)}mm)`);
           prevPos = split.position;
         });
         // Last piece
-        const lastLength = w.length - prevPos;
+        const lastLength = Math.round(w.length - prevPos);
         const fits = (lastLength <= SLAB_W && w.depth <= SLAB_H) || (w.depth <= SLAB_W && lastLength <= SLAB_H);
         pieces.push({
           name: `${w.name || 'Worktop'} (${verticalSplits.length + 1})`,
           width: lastLength,
-          height: w.depth,
+          height: Math.round(w.depth),
           type: 'worktop',
           color: '#e3f2fd',
           error: !fits
         });
-        if (!fits) oversizedPieces.push(`${w.name} part ${verticalSplits.length + 1} (${lastLength}×${w.depth}mm)`);
+        if (!fits) oversizedPieces.push(`${w.name} part ${verticalSplits.length + 1} (${lastLength}×${Math.round(w.depth)}mm)`);
       } else if (horizontalSplits.length > 0) {
         // Horizontal splits divide the depth
         let prevPos = 0;
         horizontalSplits.forEach((split, i) => {
-          const pieceDepth = split.position - prevPos;
+          const pieceDepth = Math.round(split.position - prevPos);
           const fits = (w.length <= SLAB_W && pieceDepth <= SLAB_H) || (pieceDepth <= SLAB_W && w.length <= SLAB_H);
           pieces.push({
             name: `${w.name || 'Worktop'} (${i + 1})`,
-            width: w.length,
+            width: Math.round(w.length),
             height: pieceDepth,
             type: 'worktop',
             color: '#e3f2fd',
             error: !fits
           });
-          if (!fits) oversizedPieces.push(`${w.name} part ${i + 1} (${w.length}×${pieceDepth}mm)`);
+          if (!fits) oversizedPieces.push(`${w.name} part ${i + 1} (${Math.round(w.length)}×${pieceDepth}mm)`);
           prevPos = split.position;
         });
         // Last piece
-        const lastDepth = w.depth - prevPos;
+        const lastDepth = Math.round(w.depth - prevPos);
         const fits = (w.length <= SLAB_W && lastDepth <= SLAB_H) || (lastDepth <= SLAB_W && w.length <= SLAB_H);
         pieces.push({
           name: `${w.name || 'Worktop'} (${horizontalSplits.length + 1})`,
-          width: w.length,
+          width: Math.round(w.length),
           height: lastDepth,
           type: 'worktop',
           color: '#e3f2fd',
           error: !fits
         });
-        if (!fits) oversizedPieces.push(`${w.name} part ${horizontalSplits.length + 1} (${w.length}×${lastDepth}mm)`);
+        if (!fits) oversizedPieces.push(`${w.name} part ${horizontalSplits.length + 1} (${Math.round(w.length)}×${lastDepth}mm)`);
       }
     } else {
       // No splits - add whole worktop
-      const pw = w.length;
-      const ph = w.depth;
+      const pw = Math.round(w.length);
+      const ph = Math.round(w.depth);
       
       // If worktop has stepout, use bounding box dimensions
       let actualW = pw;
@@ -11320,10 +11385,10 @@ function renderSlabLayout() {
         const isVertical = w.depth > w.length;
         if (isVertical) {
           // Stepout extends left/right, adds to width
-          actualW = pw + w.stepout.depth;
+          actualW = pw + Math.round(w.stepout.depth);
         } else {
           // Stepout extends down/up, adds to height
-          actualH = ph + w.stepout.depth;
+          actualH = ph + Math.round(w.stepout.depth);
         }
       }
       
@@ -11347,8 +11412,8 @@ function renderSlabLayout() {
   });
   
   upstands.forEach(u => {
-    const pw = u.length;
-    const ph = u.isWindowCill ? (u.depth || 200) : u.height;
+    const pw = Math.round(u.length);
+    const ph = Math.round(u.isWindowCill ? (u.depth || 200) : u.height);
     
     // Skip pieces with invalid dimensions (less than 10mm)
     if (pw < 10 || ph < 10) {
@@ -11384,8 +11449,8 @@ function renderSlabLayout() {
             e = parts[2];
           }
           
-          const pw = parseInt(e) - parseInt(s);
-          const ph = v.height;
+          const pw = Math.round(parseInt(e) - parseInt(s));
+          const ph = Math.round(v.height);
           const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
           
           if (v.type === 'dropdown') {
@@ -11413,8 +11478,23 @@ function renderSlabLayout() {
     return { ...p, preRotated: false };
   });
   
-  const bulkPieces = normalizedPieces.filter(p => p.type === 'worktop' || p.type === 'dropdown' || p.type === 'mitred_edge');
-  const thinPieces = normalizedPieces.filter(p => p.type !== 'worktop' && p.type !== 'dropdown' && p.type !== 'mitred_edge');
+  // Classify pieces: bulk (large) vs thin (small accessories)
+  // Large splashbacks/cills should be treated as bulk pieces
+  const BULK_AREA_THRESHOLD = 200000; // 200,000 sq mm (e.g., 500×400)
+  
+  const bulkPieces = normalizedPieces.filter(p => {
+    // Worktops, dropdowns, mitred edges are always bulk
+    if (p.type === 'worktop' || p.type === 'dropdown' || p.type === 'mitred_edge') return true;
+    // Large splashbacks/cills/upstands should also be bulk
+    const area = p.width * p.height;
+    return area >= BULK_AREA_THRESHOLD;
+  });
+  
+  const thinPieces = normalizedPieces.filter(p => {
+    if (p.type === 'worktop' || p.type === 'dropdown' || p.type === 'mitred_edge') return false;
+    const area = p.width * p.height;
+    return area < BULK_AREA_THRESHOLD;
+  });
   
   // Sort bulk pieces by area (largest first)
   bulkPieces.sort((a, b) => {
@@ -12023,7 +12103,28 @@ canvas.addEventListener('mousedown', e => {
     return;
   }
   
-  // Check CORNER click first (takes priority over edge clicks)
+  // Check CUTOUTS and UPSTANDS first (they sit on top of edges)
+  if (!isDrawing) {
+    const hit = findItemAt(mm.x, mm.y);
+    // Only intercept if it's a cutout or upstand (not a worktop)
+    if (hit && (hit.type === 'cutout' || hit.type === 'upstand')) {
+      hideEdgeMenu();
+      hideCornerMenu();
+      selectItem(hit.type, hit.item.id);
+      isDragging = true;
+      
+      // Different drag offset calculation for different item types
+      if (hit.type === 'cutout' && hit.item.type === 'socket') {
+        dragStart = { x: 0, y: 0, isSocket: true };
+      } else {
+        dragStart = { x: mm.x - (hit.item.x || 0), y: mm.y - (hit.item.y || 0) };
+      }
+      canvas.style.cursor = 'move';
+      return;
+    }
+  }
+  
+  // Check CORNER click (takes priority over edge clicks)
   if (!isDrawing) {
     const cornerHit = findClickedCorner(mm.x, mm.y);
     if (cornerHit) {
@@ -12037,6 +12138,7 @@ canvas.addEventListener('mousedown', e => {
   if (!isDrawing) {
     const edgeHit = findClickedEdge(mm.x, mm.y);
     if (edgeHit) {
+      console.log('Edge detected:', edgeHit.edge, 'on worktop', edgeHit.worktop.id, 'segment:', edgeHit.segment);
       hideCornerMenu();
       // Don't hide - show new menu
       showEdgeMenu(e.clientX, e.clientY, edgeHit.worktop.id, edgeHit.edge, edgeHit.segment);
@@ -12048,21 +12150,16 @@ canvas.addEventListener('mousedown', e => {
   hideEdgeMenu();
   hideCornerMenu();
   
-  const hit = findItemAt(mm.x, mm.y);
-  
-  if (hit && !isDrawing) {
-    selectItem(hit.type, hit.item.id);
-    isDragging = true;
-    
-    // Different drag offset calculation for different item types
-    if (hit.type === 'cutout' && hit.item.type === 'socket') {
-      // Sockets use centerX/centerY, not x/y
-      dragStart = { x: 0, y: 0, isSocket: true };
-    } else {
+  // Check worktops (after edges, so edge menu works)
+  if (!isDrawing) {
+    const hit = findItemAt(mm.x, mm.y);
+    if (hit && hit.type === 'worktop') {
+      selectItem(hit.type, hit.item.id);
+      isDragging = true;
       dragStart = { x: mm.x - (hit.item.x || 0), y: mm.y - (hit.item.y || 0) };
+      canvas.style.cursor = 'move';
+      return;
     }
-    canvas.style.cursor = 'move';
-    return;
   }
   
   // Drawing
@@ -13376,6 +13473,17 @@ function loadDesignState() {
       cutouts.filter(c => c.type === 'socket').forEach(s => {
         console.log('Loaded socket:', s.id, 'parentId:', s.parentId, 'centerX:', s.centerX, 'centerY:', s.centerY);
       });
+      
+      // Cleanup orphaned sockets (sockets whose parent upstand no longer exists)
+      const orphanedSockets = cutouts.filter(c => 
+        c.type === 'socket' && !upstands.find(u => u.id === c.parentId)
+      );
+      if (orphanedSockets.length > 0) {
+        console.warn('Removing', orphanedSockets.length, 'orphaned socket(s):', orphanedSockets.map(s => s.id));
+        cutouts = cutouts.filter(c => 
+          c.type !== 'socket' || upstands.find(u => u.id === c.parentId)
+        );
+      }
       
       // Debug: log tap positions
       cutouts.filter(c => c.type === 'tap').forEach(t => {

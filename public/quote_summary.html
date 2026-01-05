@@ -1660,7 +1660,7 @@
                 ${w.stepout ? createLShapeSVG(w.length, w.depth, w.stepout) : createPieceSVG(w.length, w.depth, 'worktop')}
               </div>
               <div class="piece-name">${w.name}</div>
-              <div class="piece-dims">${w.length} × ${w.depth} mm${w.stepout ? ` + ${w.stepout.length}×${w.stepout.depth} stepout` : ''}</div>
+              <div class="piece-dims">${Math.round(w.length)} × ${Math.round(w.depth)} mm${w.stepout ? ` + ${Math.round(w.stepout.length)}×${Math.round(w.stepout.depth)} stepout` : ''}</div>
               <div class="piece-type">Worktop${w.stepout ? ' (L-Shape)' : ''}</div>
             </div>
           `).join('');
@@ -1672,7 +1672,7 @@
         (quoteData.upstands || []).forEach(u => {
           additions.push({
             name: u.name,
-            dims: `${u.length} × ${u.height} mm`,
+            dims: `${Math.round(u.length)} × ${Math.round(u.height)} mm`,
             type: u.isSplash ? 'Splashback' : 'Upstand',
             svg: createPieceSVG(u.length, u.height, u.isSplash ? 'splashback' : 'upstand')
           });
@@ -1681,7 +1681,7 @@
         (quoteData.splashbacks || []).forEach(s => {
           additions.push({
             name: s.name,
-            dims: `${s.length} × ${s.height} mm`,
+            dims: `${Math.round(s.length)} × ${Math.round(s.height)} mm`,
             type: 'Splashback',
             svg: createPieceSVG(s.length, s.height, 'splashback')
           });
@@ -1690,7 +1690,7 @@
         (quoteData.windowCills || []).forEach((c, i) => {
           additions.push({
             name: c.name || `Window Cill ${i + 1}`,
-            dims: `${c.length} × ${c.depth || 200} mm`,
+            dims: `${Math.round(c.length)} × ${Math.round(c.depth || 200)} mm`,
             type: 'Window Cill',
             svg: createPieceSVG(c.length, c.depth || 200, 'upstand')
           });
@@ -1699,7 +1699,7 @@
         (quoteData.dropdowns || []).forEach((d, i) => {
           additions.push({
             name: `Dropdown ${i + 1}`,
-            dims: `${d.length} × ${d.height} mm`,
+            dims: `${Math.round(d.length)} × ${Math.round(d.height)} mm`,
             type: 'Dropdown (Mitre)',
             svg: createPieceSVG(d.length, d.height, 'dropdown')
           });
