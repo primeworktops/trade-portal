@@ -1284,18 +1284,23 @@
     
     const FABRICATION_PRICES = {
       quartz: {
-        firstSlab: 1400,
-        additionalSlab: 400,
+        firstSlab: 1300,
+        additionalSlabPerSqFt: 12.50,
         brands: ['SIL', 'MOD', 'GLO', 'COS', 'CQS', 'ART', 'NLQ', 'HOR']
       },
       dekton: {
         firstSlab: 1700,
-        additionalSlab: 400,
+        additionalSlabPerSqFt: 12.50,
         brands: ['DEK']
+      },
+      porcelain: {
+        firstSlab: 1700,
+        additionalSlabPerSqFt: 12.50,
+        brands: ['HOR']
       },
       natural_stone: {
         firstSlab: 1800,
-        additionalSlab: 500,
+        additionalSlabPerSqFt: 12.50,
         brands: ['NAT']
       }
     };
@@ -1314,10 +1319,10 @@
     function getFabricationPrices(brandCode) {
       for (const [type, config] of Object.entries(FABRICATION_PRICES)) {
         if (config.brands.includes(brandCode)) {
-          return { firstSlab: config.firstSlab, additionalSlab: config.additionalSlab, type: type };
+          return { firstSlab: config.firstSlab, additionalSlabPerSqFt: config.additionalSlabPerSqFt, type: type };
         }
       }
-      return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlab: FABRICATION_PRICES.quartz.additionalSlab, type: 'quartz' };
+      return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlabPerSqFt: FABRICATION_PRICES.quartz.additionalSlabPerSqFt, type: 'quartz' };
     }
     
     // ══════════════════════════════════════════════════════════════════════════════
@@ -2032,21 +2037,26 @@
       const defaultFabPrices = getFabricationPrices(brandCode);
       const fabPrices = {
         firstSlab: quoteData.pricing?.firstSlab || defaultFabPrices.firstSlab,
-        additionalSlab: quoteData.pricing?.additionalSlab || defaultFabPrices.additionalSlab
+        additionalSlabPerSqFt: quoteData.pricing?.additionalSlabPerSqFt || defaultFabPrices.additionalSlabPerSqFt
       };
+      
+      // Get sq ft on additional slabs from quoteData
+      const additionalSlabsSqFt = quoteData.pricing?.additionalSlabsSqFt || 0;
       
       console.log('=== FABRICATION PRICING ===');
       console.log('quoteData.pricing.firstSlab:', quoteData.pricing?.firstSlab);
-      console.log('quoteData.pricing.additionalSlab:', quoteData.pricing?.additionalSlab);
+      console.log('quoteData.pricing.additionalSlabPerSqFt:', quoteData.pricing?.additionalSlabPerSqFt);
+      console.log('quoteData.pricing.additionalSlabsSqFt:', additionalSlabsSqFt);
       console.log('Using firstSlab:', fabPrices.firstSlab);
-      console.log('Using additionalSlab:', fabPrices.additionalSlab);
+      console.log('Using additionalSlabPerSqFt:', fabPrices.additionalSlabPerSqFt);
       
       // Material cost (supplier slab price)
       const slabPrice = quoteData.material?.slabPrice || quoteData.pricing?.materialPerSlab || 0;
       const materialCost = slabs * slabPrice;
       
-      // Fabrication cost (our charges) - uses custom values from designer
-      const fabricationCost = fabPrices.firstSlab + (slabs - 1) * fabPrices.additionalSlab;
+      // Fabrication cost (our charges) - uses sq ft model for additional slabs
+      const additionalSlabsProfit = additionalSlabsSqFt * fabPrices.additionalSlabPerSqFt;
+      const fabricationCost = fabPrices.firstSlab + additionalSlabsProfit;
       
       // Total worktop cost = material + fabrication
       subtotal = materialCost + fabricationCost;
@@ -2058,7 +2068,7 @@
       console.log('slabPrice:', slabPrice);
       console.log('slabs:', slabs);
       console.log('materialCost:', materialCost);
-      console.log('fabricationCost:', fabricationCost);
+      console.log('fabricationCost:', fabricationCost, `(£${fabPrices.firstSlab} + ${additionalSlabsSqFt.toFixed(1)} sq ft × £${fabPrices.additionalSlabPerSqFt})`);
       console.log('subtotal (material + fab):', subtotal);
       console.log('=====================');
       
@@ -2501,7 +2511,9 @@
       
       const slabs = quoteData.pricing?.slabsUsed || 1;
       const matPrice = quoteData.pricing?.materialPerSlab || 0;
-      const fabPrice = quoteData.pricing?.firstSlab + (slabs - 1) * quoteData.pricing?.additionalSlab || 0;
+      const additionalSlabsSqFt = quoteData.pricing?.additionalSlabsSqFt || 0;
+      const perSqFt = quoteData.pricing?.additionalSlabPerSqFt || 12.50;
+      const fabPrice = (quoteData.pricing?.firstSlab || 1300) + (additionalSlabsSqFt * perSqFt);
       
       if (matPrice > 0) {
         const total = (slabs * matPrice) + fabPrice;
@@ -3381,13 +3393,12 @@
           document.getElementById('slabSizeDisplay').textContent = `${SLAB_W} × ${SLAB_H} mm`;
           document.getElementById('slabCountDisplay').textContent = slabCount;
           
-          // Calculate costs - use custom values from quoteData
-          const fabPrices = {
-            firstSlab: quoteData.pricing?.firstSlab || 1300,
-            additionalSlab: quoteData.pricing?.additionalSlab || 500
-          };
+          // Calculate costs - use custom values from quoteData with sq ft model
+          const additionalSlabsSqFt = quoteData.pricing?.additionalSlabsSqFt || 0;
+          const perSqFt = quoteData.pricing?.additionalSlabPerSqFt || 12.50;
+          const firstSlabProfit = quoteData.pricing?.firstSlab || 1300;
           const materialCost = quoteData.pricing?.materialCost || 0;
-          const fabrication = slabCount > 0 ? fabPrices.firstSlab + (slabCount - 1) * fabPrices.additionalSlab : 0;
+          const fabrication = slabCount > 0 ? firstSlabProfit + (additionalSlabsSqFt * perSqFt) : 0;
           
           document.getElementById('materialCostDisplay').textContent = materialCost.toFixed(2);
           document.getElementById('fabricationCostDisplay').textContent = fabrication.toFixed(2);
@@ -3424,13 +3435,12 @@
         document.getElementById('slabSizeDisplay').textContent = `${SLAB_W} × ${SLAB_H} mm`;
         document.getElementById('slabCountDisplay').textContent = slabCount;
         
-        // Use custom values from quoteData
-        const fabPrices = {
-          firstSlab: quoteData.pricing?.firstSlab || 1300,
-          additionalSlab: quoteData.pricing?.additionalSlab || 500
-        };
+        // Use custom values from quoteData with sq ft model
+        const additionalSlabsSqFt = quoteData.pricing?.additionalSlabsSqFt || 0;
+        const perSqFt = quoteData.pricing?.additionalSlabPerSqFt || 12.50;
+        const firstSlabProfit = quoteData.pricing?.firstSlab || 1300;
         const materialCost = quoteData.pricing?.materialCost || 0;
-        const fabrication = slabCount > 0 ? fabPrices.firstSlab + (slabCount - 1) * fabPrices.additionalSlab : 0;
+        const fabrication = slabCount > 0 ? firstSlabProfit + (additionalSlabsSqFt * perSqFt) : 0;
         
         document.getElementById('materialCostDisplay').textContent = materialCost.toFixed(2);
         document.getElementById('fabricationCostDisplay').textContent = fabrication.toFixed(2);

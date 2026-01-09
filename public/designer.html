@@ -384,11 +384,11 @@
               <input type="number" id="profit1stSlab" value="1300" style="width:100%;padding:4px;border:1px solid #ccc;border-radius:4px;" onchange="renderSlabLayout()">
             </div>
             <div style="flex:1;">
-              <label style="font-size:10px;color:#666;">Add'l Slabs (£)</label>
-              <input type="number" id="profitAddSlab" value="500" style="width:100%;padding:4px;border:1px solid #ccc;border-radius:4px;" onchange="renderSlabLayout()">
+              <label style="font-size:10px;color:#666;">Add'l (£/sq ft)</label>
+              <input type="number" id="profitAddSlab" value="12.50" step="0.01" style="width:100%;padding:4px;border:1px solid #ccc;border-radius:4px;" onchange="renderSlabLayout()">
             </div>
           </div>
-          <div style="font-size:9px;color:#999;">Fabrication profit per slab</div>
+          <div style="font-size:9px;color:#999;">1st slab fixed + £/sq ft on additional slabs</div>
         </div>
         
         <div id="slabPriceEstimate" style="background:#e8f5e9;padding:8px;border-radius:4px;font-size:11px;color:#1e4d3a;">
@@ -865,19 +865,24 @@ const EDGE_CLICK_DIST = 30; // Edge clicking tolerance (mm)
 // These are the all-inclusive prices shown to customers
 const FABRICATION_PRICES = {
   quartz: {
-    firstSlab: 1400,      // First slab price
-    additionalSlab: 400,  // Each additional slab
+    firstSlab: 1300,           // First slab fixed profit
+    additionalSlabPerSqFt: 12.50, // £12.50 per sq ft of pieces on additional slabs
     brands: ['SIL', 'MOD', 'GLO', 'COS', 'CQS', 'ART', 'NLQ', 'HOR']  // Silestone, Modern, Global, Cosy, Classic, Artemis, Nile, Horizon
   },
   dekton: {
-    firstSlab: 1700,      // First slab price
-    additionalSlab: 400,  // Each additional slab
-    brands: ['DEK']       // Dekton only
+    firstSlab: 1700,           // First slab fixed profit (harder to work)
+    additionalSlabPerSqFt: 12.50, // £12.50 per sq ft of pieces on additional slabs
+    brands: ['DEK']            // Dekton only
+  },
+  porcelain: {
+    firstSlab: 1700,           // First slab fixed profit
+    additionalSlabPerSqFt: 12.50, // £12.50 per sq ft of pieces on additional slabs
+    brands: ['HOR']            // Horizon Porcelain
   },
   natural_stone: {
-    firstSlab: 1800,      // First slab price (Granite & Quartzite)
-    additionalSlab: 500,  // Each additional slab
-    brands: ['NAT']       // Natural Stone
+    firstSlab: 1800,           // First slab fixed profit (Granite & Quartzite)
+    additionalSlabPerSqFt: 12.50, // £12.50 per sq ft of pieces on additional slabs
+    brands: ['NAT']            // Natural Stone
   }
 };
 
@@ -930,17 +935,17 @@ function getFabricationPrices(brandCode) {
     // Check if values differ from defaults (meaning admin changed them)
     // We'll use a flag to track if admin has manually edited
     if (profit1stEl.dataset.manuallySet === 'true' || profitAddEl.dataset.manuallySet === 'true') {
-      return { firstSlab: customFirst || 1300, additionalSlab: customAdd || 500, type: 'custom' };
+      return { firstSlab: customFirst || 1300, additionalSlabPerSqFt: customAdd || 12.50, type: 'custom' };
     }
   }
   
   for (const [type, config] of Object.entries(FABRICATION_PRICES)) {
     if (config.brands.includes(brandCode)) {
-      return { firstSlab: config.firstSlab, additionalSlab: config.additionalSlab, type: type };
+      return { firstSlab: config.firstSlab, additionalSlabPerSqFt: config.additionalSlabPerSqFt, type: type };
     }
   }
   // Default to quartz if brand not found
-  return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlab: FABRICATION_PRICES.quartz.additionalSlab, type: 'quartz' };
+  return { firstSlab: FABRICATION_PRICES.quartz.firstSlab, additionalSlabPerSqFt: FABRICATION_PRICES.quartz.additionalSlabPerSqFt, type: 'quartz' };
 }
 
 // Track when admin manually edits profit settings
@@ -11285,7 +11290,7 @@ function renderSlabLayout() {
   const profitAddEl = document.getElementById('profitAddSlab');
   
   // Use admin input values if set, otherwise use material defaults
-  let profit1st, profitAdd;
+  let profit1st, profitPerSqFt;
   if (profit1stEl && profit1stEl.dataset.manuallySet === 'true') {
     profit1st = parseFloat(profit1stEl.value) || 1300;
   } else {
@@ -11294,10 +11299,10 @@ function renderSlabLayout() {
   }
   
   if (profitAddEl && profitAddEl.dataset.manuallySet === 'true') {
-    profitAdd = parseFloat(profitAddEl.value) || 500;
+    profitPerSqFt = parseFloat(profitAddEl.value) || 12.50;
   } else {
-    profitAdd = getFabricationPrices(materialBrand).additionalSlab;
-    if (profitAddEl) profitAddEl.value = profitAdd;
+    profitPerSqFt = getFabricationPrices(materialBrand).additionalSlabPerSqFt;
+    if (profitAddEl) profitAddEl.value = profitPerSqFt;
   }
   
   // Collect all pieces
@@ -12027,9 +12032,39 @@ function renderSlabLayout() {
   const sumY = PADDING + slabs.length * (FIXED_SLAB_H + GAP_BETWEEN) + 10;
   const eff = totalArea > 0 ? ((usedArea / totalArea) * 100).toFixed(1) : 0;
   
-  // Calculate profit
+  // Calculate profit using new model:
+  // 1st slab: fixed profit
+  // Additional slabs: £ per sq ft of pieces placed on those slabs
   const slabCount = slabs.length;
-  const profit = slabCount > 0 ? profit1st + (slabCount - 1) * profitAdd : 0;
+  let additionalSlabsSqFt = 0;
+  
+  // Calculate total sq ft of pieces on slabs 2, 3, 4, etc.
+  slabs.forEach((slab, slabIndex) => {
+    if (slabIndex >= 1) { // Skip slab 1 (index 0)
+      slab.pieces.forEach(p => {
+        // Convert mm² to sq ft (1 sq ft = 92903.04 mm²)
+        const pieceSqFt = (p.pw * p.ph) / 92903.04;
+        additionalSlabsSqFt += pieceSqFt;
+      });
+    }
+  });
+  
+  const additionalSlabsProfit = additionalSlabsSqFt * profitPerSqFt;
+  const profit = slabCount > 0 ? profit1st + additionalSlabsProfit : 0;
+  
+  // Store data for quote generation (slabCanvas already defined at top of function)
+  if (slabCanvas) {
+    slabCanvas._lastSlabData = {
+      slabCount: slabCount,
+      additionalSlabsSqFt: additionalSlabsSqFt,
+      profit1st: profit1st,
+      profitPerSqFt: profitPerSqFt,
+      totalProfit: profit
+    };
+    console.log('Stored slab data:', slabCanvas._lastSlabData);
+  } else {
+    console.log('WARNING: slabCanvas not found, cannot store slab data');
+  }
   
   ctx.fillStyle = '#1e4d3a';
   ctx.font = 'bold 13px sans-serif';
@@ -12051,8 +12086,13 @@ function renderSlabLayout() {
   // Update profit estimate in admin panel
   const profitEl = document.getElementById('slabPriceEstimate');
   if (profitEl) {
-    profitEl.innerHTML = `<strong>Fabrication Profit:</strong> £${profit.toFixed(2)}<br>` +
-      `<span style="font-size:10px;color:#666;">(£${profit1st} first + £${profitAdd} × ${Math.max(0, slabCount-1)} additional)</span>`;
+    if (slabCount > 1) {
+      profitEl.innerHTML = `<strong>Fabrication Profit:</strong> £${profit.toFixed(2)}<br>` +
+        `<span style="font-size:10px;color:#666;">(£${profit1st} first slab + ${additionalSlabsSqFt.toFixed(1)} sq ft × £${profitPerSqFt} = £${additionalSlabsProfit.toFixed(2)})</span>`;
+    } else {
+      profitEl.innerHTML = `<strong>Fabrication Profit:</strong> £${profit.toFixed(2)}<br>` +
+        `<span style="font-size:10px;color:#666;">(£${profit1st} first slab)</span>`;
+    }
   }
   
   // Legend on right
@@ -13038,9 +13078,23 @@ async function generateQuote() {
   const profit1st = (profit1stEl && profit1stEl.dataset.manuallySet === 'true') 
     ? parseFloat(profit1stEl.value) || fabPrices.firstSlab 
     : fabPrices.firstSlab;
-  const profitAdd = (profitAddEl && profitAddEl.dataset.manuallySet === 'true') 
-    ? parseFloat(profitAddEl.value) || fabPrices.additionalSlab 
-    : fabPrices.additionalSlab;
+  const profitPerSqFt = (profitAddEl && profitAddEl.dataset.manuallySet === 'true') 
+    ? parseFloat(profitAddEl.value) || fabPrices.additionalSlabPerSqFt 
+    : fabPrices.additionalSlabPerSqFt;
+  
+  // Calculate sq ft on additional slabs from the rendered slab layout
+  // We need to read this from the last slab layout calculation
+  let additionalSlabsSqFt = 0;
+  const slabCanvasEl = document.getElementById('canvasSlab');
+  console.log('=== SLAB DATA DEBUG ===');
+  console.log('slabCanvasEl found:', !!slabCanvasEl);
+  console.log('_lastSlabData:', slabCanvasEl?._lastSlabData);
+  if (slabCanvasEl && slabCanvasEl._lastSlabData) {
+    additionalSlabsSqFt = slabCanvasEl._lastSlabData.additionalSlabsSqFt || 0;
+    console.log('additionalSlabsSqFt from slab data:', additionalSlabsSqFt);
+  } else {
+    console.log('WARNING: No slab data found!');
+  }
   
   // Get material pricing - check custom slab price first
   const customSlabPriceEl = document.getElementById('customSlabPrice');
@@ -13097,9 +13151,10 @@ async function generateQuote() {
     edges: edgesList,
     dropdowns: edgesList.filter(e => e.type === 'dropdown').map(e => ({ length: e.length * 1000, height: e.height })),
     pricing: {
-      materialPerSlab: slabPrice,  // Material cost per slab (internal)
-      firstSlab: profit1st,        // All-inclusive first slab price
-      additionalSlab: profitAdd,   // All-inclusive additional slabs
+      materialPerSlab: slabPrice,             // Material cost per slab (internal)
+      firstSlab: profit1st,                   // Fixed first slab profit
+      additionalSlabPerSqFt: profitPerSqFt,   // £ per sq ft on additional slabs
+      additionalSlabsSqFt: additionalSlabsSqFt, // Total sq ft on slabs 2+
       slabsUsed: slabsRequired,
       // Include what's in the base price for reference
       included: {
