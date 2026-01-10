@@ -1110,7 +1110,18 @@
             <div><strong>Slab Size:</strong> <span id="slabSizeDisplay">3200 × 1600 mm</span></div>
             <div><strong>Slabs Required:</strong> <span id="slabCountDisplay">0</span></div>
             <div><strong>Material Cost:</strong> £<span id="materialCostDisplay">0.00</span></div>
-            <div><strong>Fabrication:</strong> £<span id="fabricationCostDisplay">0.00</span></div>
+          </div>
+          <!-- Profit Breakdown -->
+          <div style="background:#e8f5e9;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;">
+            <div style="font-weight:bold;color:#1e4d3a;margin-bottom:8px;">💰 Profit Breakdown</div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:4px 15px;">
+              <span>Base Fabrication:</span><span id="baseFabDisplay">£0.00</span>
+              <span>Extra Cutouts:</span><span id="extraCutoutsDisplay" style="color:#2e7d32;">+£0.00</span>
+              <span>Edge Profiles:</span><span id="edgeProfitDisplay" style="color:#2e7d32;">+£0.00</span>
+              <span>Credits Given:</span><span id="creditsGivenDisplay" style="color:#c62828;">-£0.00</span>
+              <span style="border-top:1px solid #ccc;padding-top:4px;font-weight:bold;">Total Profit:</span>
+              <span id="totalProfitDisplay" style="border-top:1px solid #ccc;padding-top:4px;font-weight:bold;color:#1e4d3a;">£0.00</span>
+            </div>
           </div>
           <div id="slabCanvasContainer" style="overflow:auto;max-height:450px;">
             <canvas id="slabCanvas" width="620" height="200" style="border:1px solid #ccc;background:#f9f9f9;max-width:100%;"></canvas>
@@ -3384,6 +3395,119 @@
       alert('Quote saved!\n\nQuote #' + quoteData.quoteNumber + ' has been saved.');
     }
     
+    // ========== PROFIT BREAKDOWN (Admin) ==========
+    function updateProfitBreakdown(baseFabrication) {
+      // Simple profit calculation:
+      // Base fabrication = your profit from slabs (includes standard cutouts)
+      // + Extra cutouts = additional charges for 2nd sink, recess hob, sockets, etc.
+      // + Edge profiles = charges for upgraded edges and dropdowns
+      // - Credits given = discounts for missing sink/hob/tap/drainer
+      
+      const cutouts = quoteData.cutouts || [];
+      const edges = quoteData.edges || [];
+      
+      // Group cutouts by type
+      const sinks = cutouts.filter(c => c.type?.includes('sink'));
+      const hobs = cutouts.filter(c => c.type?.includes('hob'));
+      const taps = cutouts.filter(c => c.type === 'tap');
+      const drainers = cutouts.filter(c => c.type?.includes('drainer'));
+      const sockets = cutouts.filter(c => c.type === 'socket');
+      const regularHobs = hobs.filter(h => h.type !== 'recess_hob');
+      const regularDrainers = drainers.filter(d => d.type !== 'recess_drainer');
+      
+      // Calculate EXTRA cutouts charged (pure additional revenue)
+      let extraCutouts = 0;
+      
+      // Additional sinks (2nd+)
+      sinks.slice(1).forEach(c => {
+        extraCutouts += c.type === 'overmount_sink' ? 55 : 110;
+      });
+      
+      // Recess hobs always charged, additional regular hobs (2nd+) charged
+      hobs.forEach((c, i) => {
+        if (c.type === 'recess_hob') {
+          extraCutouts += 125;
+        } else if (i > 0) {
+          extraCutouts += 55;
+        }
+      });
+      
+      // Additional taps (2nd+)
+      taps.slice(1).forEach(() => {
+        extraCutouts += 9.17;
+      });
+      
+      // Recess drainers always charged, additional regular drainers (2nd+) charged
+      drainers.forEach((c, i) => {
+        if (c.type === 'recess_drainer') {
+          extraCutouts += 330;
+        } else if (i > 0) {
+          extraCutouts += 110;
+        }
+      });
+      
+      // All sockets charged (never included free)
+      sockets.forEach(() => {
+        extraCutouts += 35;
+      });
+      
+      // Credits GIVEN to customer (reduces their price, reduces our revenue)
+      let creditsGiven = 0;
+      if (sinks.length === 0) creditsGiven += 55;
+      if (regularHobs.length === 0) creditsGiven += 27.50;
+      if (taps.length === 0) creditsGiven += 4.58;
+      if (regularDrainers.length === 0) creditsGiven += 55;
+      // Overmount saves vs undermount - customer gets credit
+      if (sinks.length > 0 && sinks[0].type === 'overmount_sink') creditsGiven += 55;
+      
+      // Calculate edge profile charges (price is per meter, need to multiply by length)
+      let edgeProfit = 0;
+      const extraEdges = edges.filter(e => !e.included && e.type !== 'dropdown');
+      extraEdges.forEach(e => {
+        const length = e.length || 0;
+        const pricePerMeter = e.price || 0;
+        edgeProfit += length * pricePerMeter;
+      });
+      
+      // Dropdown edges (usually included, but check for price)
+      const dropdowns = edges.filter(e => e.type === 'dropdown');
+      dropdowns.forEach(e => {
+        const length = e.length || 0;
+        const pricePerMeter = e.price || 0;
+        edgeProfit += length * pricePerMeter;
+      });
+      
+      // Total profit = base fab + extras + edges - credits
+      const totalProfit = baseFabrication + extraCutouts + edgeProfit - creditsGiven;
+      
+      // Update display
+      document.getElementById('baseFabDisplay').textContent = '£' + baseFabrication.toFixed(2);
+      document.getElementById('extraCutoutsDisplay').textContent = '+£' + extraCutouts.toFixed(2);
+      document.getElementById('extraCutoutsDisplay').style.color = extraCutouts > 0 ? '#2e7d32' : '#666';
+      document.getElementById('edgeProfitDisplay').textContent = '+£' + edgeProfit.toFixed(2);
+      document.getElementById('edgeProfitDisplay').style.color = edgeProfit > 0 ? '#2e7d32' : '#666';
+      document.getElementById('creditsGivenDisplay').textContent = '-£' + creditsGiven.toFixed(2);
+      document.getElementById('creditsGivenDisplay').style.color = creditsGiven > 0 ? '#c62828' : '#666';
+      document.getElementById('totalProfitDisplay').textContent = '£' + totalProfit.toFixed(2);
+      
+      // Color code total profit
+      const totalEl = document.getElementById('totalProfitDisplay');
+      if (totalProfit < 500) {
+        totalEl.style.color = '#c62828'; // Red for low profit
+      } else if (totalProfit < 1000) {
+        totalEl.style.color = '#f57c00'; // Orange for medium
+      } else {
+        totalEl.style.color = '#2e7d32'; // Green for good profit
+      }
+      
+      console.log('=== PROFIT BREAKDOWN ===');
+      console.log('Base Fabrication:', baseFabrication);
+      console.log('Extra Cutouts:', extraCutouts);
+      console.log('Edge Profiles:', edgeProfit);
+      console.log('Credits Given:', creditsGiven);
+      console.log('Total Profit:', totalProfit);
+    }
+
     // ========== SLAB LAYOUT RENDERING (Admin) ==========
     function renderSlabLayoutSummary() {
       const canvas = document.getElementById('slabCanvas');
@@ -3416,7 +3540,9 @@
           const fabrication = slabCount > 0 ? firstSlabProfit + (additionalSlabsSqFt * perSqFt) : 0;
           
           document.getElementById('materialCostDisplay').textContent = materialCost.toFixed(2);
-          document.getElementById('fabricationCostDisplay').textContent = fabrication.toFixed(2);
+          
+          // Calculate profit breakdown
+          updateProfitBreakdown(fabrication);
         };
         img.onerror = function() {
           console.error('Failed to load slab layout image');
@@ -3458,7 +3584,9 @@
         const fabrication = slabCount > 0 ? firstSlabProfit + (additionalSlabsSqFt * perSqFt) : 0;
         
         document.getElementById('materialCostDisplay').textContent = materialCost.toFixed(2);
-        document.getElementById('fabricationCostDisplay').textContent = fabrication.toFixed(2);
+        
+        // Calculate profit breakdown
+        updateProfitBreakdown(fabrication);
       }
       
       // No captured image - show placeholder
