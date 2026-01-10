@@ -1343,6 +1343,7 @@ let slabOptimizationSuggestions = [];
 let hasShownSlabWarning = false;
 let isPageLoading = true;  // Skip popup during initial load
 let lastKnownSlabCount = 0;
+let isMaterialChanging = false; // Skip popup during material selection
 
 // Custom material for granite/marble quotes
 let customMaterial = {
@@ -3940,6 +3941,9 @@ function confirmMaterial() {
     selectedMaterial = pendingMaterial;
     const mat = MATERIAL_COLORS[selectedMaterial];
     
+    // Suppress slab warning popup during material change
+    isMaterialChanging = true;
+    
     closeMaterialModal();
     
     // Update legacy info element
@@ -3984,6 +3988,11 @@ function confirmMaterial() {
         render3D();
       });
     }
+    
+    // Re-enable slab warnings after material change completes
+    setTimeout(() => {
+      isMaterialChanging = false;
+    }, 500);
   }
 }
 
@@ -7504,6 +7513,49 @@ function drawUpstand2D(u) {
     label = `${Math.round(u.length)}×${Math.round(u.height)}`;
   }
   ctx.fillText(label, p.x + w/2, p.y + h/2);
+  
+  // Draw auto-split line if upstand has one
+  if (u.autoSplitPos) {
+    ctx.strokeStyle = '#ff5722';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    
+    const edge = u.parentEdge || 'back';
+    const isVertical = u.vertical || edge === 'left' || edge === 'right';
+    
+    if (isVertical) {
+      // Vertical upstand - split line is horizontal
+      const splitY = p.y + (u.autoSplitPos * scale);
+      ctx.beginPath();
+      ctx.moveTo(p.x, splitY);
+      ctx.lineTo(p.x + w, splitY);
+      ctx.stroke();
+    } else {
+      // Horizontal upstand - split line is vertical
+      const splitX = p.x + (u.autoSplitPos * scale);
+      ctx.beginPath();
+      ctx.moveTo(splitX, p.y);
+      ctx.lineTo(splitX, p.y + h);
+      ctx.stroke();
+    }
+    
+    ctx.setLineDash([]);
+    
+    // Draw small "joint" indicator
+    ctx.fillStyle = '#ff5722';
+    ctx.font = '8px sans-serif';
+    if (isVertical) {
+      const splitY = p.y + (u.autoSplitPos * scale);
+      ctx.fillText('joint', p.x + w/2, splitY - 6);
+    } else {
+      const splitX = p.x + (u.autoSplitPos * scale);
+      ctx.save();
+      ctx.translate(splitX, p.y + h/2);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText('joint', 0, -4);
+      ctx.restore();
+    }
+  }
 }
 
 // Find connections between upstands
@@ -9340,6 +9392,10 @@ function updateProfileLegend(profileKeys) {
 }
 
 function updateSummary() {
+  // Auto-splits are calculated during slab packing (getAccurateSlabCount/renderSlabLayout)
+  // Clear any stale auto-split positions first
+  upstands.forEach(u => delete u.autoSplitPos);
+  
   let wa = 0, ua = 0, sa = 0, ca = 0, da = 0, pl = 0, jc = 0;
   let sinkCount = 0, hobCount = 0, tapCount = 0, drainerCount = 0;
   let profilePrice = 0;
@@ -9439,11 +9495,28 @@ function updateSummary() {
     const accurateSlabs = getAccurateSlabCount();
     document.getElementById('sumSlabs').textContent = accurateSlabs;
     
-    // Trigger popup when slab count INCREASES and we have suggestions
-    if (accurateSlabs > lastKnownSlabCount && slabOptimizationSuggestions.length > 0) {
+    // Debug logging
+    console.log('Slab check - accurate:', accurateSlabs, 'lastKnown:', lastKnownSlabCount, 'suggestions:', slabOptimizationSuggestions.length, 'hasShown:', hasShownSlabWarning, 'materialChanging:', isMaterialChanging);
+    
+    // Trigger popup when:
+    // 1. Slab count INCREASES and we have suggestions, OR
+    // 2. We have suggestions for a high slab count (3+) and haven't shown warning yet
+    // BUT NOT during material changes or page loading
+    const shouldShowPopup = !isMaterialChanging && slabOptimizationSuggestions.length > 0 && (
+      (accurateSlabs > lastKnownSlabCount) ||
+      (accurateSlabs >= 3 && !hasShownSlabWarning)
+    );
+    
+    if (shouldShowPopup) {
+      hasShownSlabWarning = true;
       setTimeout(() => {
         showSlabOptimizationPopup(accurateSlabs);
       }, 200);
+    }
+    
+    // Reset warning flag if slabs decreased significantly
+    if (accurateSlabs < lastKnownSlabCount - 1) {
+      hasShownSlabWarning = false;
     }
     
     // Always update lastKnownSlabCount
@@ -9560,12 +9633,20 @@ function getAccurateSlabCount() {
     }
   });
   
-  // Add upstands, splashbacks, cills
+  // Add upstands, splashbacks, cills - DON'T pre-split, will check during placement
   upstands.forEach(u => {
     const ph = u.isWindowCill ? (u.depth || 200) : u.height;
     if (u.length >= 10 && ph >= 10) {
       const typeName = u.isWindowCill ? 'Window Cill' : (u.isSplash ? 'Splashback' : 'Upstand');
-      pieces.push({ width: u.length, height: ph, type: u.isSplash ? 'splash' : (u.isWindowCill ? 'cill' : 'upstand'), name: typeName });
+      const pieceType = u.isSplash ? 'splash' : (u.isWindowCill ? 'cill' : 'upstand');
+      
+      pieces.push({ 
+        width: u.length, 
+        height: ph, 
+        type: pieceType, 
+        name: typeName,
+        upstandRef: u // Reference to original upstand for auto-split marking
+      });
     }
   });
   
@@ -9702,6 +9783,18 @@ function getAccurateSlabCount() {
     return placePiece(slab, best.rect, pw, ph, best.rotated);
   }
   
+  // Check if a piece can fit on any existing slab
+  function canFitOnExistingSlabs(pw, ph) {
+    for (const slab of slabs) {
+      if (findBestRect(slab, pw, ph)) return true;
+    }
+    return false;
+  }
+  
+  // Track placed upstands so we can potentially swap splits to longer ones
+  const placedUpstands = [];
+  let needsRepack = false;
+  
   // Place all pieces and track which cause new slabs
   sortedPieces.forEach(piece => {
     const pw = piece.width;
@@ -9723,27 +9816,179 @@ function getAccurateSlabCount() {
       if (placed) break;
     }
     
-    // Need new slab - this piece caused it!
+    // Track placed upstands for potential swap
+    if (placed && ['upstand', 'splash', 'cill'].includes(piece.type) && piece.upstandRef) {
+      placedUpstands.push({ piece, pw, ph });
+    }
+    
+    // Need new slab - but check if we can AUTO-SPLIT to avoid it
     if (!placed) {
+      // Only try auto-split for upstands/splashbacks/cills that are long enough
+      const canSplit = ['upstand', 'splash', 'cill'].includes(piece.type) && 
+                       piece.upstandRef && 
+                       pw > 1000; // Only split if > 1000mm
+      
+      if (canSplit) {
+        // First check if splitting THIS piece would save a slab
+        const halfLen = Math.floor((pw - 3) / 2);
+        const piece1W = halfLen;
+        const piece2W = pw - halfLen - 3; // 3mm joint
+        
+        const half1Fits = canFitOnExistingSlabs(piece1W, ph);
+        const half2Fits = canFitOnExistingSlabs(piece2W, ph);
+        
+        if (half1Fits && half2Fits) {
+          // Splitting this piece would save a slab!
+          // But check if there's a LONGER upstand we could split instead
+          // (prefer joint on longer piece for aesthetics)
+          const longerCandidate = placedUpstands
+            .filter(p => p.piece.type === piece.type && p.pw > pw && !p.piece.upstandRef.autoSplitPos)
+            .sort((a, b) => b.pw - a.pw)[0];
+          
+          if (longerCandidate) {
+            // Check if splitting the longer one would ALSO let this piece fit
+            const longerW = longerCandidate.pw;
+            const longerHalf = Math.floor((longerW - 3) / 2);
+            const longer1Fits = canFitOnExistingSlabs(longerHalf, longerCandidate.ph);
+            const longer2Fits = canFitOnExistingSlabs(longerW - longerHalf - 3, longerCandidate.ph);
+            
+            // If splitting longer would also work, prefer that
+            if (longer1Fits && longer2Fits) {
+              longerCandidate.piece.upstandRef.autoSplitPos = longerHalf;
+              console.log(`Auto-split LONGER ${longerCandidate.piece.name}: ${longerW}mm (instead of ${pw}mm) - prefer longer`);
+              needsRepack = true;
+              return;
+            }
+          }
+          
+          // No longer candidate that works, split this piece
+          piece.upstandRef.autoSplitPos = halfLen;
+          console.log(`Auto-split ${piece.name}: ${pw}mm → ${piece1W}mm + ${piece2W}mm (saves a slab)`);
+          needsRepack = true;
+          return;
+        }
+      }
+      
+      // Couldn't avoid new slab
       const newSlabNum = slabs.length + 1;
       const newSlab = createSlab();
       placed = tryPlacePiece(newSlab, pw, ph);
       if (placed) {
         slabs.push(newSlab);
         
-        // Generate suggestion for upstands/splashbacks/cills that cause new slabs
-        // (worktops have their own split feature via edge menu)
+        // Generate suggestion for the piece that caused this new slab
+        // Only keep suggestion for the HIGHEST slab (most relevant)
         const maxDim = Math.max(pw, ph);
-        if (newSlabNum >= 2 && maxDim > 1500 && ['upstand', 'splash', 'cill'].includes(piece.type)) {
-          slabOptimizationSuggestions.push({
-            piece: piece,
-            message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Splitting it could save a slab.`,
-            type: piece.type
-          });
+        if (newSlabNum >= 2 && maxDim > 1500) {
+          // Clear previous suggestions - only care about the latest slab increase
+          slabOptimizationSuggestions = [];
+          
+          if (['upstand', 'splash', 'cill'].includes(piece.type)) {
+            slabOptimizationSuggestions.push({
+              piece: piece,
+              message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Splitting it could save a slab.`,
+              type: piece.type
+            });
+          } else if (piece.type === 'worktop' && maxDim > SLAB_W * 0.6) {
+            slabOptimizationSuggestions.push({
+              piece: piece,
+              message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Adding a join could help fit pieces better.`,
+              type: piece.type
+            });
+          } else if (piece.type === 'dropdown') {
+            slabOptimizationSuggestions.push({
+              piece: piece,
+              message: `Dropdown (${maxDim}mm) pushed design to slab ${newSlabNum}.`,
+              type: piece.type
+            });
+          }
         }
       }
     }
   });
+  
+  // Repack with auto-splits applied (may need multiple passes)
+  let repackIteration = 0;
+  const MAX_REPACK = 5;
+  
+  while (needsRepack && repackIteration < MAX_REPACK) {
+    repackIteration++;
+    needsRepack = false;
+    
+    // Rebuild pieces with splits
+    const repackPieces = [];
+    sortedPieces.forEach(p => {
+      if (['upstand', 'splash', 'cill'].includes(p.type) && p.upstandRef && p.upstandRef.autoSplitPos) {
+        const splitPos = p.upstandRef.autoSplitPos;
+        repackPieces.push({ ...p, width: splitPos, name: `${p.name} (1/2)`, autoSplit: true });
+        repackPieces.push({ ...p, width: p.width - splitPos - 3, name: `${p.name} (2/2)`, autoSplit: true });
+      } else {
+        repackPieces.push(p);
+      }
+    });
+    
+    repackPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    slabs.length = 0;
+    const repackPlaced = [];
+    
+    repackPieces.forEach(piece => {
+      const pw = piece.width, ph = piece.height;
+      const fitsNormal = (pw <= SLAB_W && ph <= SLAB_H);
+      const fitsRotated = (ph <= SLAB_W && pw <= SLAB_H);
+      
+      if (!fitsNormal && !fitsRotated) {
+        slabs.push(createSlab());
+        return;
+      }
+      
+      let placed = null;
+      for (const slab of slabs) {
+        placed = tryPlacePiece(slab, pw, ph);
+        if (placed) break;
+      }
+      
+      if (placed && ['upstand', 'splash', 'cill'].includes(piece.type) && piece.upstandRef && !piece.autoSplit) {
+        repackPlaced.push({ piece, pw, ph });
+      }
+      
+      if (!placed) {
+        const canSplit = ['upstand', 'splash', 'cill'].includes(piece.type) && 
+                         piece.upstandRef && !piece.autoSplit && pw > 1000;
+        
+        if (canSplit && slabs.length > 0) {
+          const halfLen = Math.floor((pw - 3) / 2);
+          const half1Fits = canFitOnExistingSlabs(halfLen, ph);
+          const half2Fits = canFitOnExistingSlabs(pw - halfLen - 3, ph);
+          
+          if (half1Fits && half2Fits) {
+            // Check for longer candidate
+            const longerCandidate = repackPlaced
+              .filter(p => p.piece.type === piece.type && p.pw > pw && !p.piece.upstandRef.autoSplitPos)
+              .sort((a, b) => b.pw - a.pw)[0];
+            
+            if (longerCandidate) {
+              const longerW = longerCandidate.pw;
+              const longerHalf = Math.floor((longerW - 3) / 2);
+              if (canFitOnExistingSlabs(longerHalf, longerCandidate.ph) && 
+                  canFitOnExistingSlabs(longerW - longerHalf - 3, longerCandidate.ph)) {
+                longerCandidate.piece.upstandRef.autoSplitPos = longerHalf;
+                needsRepack = true;
+                return;
+              }
+            }
+            
+            piece.upstandRef.autoSplitPos = halfLen;
+            needsRepack = true;
+            return;
+          }
+        }
+        
+        const newSlab = createSlab();
+        placed = tryPlacePiece(newSlab, pw, ph);
+        if (placed) slabs.push(newSlab);
+      }
+    });
+  }
   
   // Update the warning display
   updateSlabWarning(slabs.length);
@@ -11409,6 +11654,9 @@ function renderSlabLayout() {
   const slabCanvas = document.getElementById('canvasSlab');
   const container = document.getElementById('canvasContainer');
   
+  // Clear any existing autoSplitPos - will be recalculated fresh
+  upstands.forEach(u => delete u.autoSplitPos);
+  
   // Get slab dimensions from inputs (default 3200x1600)
   const slabWInput = document.getElementById('slabWidthInput');
   const slabHInput = document.getElementById('slabHeightInput');
@@ -11562,17 +11810,33 @@ function renderSlabLayout() {
       return;
     }
     
-    const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
-    
+    // Determine piece type and color
+    let typeName, pieceType, color;
     if (u.isWindowCill) {
-      pieces.push({ name: 'Cill', width: pw, height: ph, type: 'cill', color: '#fff3e0', error: !fits });
+      typeName = 'Cill';
+      pieceType = 'cill';
+      color = '#fff3e0';
     } else if (u.isSplash) {
-      pieces.push({ name: 'Splash', width: pw, height: ph, type: 'splash', color: '#e0f7fa', error: !fits });
+      typeName = 'Splash';
+      pieceType = 'splash';
+      color = '#e0f7fa';
     } else {
-      pieces.push({ name: 'Upstand', width: pw, height: ph, type: 'upstand', color: '#e8f5e9', error: !fits });
+      typeName = 'Upstand';
+      pieceType = 'upstand';
+      color = '#e8f5e9';
     }
     
-    if (!fits) oversizedPieces.push(`${u.isSplash ? 'Splash' : 'Upstand'} (${pw}×${ph}mm)`);
+    const fits = (pw <= SLAB_W && ph <= SLAB_H) || (ph <= SLAB_W && pw <= SLAB_H);
+    pieces.push({ 
+      name: typeName, 
+      width: pw, 
+      height: ph, 
+      type: pieceType, 
+      color: color, 
+      error: !fits,
+      upstandRef: u // Reference for auto-split marking
+    });
+    if (!fits) oversizedPieces.push(`${typeName} (${pw}×${ph}mm)`);
   });
   
   worktops.forEach(w => {
@@ -11814,6 +12078,18 @@ function renderSlabLayout() {
     return placePiece(slab, best.rect, pw, ph, best.rotated);
   }
   
+  // Check if a piece can fit on any existing slab (without placing it)
+  function canFitOnExistingSlabs(pw, ph) {
+    for (const slab of slabs) {
+      if (findBestRect(slab, pw, ph)) return true;
+    }
+    return false;
+  }
+  
+  // Track placed upstands for potential swap
+  const placedUpstands = [];
+  let needsRepack = false;
+  
   sortedPieces.forEach(piece => {
     if (piece.error) {
       // Oversized piece - create its own slab with error
@@ -11835,8 +12111,59 @@ function renderSlabLayout() {
       }
     }
     
-    // Need new slab?
+    // Track placed upstands for potential swap
+    if (placed && ['upstand', 'splash', 'cill'].includes(piece.type) && piece.upstandRef) {
+      placedUpstands.push({ piece, placed, placedSlab });
+    }
+    
+    // Need new slab? Try auto-split first for upstands/splashbacks/cills
     if (!placed) {
+      const pw = piece.width;
+      const ph = piece.height;
+      const canSplit = ['upstand', 'splash', 'cill'].includes(piece.type) && 
+                       piece.upstandRef && 
+                       pw > 1000;
+      
+      if (canSplit && slabs.length > 0) {
+        // First check if splitting THIS piece would save a slab
+        const halfLen = Math.floor((pw - 3) / 2);
+        const piece1W = halfLen;
+        const piece2W = pw - halfLen - 3;
+        
+        const half1Fits = canFitOnExistingSlabs(piece1W, ph);
+        const half2Fits = canFitOnExistingSlabs(piece2W, ph);
+        
+        if (half1Fits && half2Fits) {
+          // Splitting this piece would save a slab!
+          // But check if there's a LONGER upstand we could split instead
+          const longerCandidate = placedUpstands
+            .filter(p => p.piece.type === piece.type && p.piece.width > pw && !p.piece.upstandRef.autoSplitPos)
+            .sort((a, b) => b.piece.width - a.piece.width)[0];
+          
+          if (longerCandidate) {
+            const longerW = longerCandidate.piece.width;
+            const longerH = longerCandidate.piece.height;
+            const longerHalf = Math.floor((longerW - 3) / 2);
+            const longer1Fits = canFitOnExistingSlabs(longerHalf, longerH);
+            const longer2Fits = canFitOnExistingSlabs(longerW - longerHalf - 3, longerH);
+            
+            if (longer1Fits && longer2Fits) {
+              longerCandidate.piece.upstandRef.autoSplitPos = longerHalf;
+              console.log(`Auto-split LONGER ${longerCandidate.piece.name}: ${longerW}mm (instead of ${pw}mm) - prefer longer`);
+              needsRepack = true;
+              return;
+            }
+          }
+          
+          // No longer candidate, split this piece
+          piece.upstandRef.autoSplitPos = halfLen;
+          console.log(`Auto-split ${piece.name}: ${pw}mm → ${piece1W}mm + ${piece2W}mm - will repack`);
+          needsRepack = true;
+          return;
+        }
+      }
+      
+      // Couldn't auto-split, create new slab
       const newSlab = createSlab();
       placed = tryPlacePiece(newSlab, piece.width, piece.height);
       
@@ -11974,6 +12301,149 @@ function renderSlabLayout() {
     console.log(`PLACED: ${piece.name} (${piece.width}×${piece.height}) at (${placed.x},${placed.y}) as ${placed.w}×${placed.h} rotated=${placed.rotated} on slab ${slabs.indexOf(placedSlab) + 1}`);
     console.log(`  Free rects remaining:`, placedSlab.freeRects.length);
   });
+  
+  // If auto-splits were detected, we need to repack with the split pieces
+  // If auto-splits were detected, we need to repack with the split pieces
+  // This may need multiple passes if splitting one enables fitting more
+  let repackIteration = 0;
+  const MAX_REPACK_ITERATIONS = 5;
+  
+  while (needsRepack && repackIteration < MAX_REPACK_ITERATIONS) {
+    repackIteration++;
+    needsRepack = false; // Reset - will be set again if more splits needed
+    
+    console.log(`=== REPACKING SLAB LAYOUT (iteration ${repackIteration}) ===`);
+    
+    // Rebuild pieces array with splits applied
+    const repackPieces = [];
+    
+    // Re-add worktops and dropdowns (unchanged)
+    pieces.filter(p => !['upstand', 'splash', 'cill'].includes(p.type)).forEach(p => {
+      repackPieces.push(p);
+    });
+    
+    // Re-add upstands with splits applied
+    pieces.filter(p => ['upstand', 'splash', 'cill'].includes(p.type)).forEach(p => {
+      if (p.upstandRef && p.upstandRef.autoSplitPos) {
+        const splitPos = p.upstandRef.autoSplitPos;
+        const piece1W = splitPos;
+        const piece2W = p.width - splitPos - 3;
+        
+        repackPieces.push({
+          ...p,
+          name: `${p.name} (1/2)`,
+          width: piece1W,
+          autoSplit: true
+        });
+        repackPieces.push({
+          ...p,
+          name: `${p.name} (2/2)`,
+          width: piece2W,
+          autoSplit: true
+        });
+      } else {
+        repackPieces.push(p);
+      }
+    });
+    
+    // Sort by area descending
+    repackPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    
+    // Clear slabs and repack
+    slabs.length = 0;
+    const repackPlacedUpstands = [];
+    
+    repackPieces.forEach(piece => {
+      if (piece.error) {
+        const newSlab = createSlab();
+        newSlab.pieces.push({ ...piece, x: 0, y: 0, pw: piece.width, ph: piece.height, rotated: false });
+        slabs.push(newSlab);
+        return;
+      }
+      
+      let placed = null;
+      let placedSlab = null;
+      
+      for (let slab of slabs) {
+        placed = tryPlacePiece(slab, piece.width, piece.height);
+        if (placed) {
+          placedSlab = slab;
+          break;
+        }
+      }
+      
+      // Track placed upstands for potential further splits
+      if (placed && ['upstand', 'splash', 'cill'].includes(piece.type) && piece.upstandRef && !piece.autoSplit) {
+        repackPlacedUpstands.push({ piece, pw: piece.width, ph: piece.height });
+      }
+      
+      // Need new slab? Check for auto-split opportunity
+      if (!placed) {
+        const pw = piece.width;
+        const ph = piece.height;
+        const canSplit = ['upstand', 'splash', 'cill'].includes(piece.type) && 
+                         piece.upstandRef && 
+                         !piece.autoSplit && // Don't split already-split pieces
+                         pw > 1000;
+        
+        if (canSplit && slabs.length > 0) {
+          const halfLen = Math.floor((pw - 3) / 2);
+          const piece1W = halfLen;
+          const piece2W = pw - halfLen - 3;
+          
+          const half1Fits = canFitOnExistingSlabs(piece1W, ph);
+          const half2Fits = canFitOnExistingSlabs(piece2W, ph);
+          
+          if (half1Fits && half2Fits) {
+            // Check for longer candidate to split instead
+            const longerCandidate = repackPlacedUpstands
+              .filter(p => p.piece.type === piece.type && p.pw > pw && !p.piece.upstandRef.autoSplitPos)
+              .sort((a, b) => b.pw - a.pw)[0];
+            
+            if (longerCandidate) {
+              const longerW = longerCandidate.pw;
+              const longerHalf = Math.floor((longerW - 3) / 2);
+              const longer1Fits = canFitOnExistingSlabs(longerHalf, longerCandidate.ph);
+              const longer2Fits = canFitOnExistingSlabs(longerW - longerHalf - 3, longerCandidate.ph);
+              
+              if (longer1Fits && longer2Fits) {
+                longerCandidate.piece.upstandRef.autoSplitPos = longerHalf;
+                console.log(`Repack: Auto-split LONGER ${longerCandidate.piece.name}: ${longerW}mm (instead of ${pw}mm)`);
+                needsRepack = true;
+                return;
+              }
+            }
+            
+            piece.upstandRef.autoSplitPos = halfLen;
+            console.log(`Repack: Auto-split ${piece.name}: ${pw}mm → ${piece1W}mm + ${piece2W}mm`);
+            needsRepack = true;
+            return;
+          }
+        }
+        
+        // Couldn't auto-split, create new slab
+        const newSlab = createSlab();
+        placed = tryPlacePiece(newSlab, piece.width, piece.height);
+        if (placed) {
+          placedSlab = newSlab;
+          slabs.push(newSlab);
+        }
+      }
+      
+      if (placedSlab && placed) {
+        placedSlab.pieces.push({
+          ...piece,
+          x: placed.x,
+          y: placed.y,
+          pw: placed.w,
+          ph: placed.h,
+          rotated: placed.rotated
+        });
+      }
+    });
+    
+    console.log(`Repack iteration ${repackIteration} complete: ${slabs.length} slabs`);
+  }
   
   // Calculate canvas size for scrolling - use FIXED height per slab
   const PADDING = 30;
@@ -13064,7 +13534,8 @@ async function generateQuote() {
     vertical: u.vertical || false,
     parentEdge: u.parentEdge || 'back',
     isContinuous: u.isContinuous || false,
-    isSplash: u.isSplash || false
+    isSplash: u.isSplash || false,
+    autoSplitPos: u.autoSplitPos || null // Include auto-split position
   }));
   
   // Empty - we combined them above
@@ -13659,9 +14130,15 @@ function saveDesignState() {
       console.log('Saving tap:', t.id, 'x:', t.x, 'y:', t.y, 'diameter:', t.diameter);
     });
     
+    // Strip autoSplitPos from upstands - these are calculated dynamically
+    const cleanUpstands = upstands.map(u => {
+      const { autoSplitPos, ...rest } = u;
+      return rest;
+    });
+    
     const state = {
       worktops: worktops,
-      upstands: upstands,
+      upstands: cleanUpstands,
       cutouts: cutouts,
       selectedMaterial: selectedMaterial,
       worktopThickness: worktopThickness,
@@ -13686,6 +14163,9 @@ function loadDesignState() {
       selectedMaterial = state.selectedMaterial || null;
       worktopThickness = state.worktopThickness || 20;
       nextId = state.nextId || 1;
+      
+      // Clear any saved autoSplitPos - these should be recalculated fresh
+      upstands.forEach(u => delete u.autoSplitPos);
       
       // Debug: log socket positions
       cutouts.filter(c => c.type === 'socket').forEach(s => {

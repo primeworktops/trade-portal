@@ -1697,12 +1697,36 @@
         const additions = [];
         
         (quoteData.upstands || []).forEach(u => {
-          additions.push({
-            name: u.name,
-            dims: `${Math.round(u.length)} × ${Math.round(u.height)} mm`,
-            type: u.isSplash ? 'Splashback' : 'Upstand',
-            svg: createPieceSVG(u.length, u.height, u.isSplash ? 'splashback' : 'upstand')
-          });
+          const typeName = u.isSplash ? 'Splashback' : 'Upstand';
+          const typeKey = u.isSplash ? 'splashback' : 'upstand';
+          
+          // If auto-split, show as two pieces
+          if (u.autoSplitPos) {
+            const piece1Len = u.autoSplitPos;
+            const piece2Len = u.length - u.autoSplitPos - 3; // 3mm joint
+            
+            additions.push({
+              name: `${u.name} (1/2)`,
+              dims: `${Math.round(piece1Len)} × ${Math.round(u.height)} mm`,
+              type: typeName,
+              svg: createPieceSVG(piece1Len, u.height, typeKey),
+              hasJoint: true
+            });
+            additions.push({
+              name: `${u.name} (2/2)`,
+              dims: `${Math.round(piece2Len)} × ${Math.round(u.height)} mm`,
+              type: typeName,
+              svg: createPieceSVG(piece2Len, u.height, typeKey),
+              hasJoint: true
+            });
+          } else {
+            additions.push({
+              name: u.name,
+              dims: `${Math.round(u.length)} × ${Math.round(u.height)} mm`,
+              type: typeName,
+              svg: createPieceSVG(u.length, u.height, typeKey)
+            });
+          }
         });
         
         (quoteData.splashbacks || []).forEach(s => {
@@ -2272,27 +2296,36 @@
         `;
       });
       
-      // Upstands (always included)
+      // Upstands (always included) - count split pieces
       if (quoteData.upstands && quoteData.upstands.length > 0) {
         const upstandOnly = quoteData.upstands.filter(u => !u.isSplash);
         if (upstandOnly.length > 0) {
+          // Count pieces (splits count as 2)
+          let pieceCount = 0;
+          upstandOnly.forEach(u => {
+            pieceCount += u.autoSplitPos ? 2 : 1;
+          });
           rows += `
             <tr>
               <td>Upstands</td>
-              <td>${upstandOnly.length} piece${upstandOnly.length > 1 ? 's' : ''}</td>
+              <td>${pieceCount} piece${pieceCount > 1 ? 's' : ''}${upstandOnly.some(u => u.autoSplitPos) ? ' (with joints)' : ''}</td>
               <td class="amount"><span class="included">Included</span></td>
             </tr>
           `;
         }
       }
       
-      // Splashbacks (always included)
+      // Splashbacks (always included) - count split pieces
       const splashbacks = (quoteData.upstands || []).filter(u => u.isSplash);
       if (splashbacks.length > 0) {
+        let splashPieceCount = 0;
+        splashbacks.forEach(s => {
+          splashPieceCount += s.autoSplitPos ? 2 : 1;
+        });
         rows += `
           <tr>
             <td>Splashbacks</td>
-            <td>${splashbacks.length} piece${splashbacks.length > 1 ? 's' : ''}</td>
+            <td>${splashPieceCount} piece${splashPieceCount > 1 ? 's' : ''}${splashbacks.some(s => s.autoSplitPos) ? ' (with joints)' : ''}</td>
             <td class="amount"><span class="included">Included</span></td>
           </tr>
         `;
