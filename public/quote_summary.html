@@ -124,10 +124,20 @@
     .render-container {
       background: #f0f0f0;
       border-radius: 8px;
-      height: 400px;
+      min-height: 350px;
+      max-height: 550px;
       position: relative;
       overflow: hidden;
       cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .render-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
     
     .render-container:active {
@@ -615,16 +625,17 @@
       
       /* Render container - BIG 3D only */
       .render-container {
-        height: 380px !important;
-        min-height: 380px !important;
-        max-height: 380px !important;
+        height: auto !important;
+        min-height: 350px !important;
+        max-height: 500px !important;
         width: 100% !important;
       }
       
       .render-container img {
         object-fit: contain !important;
         width: 100% !important;
-        height: 100% !important;
+        height: auto !important;
+        max-height: 480px !important;
       }
       
       /* Hide reset button in print */
@@ -997,7 +1008,7 @@
               <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">🎨 3D Preview <span style="font-size:10px;font-weight:400;color:#999;">(click PDF on thumbnail to select for quote)</span></div>
               <div class="render-container" id="renderContainer">
                 <!-- Main 3D view image (shown when captured images available) -->
-                <img id="mainViewImage" style="width:100%;height:100%;object-fit:contain;background:#f5f5f5;display:none;">
+                <img id="mainViewImage" style="width:100%;height:auto;max-height:100%;object-fit:contain;background:#f5f5f5;display:none;">
                 <!-- Fallback canvas for interactive 3D (when no captured images) -->
                 <canvas id="render3d" style="display:none;"></canvas>
                 <button onclick="resetCameraView()" id="resetViewBtn" style="display:none;position:absolute;top:10px;right:10px;padding:6px 12px;background:rgba(255,255,255,0.9);border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">↺ Reset View</button>
@@ -1296,7 +1307,7 @@
       porcelain: {
         firstSlab: 1700,
         additionalSlabPerSqFt: 12.50,
-        brands: ['HOR']
+        brands: ['HSP']
       },
       natural_stone: {
         firstSlab: 1800,
@@ -2528,8 +2539,9 @@
     let isMouseDown = false;
     let mouseX = 0, mouseY = 0;
     let cameraAngleX = 0.5; // Horizontal angle
-    let cameraAngleY = 0.4; // Vertical angle (elevation)
-    let cameraDistance = 1800; // Closer default
+    let cameraAngleY = 0.5; // Vertical angle (elevation) - more top-down for better overview
+    let cameraDistance = 1800; // Default, will be recalculated
+    let optimalCameraDistance = 1800; // Stores calculated optimal distance for reset
     
     function init3D() {
       // Always create interactive 3D for website
@@ -2662,11 +2674,13 @@
       const cx = (minX + maxX) / 2;
       const cz = (minZ + maxZ) / 2;
       
-      // Adjust camera distance based on design size - closer view
+      // Adjust camera distance based on design size - ensure full visibility
       const designWidth = maxX - minX;
       const designDepth = maxZ - minZ;
       const designSize = Math.max(designWidth, designDepth);
-      cameraDistance = Math.max(1200, Math.min(2500, designSize * 0.5));
+      // Use larger multiplier and higher max for big kitchens
+      cameraDistance = Math.max(1500, Math.min(5000, designSize * 0.8));
+      optimalCameraDistance = cameraDistance; // Store for reset
       console.log('Design size:', designSize, 'Camera distance:', cameraDistance);
       updateCameraPosition();
       
@@ -3115,13 +3129,14 @@
       
       // Configure 3D container for PDF
       if (renderContainer) {
-        renderContainer.style.height = '380px';
-        renderContainer.style.minHeight = '380px';
-        renderContainer.style.maxHeight = '380px';
+        renderContainer.style.height = 'auto';
+        renderContainer.style.minHeight = '350px';
+        renderContainer.style.maxHeight = '500px';
         renderContainer.style.width = '100%';
         const mainImg = renderContainer.querySelector('img');
         if (mainImg) {
           mainImg.style.objectFit = 'contain';
+          mainImg.style.maxHeight = '480px';
           mainImg.style.width = '100%';
           mainImg.style.height = '100%';
         }
@@ -3260,14 +3275,14 @@
           image3dWrapper.style.display = original3dWrapperDisplay || 'block';
         }
         if (renderContainer) {
-          renderContainer.style.height = originalRenderHeight || '400px';
-          renderContainer.style.minHeight = '';
-          renderContainer.style.maxHeight = '';
+          renderContainer.style.height = '';
+          renderContainer.style.minHeight = '350px';
+          renderContainer.style.maxHeight = '550px';
           const mainImg = renderContainer.querySelector('img');
           if (mainImg) {
             mainImg.style.width = '100%';
-            mainImg.style.height = '100%';
-            mainImg.style.maxHeight = '';
+            mainImg.style.height = 'auto';
+            mainImg.style.maxHeight = '100%';
           }
         }
         if (plan2dImage) {
@@ -3349,8 +3364,8 @@
     function resetCameraForPDF() {
       if (!renderer) return;
       cameraAngleX = 0.5;
-      cameraAngleY = 0.4;
-      cameraDistance = 1800;
+      cameraAngleY = 0.5; // More top-down for better overview
+      cameraDistance = optimalCameraDistance;
       updateCameraPosition();
       renderer.render(scene, camera);
     }
@@ -3359,8 +3374,8 @@
     function resetCameraView() {
       if (!renderer) return;
       cameraAngleX = 0.5;
-      cameraAngleY = 0.4;
-      cameraDistance = 1800;
+      cameraAngleY = 0.5; // More top-down for better overview
+      cameraDistance = optimalCameraDistance;
       updateCameraPosition();
     }
     

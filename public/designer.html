@@ -373,7 +373,7 @@
               <input type="number" id="slabHeightInput" value="1600" style="width:70px;padding:4px;border:1px solid #ccc;border-radius:4px;" onchange="renderSlabLayout()">
             </div>
           </div>
-          <div style="margin-top:4px;font-size:9px;color:#999;">Default: 3200×1600mm (Natural Stone: 3200×1900)</div>
+          <div style="margin-top:4px;font-size:9px;color:#999;">Default: 3200×1600mm (Natural Stone: 3200×1900, Indigo Porcelain: 3300×1840)</div>
         </div>
         
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eee;">
@@ -770,6 +770,10 @@
             <div onclick="setBrandFilter('HOR')" class="brand-logo-btn" data-brand="HOR" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Horizon Stone">
               <img src="https://lh3.googleusercontent.com/d/1J6p-NlkoyZ5WKS8nxF5Pgz4IQ6fQ0M1l=s200" style="max-height:45px;max-width:70px;object-fit:contain;">
             </div>
+            <div onclick="setBrandFilter('HSP')" class="brand-logo-btn" data-brand="HSP" style="width:80px;height:80px;border:2px solid #ddd;border-radius:8px;cursor:pointer;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;" title="Horizon Porcelain">
+              <img src="https://lh3.googleusercontent.com/d/1J6p-NlkoyZ5WKS8nxF5Pgz4IQ6fQ0M1l=s200" style="max-height:40px;max-width:65px;object-fit:contain;">
+              <span style="font-size:8px;color:#666;margin-top:2px;">PORCELAIN</span>
+            </div>
           </div>
         </div>
         
@@ -877,7 +881,7 @@ const FABRICATION_PRICES = {
   porcelain: {
     firstSlab: 1700,           // First slab fixed profit
     additionalSlabPerSqFt: 12.50, // £12.50 per sq ft of pieces on additional slabs
-    brands: ['HOR']            // Horizon Porcelain
+    brands: ['HSP']            // Horizon Stone Porcelain
   },
   natural_stone: {
     firstSlab: 1800,           // First slab fixed profit (Granite & Quartzite)
@@ -1102,7 +1106,72 @@ const MATERIAL_COLORS = {
   mod_alaskagrey: { name: 'Alaska Grey (Modern)', color: 0xc0c0c0, css: '#c0c0c0', cssSelected: '#b0b0b0', roughness: 0.15, textureId: '1vAqUBEQBEicQAU01wPgSTIHZQxqpd6b0', brand: 'MOD' },
   mod_arabescato: { name: 'Arabescato (Modern)', color: 0xf5f5f5, css: '#f5f5f5', cssSelected: '#e5e5e5', roughness: 0.12, textureId: '1aYIsFwS0M59K2j3Z_QQmgLwnZVWTZVLT', brand: 'MOD' },
   mod_biancocarrara: { name: 'Bianco Carrara (Modern)', color: 0xf8f8f8, css: '#f8f8f8', cssSelected: '#e8e8e8', roughness: 0.12, textureId: '1ma13KUIWhxSamU1bf5HidKzD1l_UUBNt', brand: 'MOD' },
-  mod_calacattaoro: { name: 'Calacatta Oro (Modern)', color: 0xfaf8f0, css: '#faf8f0', cssSelected: '#eae8e0', roughness: 0.1, textureId: '1H1ljkUTlrQ4IoI2lvFqeNUyUUFkbl3kb', brand: 'MOD' }
+  mod_calacattaoro: { name: 'Calacatta Oro (Modern)', color: 0xfaf8f0, css: '#faf8f0', cssSelected: '#eae8e0', roughness: 0.1, textureId: '1H1ljkUTlrQ4IoI2lvFqeNUyUUFkbl3kb', brand: 'MOD' },
+  
+  // ========== HORIZON PORCELAIN (brand: 'HSP' = Porcelain pricing) ==========
+  // COSMOS RANGE (£450)
+  prcs001_tajmahalpolished: { name: 'Taj Mahal Polished', brand: 'HSP', textureId: '1_6SzAg-ReKTzKIgReeh8ZbuyOaV0zJIE', roughness: 0.2 },
+  prcs002_tajmahalhoned: { name: 'Taj Mahal Honed', brand: 'HSP', textureId: '10vp2VQ9URzm1eaLRYzzbY8YhH0vxngzq', roughness: 0.4 },
+  prcs003_statuariopolished: { name: 'Statuario Polished', brand: 'HSP', textureId: '1Swa0OJiMOZjVQ8QMgvFhDC8M53YCIc66', roughness: 0.2 },
+  prcs004_statuariohoned: { name: 'Statuario Honed', brand: 'HSP', textureId: '1iIT01qfeCWHVRe1RI0VgVuoltqNAVsna', roughness: 0.4 },
+  prcs005_neroportoro: { name: 'Nero Portoro Matte', brand: 'HSP', textureId: '1_EfPEt-nbVewMVz4X9PCwuVT9i5agpR1', roughness: 0.4 },
+  prcs006_riverwhitehoned: { name: 'River White Honed', brand: 'HSP', textureId: '1QD9EyaerqfftQe6YZeIqAvE1UgHxCoM0', roughness: 0.4 },
+  prcs007_whitetravertinehoned: { name: 'White Travertine Honed', brand: 'HSP', textureId: '1kBhQNYOahYtn-nO2uUlT_KLTDRSA8D-B', roughness: 0.4 },
+  prcs008_rosegoldpolished: { name: 'Rose Gold Polished', brand: 'HSP', textureId: '1IswrI5rDvnSJrPxMbTCed3mBaF3ULwUQ', roughness: 0.2 },
+  prcs009_rosegoldhoned: { name: 'Rose Gold Honed', brand: 'HSP', textureId: '12dSImiv_ajQ-C8w213qzBsgmuV_b8_1T', roughness: 0.4 },
+  prcs010_laurentmatte: { name: 'Laurent Matte', brand: 'HSP', textureId: '1185ouSVWwKtIxrYtVSm3A-13lANKKb2B', roughness: 0.4 },
+  // INDIGO RANGE - Super Jumbo 3300x1840 (£800)
+  prid021_calacattaveneresofttouch: { name: 'Calacatta Venere Soft Touch', brand: 'HSP', textureId: '1-AksvJAFz9Wospu_Zxc2EZbqyFKmIe4F', roughness: 0.4 },
+  prid022_calacattavenerepolished: { name: 'Calacatta Venere Polished', brand: 'HSP', textureId: '1NE7Grxxq3BtklOj3BZIH2_sSFRpsyXLE', roughness: 0.2 },
+  prid023_tajmahalpolished: { name: 'Taj Mahal Polished (Indigo)', brand: 'HSP', textureId: '1AbjMMw9wu0zZtMOrt0eeHx5iU8WGsNHj', roughness: 0.2 },
+  prid024_travertluminasofttouch: { name: 'Travert Lumina Soft Touch', brand: 'HSP', textureId: '1vdybZMOQ1WWjWpVXCP4CWaJwUNcQJRYY', roughness: 0.4 },
+  prid025_blacktempestnatural: { name: 'Black Tempest Natural', brand: 'HSP', textureId: '1Wi2QZYJZoH5LSRg6larGK7RMGR1rvKOe', roughness: 0.4 },
+  prid026_calacattasupremepolished: { name: 'Calacatta Supreme Polished', brand: 'HSP', textureId: '1zc6eDpS1HAIstfngXDg5wY4TUfDpbeEE', roughness: 0.2 },
+  prid027_goldlaurentnatural: { name: 'Gold Laurent Natural', brand: 'HSP', textureId: '1eDnt4h2G_FW8tKqwwHrv3xrGgchqL9Tf', roughness: 0.4 },
+  prid028_goldlaurentpolished: { name: 'Gold Laurent Polished', brand: 'HSP', textureId: '1wKkeT7TRX6soZ87TmYakSGYbvgM0JryH', roughness: 0.2 },
+  prid029_macchiavecchiapolished: { name: 'Macchia Vecchia Polished', brand: 'HSP', textureId: '1JiLAXg4WoNUe89BePkQr3jYdHXfH-SFn', roughness: 0.2 },
+  // INSPIRE RANGE (£650)
+  prin101_arabescatoviolapolished: { name: 'Arabescato Viola Polished', brand: 'HSP', textureId: '1BJfIT7ceFBuGnKXGa2bHbLYffhz_2-h8', roughness: 0.2 },
+  prin102_arabescatoviolaleather: { name: 'Arabescato Viola Leather', brand: 'HSP', textureId: '1DhqS6_IHL33RpTI89ne0Z4YVsNfSDYlh', roughness: 0.5 },
+  prin103_arabescatopolished: { name: 'Arabescato Polished', brand: 'HSP', textureId: '1S7BtGMMVB7XU10zuByad5k8HYUygej0w', roughness: 0.2 },
+  prin104_arabescatoleather: { name: 'Arabescato Leather', brand: 'HSP', textureId: '1rsNCyvmFcWj7N1mVza8LzoKdRFNpuOhR', roughness: 0.5 },
+  prin105_calacattaoropolished: { name: 'Calacatta Oro Polished', brand: 'HSP', textureId: '1NYBa7fI08TtsyiPJkj_fuvcmd-gwQXsI', roughness: 0.2 },
+  prin106_calacattaoroleather: { name: 'Calacatta Oro Leather', brand: 'HSP', textureId: '1qJ1ggSRa2aKfy_8IYdIlhQFR3XTYtz9H', roughness: 0.5 },
+  prin107_calacattadoratopolished: { name: 'Calacatta Dorato Polished', brand: 'HSP', textureId: '1fLXZjag-wT2JPGJ7C6lZg49TUlJKByxl', roughness: 0.2 },
+  prin108_calacattadoratoleather: { name: 'Calacatta Dorato Leather', brand: 'HSP', textureId: '1kXhaG1q2fv7LCTroigfZP1euT03a-I22', roughness: 0.5 },
+  prin109_borghettopolished: { name: 'Borghetto Polished', brand: 'HSP', textureId: '15P81Qrak8R9duwiiJoPu4Y6kueGCia01', roughness: 0.2 },
+  prin110_borghettoleather: { name: 'Borghetto Leather', brand: 'HSP', textureId: '1nwLTh1-Ufu-JKjnbO0Vlgksps_jeQP1F', roughness: 0.5 },
+  prin111_caravaggioiogoldleather: { name: 'Caravaggio Gold Leather', brand: 'HSP', textureId: '1YFQVfdwVhroTSVIVCITXmTlIARwBMgdK', roughness: 0.5 },
+  prin112_fiordiboscoleather: { name: 'Fior Di Bosco Leather', brand: 'HSP', textureId: '1RXi0KrrOCwWb7mmt1y17reuvlDLIqbIZ', roughness: 0.5 },
+  prin113_hermitagepolished: { name: 'Hermitage Polished', brand: 'HSP', textureId: '1vcDE-uQtElmfmAB6142yX9UGjZiWRt4v', roughness: 0.2 },
+  prin114_hermitageleather: { name: 'Hermitage Leather', brand: 'HSP', textureId: '1UURf7jG9bTSmTzQ-YxbCX1rLe_AGxn8u', roughness: 0.5 },
+  prin115_lasawhitepolished: { name: 'Lasa White Polished', brand: 'HSP', textureId: '1LyXisnIb2CHQvfkRsqGwxoB9u0B4mNgm', roughness: 0.2 },
+  prin116_lasawhiteleather: { name: 'Lasa White Leather', brand: 'HSP', textureId: '1oTSZjfOnx03yy32xi2xVzkyJxXrFmrup', roughness: 0.5 },
+  prin117_lightredcalacattapolished: { name: 'Light Red Calacatta Polished', brand: 'HSP', textureId: '1NHye6GwKxWJzdMCah8u9DneK63fJ3GbQ', roughness: 0.2 },
+  prin118_lightredcalacattaleather: { name: 'Light Red Calacatta Leather', brand: 'HSP', textureId: '1EcNrgKAiEAVzV16DEsTz-GyseoOp-9AG', roughness: 0.5 },
+  prin119_lincolndoratopolished: { name: 'Lincoln Dorato Polished', brand: 'HSP', textureId: '1PrLJnyzykYull6VNuA47rNlz4q3jQD2x', roughness: 0.2 },
+  prin120_lincolndoratoleather: { name: 'Lincoln Dorato Leather', brand: 'HSP', textureId: '1eRBq3PnidCK7LnogZOjfnp-fu1j3fdOA', roughness: 0.5 },
+  prin121_marmoanticopolished: { name: 'Marmo Antico Polished', brand: 'HSP', textureId: '1_-hgepEnOrWrs4mHUP9P33Ws2Cwtq50G', roughness: 0.2 },
+  prin122_marmoanticoleather: { name: 'Marmo Antico Leather', brand: 'HSP', textureId: '1WZfgvU80Q5UNZfnNT3C0PDgf9C9IWKxk', roughness: 0.5 },
+  prin123_negevpolished: { name: 'Negev Polished', brand: 'HSP', textureId: '1HcVVMMX1uAnSJUrGi2Ajz7gDNWDkFzAl', roughness: 0.2 },
+  prin124_negevleather: { name: 'Negev Leather', brand: 'HSP', textureId: '1IV7UOelqgSXnz4hdfeZks2ghG00OBKRT', roughness: 0.5 },
+  prin125_portoroleather: { name: 'Portoro Leather', brand: 'HSP', textureId: '1_hGiL29xEXilTjNWSi777BV7TTlFuI3D', roughness: 0.5 },
+  prin126_preciousstonepolished: { name: 'Precious Stone Polished', brand: 'HSP', textureId: '1sWt1Bj4aBzjhtLu8WWxpMVsW8kyawoa_', roughness: 0.2 },
+  prin127_statuarioleonardopolished: { name: 'Statuario Leonardo Polished', brand: 'HSP', textureId: '17Pc-rbw4pp7NGpaeQ3cVfoU1K9Kumr16', roughness: 0.2 },
+  prin128_statuarioleonardoleather: { name: 'Statuario Leonardo Leather', brand: 'HSP', textureId: '1UtbbM_IbiTU1AWGllpaSfqK9StQJf0ri', roughness: 0.5 },
+  prin129_superwhiteleather: { name: 'Super White Leather', brand: 'HSP', textureId: '1BPadDQ4RDp6HjL0qXKL5586f1Jg2Fxh8', roughness: 0.5 },
+  prin130_tajmahalpolished: { name: 'Taj Mahal Polished (Inspire)', brand: 'HSP', textureId: '1yCXara2KHXIGLW7CUdKLBb-A8oCrUP0x', roughness: 0.2 },
+  prin131_tajmahalleather: { name: 'Taj Mahal Leather', brand: 'HSP', textureId: '1mOyE1JJjNu9TYhQErko-U7SjhPQ3smrZ', roughness: 0.5 },
+  prin132_blackgoldleather: { name: 'Black Gold Leather', brand: 'HSP', textureId: '13QGjmHSeAdutKVVDVlsrO19BxDGQIk29', roughness: 0.5 },
+  prin133_balletpolished: { name: 'Ballet Polished', brand: 'HSP', textureId: '1Y6A8VhxVpmrkprEIh2AySyC1DD8Afa28', roughness: 0.2 },
+  prin134_balletleather: { name: 'Ballet Leather', brand: 'HSP', textureId: '1eEQ9ueFb0_ax3JAB_pQh_1iqUXuj0e5D', roughness: 0.5 },
+  prin135_doratinopolished: { name: 'Doratino Polished', brand: 'HSP', textureId: '16D5zj5FBIm3G5W6uRov_LKBinux2kmn7', roughness: 0.2 },
+  prin136_doratinoleather: { name: 'Doratino Leather', brand: 'HSP', textureId: '1qlf94TyrHFkAj74spRPoVbT6dQjiHMry', roughness: 0.5 },
+  prin137_travertinowhitepolished: { name: 'Travertino White Polished', brand: 'HSP', textureId: '1-M2jDRDu9Yi5t4xrSEidMxeYM9Mrt836', roughness: 0.2 },
+  prin138_travertinowhiteleather: { name: 'Travertino White Leather', brand: 'HSP', textureId: '1E4X0KkMTJsKc0-xDkipwNdrmTDsUQErn', roughness: 0.5 },
+  prin139_travertinobeigebeather: { name: 'Travertino Beige Leather', brand: 'HSP', textureId: '1inlwhwAW-8gqwp7wS2prPAIBqx8zHYTC', roughness: 0.5 },
+  prin140_midnightleather: { name: 'Midnight Leather', brand: 'HSP', textureId: '161PQN-wRIIWwdBJ193Dyh8MqimCqIv-z', roughness: 0.5 },
+  prin141_tintaunitaneropolished: { name: 'Tinta Unita Nero Polished', brand: 'HSP', textureId: '17Lb1tVROWm6B6NgJpB_mTb3l-ixMqjO3', roughness: 0.2 }
 };
 
 // Material pricing data (from Silestone price list)
@@ -3323,22 +3392,36 @@ function cancelProfileSelection() {
 
 // ========== MATERIAL COLOR SELECTION ==========
 function showMaterialModal() {
-  currentBrandFilter = 'all';
+  // If a material is selected, default to its brand; otherwise show all
+  if (selectedMaterial && MATERIAL_COLORS[selectedMaterial]) {
+    currentBrandFilter = MATERIAL_COLORS[selectedMaterial].brand || 'all';
+  } else {
+    currentBrandFilter = 'all';
+  }
   currentTierFilter = 'all';
   pendingMaterial = selectedMaterial;
   
   document.getElementById('materialSearch').value = '';
   
-  // Reset brand logo buttons
+  // Reset brand logo buttons then highlight the correct one
   document.querySelectorAll('.brand-logo-btn').forEach(btn => {
     btn.style.borderColor = '#ddd';
     btn.style.background = 'white';
   });
-  const brandAllBtn = document.getElementById('brandAll');
-  if (brandAllBtn) {
-    brandAllBtn.style.borderColor = '#1e4d3a';
-    brandAllBtn.style.background = '#e8f5e9';
-    brandAllBtn.style.fontWeight = '600';
+  
+  // Highlight the selected brand button
+  const selectedBrandBtn = document.querySelector(`.brand-logo-btn[data-brand="${currentBrandFilter}"]`);
+  if (selectedBrandBtn) {
+    selectedBrandBtn.style.borderColor = '#1e4d3a';
+    selectedBrandBtn.style.background = '#e8f5e9';
+  } else {
+    // Fallback to "All" if brand not found
+    const brandAllBtn = document.getElementById('brandAll');
+    if (brandAllBtn) {
+      brandAllBtn.style.borderColor = '#1e4d3a';
+      brandAllBtn.style.background = '#e8f5e9';
+      brandAllBtn.style.fontWeight = '600';
+    }
   }
   
   // Reset tier buttons
@@ -3671,7 +3754,8 @@ function filterMaterialsNew() {
     'ART': 'Quartz',
     'NLQ': 'Quartz',
     'NAT': 'Natural Stone',
-    'HOR': 'Quartz'
+    'HOR': 'Quartz',
+    'HSP': 'Porcelain'
   };
   
   let html = '';
@@ -3797,7 +3881,8 @@ function previewMaterial(key) {
     'ART': 'Quartz',
     'NLQ': 'Quartz',
     'NAT': 'Natural Stone',
-    'HOR': 'Quartz'
+    'HOR': 'Quartz',
+    'HSP': 'Porcelain'
   };
   
   // Update selected preview bar
@@ -3815,7 +3900,8 @@ function previewMaterial(key) {
     const brandNames = {
       'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global Granite',
       'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
-      'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
+      'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone',
+      'HSP': 'Horizon Porcelain'
     };
     // For NAT use actual type (Granite/Quartzite), for others use brand mapping
     const matType = mat.brand === 'NAT' ? (mat.type || 'Natural Stone') : (materialTypes[mat.brand] || 'Stone');
@@ -3865,13 +3951,22 @@ function confirmMaterial() {
     
     // Adjust slab size based on material type
     // Natural Stone (NAT) uses larger slabs: 3200x1900
+    // Horizon Porcelain Indigo (PRID*) uses super jumbo: 3300x1840
     // All others use standard: 3200x1600
+    const slabWidthInput = document.getElementById('slabWidthInput');
     const slabHeightInput = document.getElementById('slabHeightInput');
-    if (slabHeightInput) {
-      if (mat.brand === 'NAT') {
+    if (slabWidthInput && slabHeightInput) {
+      if (selectedMaterial.startsWith('prid')) {
+        // Indigo range - Super Jumbo 3300x1840
+        slabWidthInput.value = 3300;
+        slabHeightInput.value = 1840;
+        console.log('Horizon Porcelain Indigo selected - slab size set to 3300x1840');
+      } else if (mat.brand === 'NAT') {
+        slabWidthInput.value = 3200;
         slabHeightInput.value = 1900;
         console.log('Natural Stone selected - slab size set to 3200x1900');
       } else {
+        slabWidthInput.value = 3200;
         slabHeightInput.value = 1600;
       }
     }
@@ -3920,7 +4015,8 @@ function updateCurrentMaterialDisplay() {
   const brandNames = {
     'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global',
     'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
-    'ART': 'Artemis', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon'
+    'ART': 'Artemis', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon',
+    'HSP': 'Horizon Porcelain'
   };
   if (brandEl) {
     const pricing = MATERIAL_PRICING[selectedMaterial];
@@ -10196,98 +10292,137 @@ function render3D() {
     
     // Debug corner radii
     const hasRadii = radii.tl > 0 || radii.tr > 0 || radii.br > 0 || radii.bl > 0;
-    console.log('3D Worktop:', w.name || w.id, 'hasStepout:', !!stepout, 'hasRadii:', hasRadii);
+    console.log('3D Worktop:', w.name || w.id, 'hasStepout:', !!stepout, 'hasRadii:', hasRadii, 'dimensions:', w.length, 'x', w.depth);
     if (hasRadii) {
-      console.log('  Radii:', JSON.stringify(radii));
-      console.log('  Shape radii: TL=', rShapeTL, 'TR=', rShapeTR, 'BR=', rShapeBR, 'BL=', rShapeBL);
+      console.log('  Radii from worktop:', JSON.stringify(radii));
+      console.log('  Shape radii mapped: BL=', rShapeBL, 'BR=', rShapeBR, 'TR=', rShapeTR, 'TL=', rShapeTL);
+      if (stepout) {
+        console.log('  Stepout corner:', stepout.corner, '- radii will be applied to outer corners only');
+      }
     }
     
     if (stepout) {
-      // Create L-shape for stepout
-      // In 3D shape: X = length, Y = depth
-      // After rotation (-PI/2): high Y becomes 3D back (far), low Y becomes 3D front
-      // So 2D front = Shape bottom, 2D back = Shape top
-      
+      // Create L-shape for stepout WITH corner radii on outer corners
+      // Inner corners (where L meets) have no radius
       const sLen = stepout.length;
       const sDepth = stepout.depth;
+      
+      // Standard corner arc angles (counterclockwise path):
+      // BL: π to 1.5π, BR: -π/2 to 0, TR: 0 to π/2, TL: π/2 to π
       
       if (isVertical) {
         // VERTICAL worktop - stepout extends left/right (X direction in shape)
         if (stepout.corner === 'front-left') {
-          // Stepout extends LEFT from bottom-left (2D front-left = Shape bottom-left)
-          shape.moveTo(-sDepth, 0);                    // Stepout outer left
+          // Stepout extends LEFT from bottom-left
+          shape.moveTo(-sDepth + rShapeBL, 0);
+          if (rShapeBL > 0) shape.absarc(-sDepth + rShapeBL, rShapeBL, rShapeBL, Math.PI * 1.5, Math.PI, true);
           shape.lineTo(-sDepth, sLen);                 // Up stepout left edge
-          shape.lineTo(0, sLen);                       // Right to main
-          shape.lineTo(0, w.depth);                    // Up to top
-          shape.lineTo(w.length, w.depth);             // Right to top-right
-          shape.lineTo(w.length, 0);                   // Down to bottom-right
+          shape.lineTo(0, sLen);                       // Right to main (inner corner)
+          shape.lineTo(0, w.depth - rShapeTL);         // Up to near top-left
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length - rShapeTR, w.depth);  // Right to near top-right
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, rShapeBR);            // Down to near bottom-right
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
+          shape.lineTo(0, 0);                          // Left along bottom to inner
           shape.closePath();
         } else if (stepout.corner === 'front-right') {
           // Stepout extends RIGHT from bottom-right
-          shape.moveTo(0, 0);                          // Bottom-left
-          shape.lineTo(0, w.depth);                    // Up to top-left
-          shape.lineTo(w.length, w.depth);             // Right to top-right
-          shape.lineTo(w.length, sLen);                // Down to stepout
+          shape.moveTo(rShapeBL, 0);
+          if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, w.depth - rShapeTL);
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length - rShapeTR, w.depth);
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, sLen);                // Down to stepout inner
           shape.lineTo(w.length + sDepth, sLen);       // Right to stepout outer
-          shape.lineTo(w.length + sDepth, 0);          // Down stepout right edge
+          shape.lineTo(w.length + sDepth, rShapeBR);   // Down stepout right edge
+          if (rShapeBR > 0) shape.absarc(w.length + sDepth - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
           shape.closePath();
         } else if (stepout.corner === 'back-left') {
-          // Stepout extends LEFT from top-left (2D back-left = Shape top-left)
-          shape.moveTo(0, 0);                          // Bottom-left
-          shape.lineTo(0, w.depth - sLen);             // Up to where stepout starts
+          // Stepout extends LEFT from top-left
+          shape.moveTo(rShapeBL, 0);
+          if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, w.depth - sLen);             // Up to stepout inner
           shape.lineTo(-sDepth, w.depth - sLen);       // Left to stepout outer
-          shape.lineTo(-sDepth, w.depth);              // Up stepout left edge
-          shape.lineTo(w.length, w.depth);             // Right to top-right
-          shape.lineTo(w.length, 0);                   // Down to bottom-right
+          shape.lineTo(-sDepth, w.depth - rShapeTL);   // Up stepout left edge
+          if (rShapeTL > 0) shape.absarc(-sDepth + rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length - rShapeTR, w.depth);
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, rShapeBR);
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
           shape.closePath();
         } else if (stepout.corner === 'back-right') {
           // Stepout extends RIGHT from top-right
-          shape.moveTo(0, 0);                          // Bottom-left
-          shape.lineTo(0, w.depth);                    // Up to top-left
-          shape.lineTo(w.length, w.depth);             // Right to top-right of main
+          shape.moveTo(rShapeBL, 0);
+          if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, w.depth - rShapeTL);
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length, w.depth);             // Right to main top-right (inner)
           shape.lineTo(w.length + sDepth, w.depth);    // Right to stepout outer
-          shape.lineTo(w.length + sDepth, w.depth - sLen); // Down stepout right edge
-          shape.lineTo(w.length, w.depth - sLen);      // Left to main
-          shape.lineTo(w.length, 0);                   // Down to bottom-right
+          shape.lineTo(w.length + sDepth, w.depth - sLen + rShapeTR); // Down stepout
+          if (rShapeTR > 0) shape.absarc(w.length + sDepth - rShapeTR, w.depth - sLen + rShapeTR, rShapeTR, 0, -Math.PI/2, true);
+          shape.lineTo(w.length, w.depth - sLen);      // Left to inner
+          shape.lineTo(w.length, rShapeBR);
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
           shape.closePath();
         }
       } else {
         // HORIZONTAL worktop - stepout extends down/up (Y direction in shape)
         if (stepout.corner === 'front-left') {
-          // Stepout extends DOWN from front-left (2D front = Shape bottom)
-          shape.moveTo(0, -sDepth);                    // Stepout outer bottom-left
-          shape.lineTo(sLen, -sDepth);                 // Right along stepout bottom
-          shape.lineTo(sLen, 0);                       // Up to main front
-          shape.lineTo(w.length, 0);                   // Right to front-right
-          shape.lineTo(w.length, w.depth);             // Up to back-right
-          shape.lineTo(0, w.depth);                    // Left to back-left
+          // Stepout extends DOWN from front-left
+          // Path: stepout BL outer → up left of stepout → inner corner → up main left → 
+          //       TL corner → across top → TR corner → down right → BR corner → across front → inner → close
+          shape.moveTo(rShapeBL, -sDepth);             // Start at stepout outer bottom
+          if (rShapeBL > 0) shape.absarc(rShapeBL, -sDepth + rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, 0);                          // Up to inner corner
+          shape.lineTo(0, w.depth - rShapeTL);         // Up main left edge
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length - rShapeTR, w.depth);  // Across top
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, rShapeBR);            // Down right edge
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
+          shape.lineTo(sLen, 0);                       // Left to stepout inner
+          shape.lineTo(sLen, -sDepth);                 // Down stepout inner edge
           shape.closePath();
         } else if (stepout.corner === 'front-right') {
           // Stepout extends DOWN from front-right
-          shape.moveTo(0, 0);                          // Front-left
-          shape.lineTo(w.length - sLen, 0);            // Right to stepout inner
-          shape.lineTo(w.length - sLen, -sDepth);      // Down to stepout outer
-          shape.lineTo(w.length, -sDepth);             // Right along stepout bottom
-          shape.lineTo(w.length, w.depth);             // Up to back-right
-          shape.lineTo(0, w.depth);                    // Left to back-left
+          shape.moveTo(rShapeBL, 0);                   // Front-left
+          if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, w.depth - rShapeTL);         // Up to near back-left
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length - rShapeTR, w.depth);  // Right to near back-right
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, -sDepth + rShapeBR);  // Down to stepout outer
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, -sDepth + rShapeBR, rShapeBR, 0, -Math.PI/2, true);
+          shape.lineTo(w.length - sLen, -sDepth);      // Left along stepout bottom
+          shape.lineTo(w.length - sLen, 0);            // Up to inner corner
           shape.closePath();
         } else if (stepout.corner === 'back-left') {
-          // Stepout extends UP from back-left (2D back = Shape top)
-          shape.moveTo(0, 0);                          // Front-left
-          shape.lineTo(w.length, 0);                   // Right to front-right
-          shape.lineTo(w.length, w.depth);             // Up to back-right
-          shape.lineTo(sLen, w.depth);                 // Left to stepout inner
-          shape.lineTo(sLen, w.depth + sDepth);        // Up to stepout outer
-          shape.lineTo(0, w.depth + sDepth);           // Left along stepout top
+          // Stepout extends UP from back-left
+          shape.moveTo(rShapeBL, 0);                   // Front-left
+          if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, w.depth + sDepth - rShapeTL); // Up to stepout outer
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth + sDepth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(sLen, w.depth + sDepth);        // Right along stepout top
+          shape.lineTo(sLen, w.depth);                 // Down to inner corner
+          shape.lineTo(w.length - rShapeTR, w.depth);  // Right to near back-right
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, rShapeBR);            // Down to near front-right
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
           shape.closePath();
         } else if (stepout.corner === 'back-right') {
           // Stepout extends UP from back-right
-          shape.moveTo(0, 0);                          // Front-left
-          shape.lineTo(w.length, 0);                   // Right to front-right
-          shape.lineTo(w.length, w.depth + sDepth);    // Up to stepout outer
-          shape.lineTo(w.length - sLen, w.depth + sDepth); // Left along stepout top
-          shape.lineTo(w.length - sLen, w.depth);      // Down to main back
-          shape.lineTo(0, w.depth);                    // Left to back-left
+          shape.moveTo(rShapeBL, 0);                   // Front-left
+          if (rShapeBL > 0) shape.absarc(rShapeBL, rShapeBL, rShapeBL, -Math.PI/2, Math.PI, false);
+          shape.lineTo(0, w.depth - rShapeTL);         // Up to near back-left
+          if (rShapeTL > 0) shape.absarc(rShapeTL, w.depth - rShapeTL, rShapeTL, Math.PI, Math.PI/2, true);
+          shape.lineTo(w.length - sLen, w.depth);      // Right to inner corner
+          shape.lineTo(w.length - sLen, w.depth + sDepth); // Up stepout inner
+          shape.lineTo(w.length - rShapeTR, w.depth + sDepth); // Right to near stepout outer
+          if (rShapeTR > 0) shape.absarc(w.length - rShapeTR, w.depth + sDepth - rShapeTR, rShapeTR, Math.PI/2, 0, true);
+          shape.lineTo(w.length, rShapeBR);            // Down to near front-right
+          if (rShapeBR > 0) shape.absarc(w.length - rShapeBR, rShapeBR, rShapeBR, 0, -Math.PI/2, true);
           shape.closePath();
         }
       }
@@ -10367,7 +10502,8 @@ function render3D() {
     // Extrude the shape
     const extrudeSettings = {
       depth: WORKTOP_THICKNESS,
-      bevelEnabled: false
+      bevelEnabled: false,
+      curveSegments: 16  // More segments for smoother rounded corners
     };
     
     const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -12756,13 +12892,38 @@ async function capture3DViews() {
             try {
               const views = [];
               
-              // Define camera angles: [name, x, y, z]
+              // Calculate design bounds to position camera appropriately
+              let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+              worktops.forEach(w => {
+                minX = Math.min(minX, w.x);
+                maxX = Math.max(maxX, w.x + w.length);
+                minY = Math.min(minY, w.y);
+                maxY = Math.max(maxY, w.y + w.depth);
+              });
+              upstands.forEach(u => {
+                minX = Math.min(minX, u.absoluteX || 0);
+                maxX = Math.max(maxX, (u.absoluteX || 0) + (u.isVertical ? 20 : u.length));
+                minY = Math.min(minY, u.absoluteY || 0);
+                maxY = Math.max(maxY, (u.absoluteY || 0) + (u.isVertical ? u.length : 20));
+              });
+              
+              const designWidth = maxX - minX || 3000;
+              const designDepth = maxY - minY || 600;
+              const designSize = Math.max(designWidth, designDepth);
+              
+              // Scale camera distances based on design size
+              const baseDistance = Math.max(2000, designSize * 0.8);
+              const topHeight = Math.max(3000, designSize * 1.0);
+              
+              console.log('Design size for 3D capture:', designSize, 'Base distance:', baseDistance);
+              
+              // Define camera angles: [name, x, y, z] - scaled to design
               const cameraAngles = [
-                ['Isometric', 2500, 2000, 2500],
-                ['Front', 0, 1500, 4000],
-                ['Top', 0, 3000, 50],  // Closer top view
-                ['Left Side', -4000, 1500, 0],
-                ['Right Side', 4000, 1500, 0]
+                ['Isometric', baseDistance * 0.9, baseDistance * 0.7, baseDistance * 0.9],
+                ['Front', 0, baseDistance * 0.5, baseDistance * 1.4],
+                ['Top', 0, topHeight, 50],  // Top-down view
+                ['Left Side', -baseDistance * 1.4, baseDistance * 0.5, 0],
+                ['Right Side', baseDistance * 1.4, baseDistance * 0.5, 0]
               ];
               
               // Capture each angle (use JPEG for smaller file size)
@@ -12865,13 +13026,15 @@ async function generateQuote() {
   const materialTypes = {
     'SIL': 'Quartz', 'DEK': 'Sintered Stone', 'GLO': 'Quartz',
     'MOD': 'Quartz', 'COS': 'Quartz', 'CQS': 'Quartz',
-    'ART': 'Quartz', 'NLQ': 'Quartz', 'NAT': 'Natural Stone', 'HOR': 'Quartz'
+    'ART': 'Quartz', 'NLQ': 'Quartz', 'NAT': 'Natural Stone', 'HOR': 'Quartz',
+    'HSP': 'Porcelain'
   };
   
   const brandNames = {
     'SIL': 'Silestone', 'DEK': 'Dekton', 'GLO': 'Global Granite',
     'MOD': 'Modern Quartz', 'COS': 'Cosy Stone', 'CQS': 'Classic Quartz',
-    'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone'
+    'ART': 'Artemis Stone', 'NLQ': 'Nile Quartz', 'NAT': 'Natural Stone', 'HOR': 'Horizon Stone',
+    'HSP': 'Horizon Porcelain'
   };
   
   // Collect worktop data WITH positions and splits
