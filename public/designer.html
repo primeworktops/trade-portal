@@ -1340,9 +1340,9 @@ let currentView = '2d';
 
 // Slab optimization warning state
 let slabOptimizationSuggestions = [];
-let hasShownSlabWarning = false;
+let hasShownSlabWarning = sessionStorage.getItem('hasShownSlabWarning') === 'true';
 let isPageLoading = true;  // Skip popup during initial load
-let lastKnownSlabCount = 0;
+let lastKnownSlabCount = parseInt(sessionStorage.getItem('lastKnownSlabCount')) || 0;
 let isMaterialChanging = false; // Skip popup during material selection
 
 // Custom material for granite/marble quotes
@@ -9496,19 +9496,17 @@ function updateSummary() {
     document.getElementById('sumSlabs').textContent = accurateSlabs;
     
     // Debug logging
-    console.log('Slab check - accurate:', accurateSlabs, 'lastKnown:', lastKnownSlabCount, 'suggestions:', slabOptimizationSuggestions.length, 'hasShown:', hasShownSlabWarning, 'materialChanging:', isMaterialChanging);
+    console.log('Slab check - accurate:', accurateSlabs, 'lastKnown:', lastKnownSlabCount, 'suggestions:', slabOptimizationSuggestions.length, 'hasShown:', hasShownSlabWarning, 'materialChanging:', isMaterialChanging, 'pageLoading:', isPageLoading);
     
-    // Trigger popup when:
-    // 1. Slab count INCREASES and we have suggestions, OR
-    // 2. We have suggestions for a high slab count (3+) and haven't shown warning yet
-    // BUT NOT during material changes or page loading
-    const shouldShowPopup = !isMaterialChanging && slabOptimizationSuggestions.length > 0 && (
-      (accurateSlabs > lastKnownSlabCount) ||
-      (accurateSlabs >= 3 && !hasShownSlabWarning)
-    );
+    // Trigger popup ONLY when slab count INCREASES and we have actionable suggestions
+    // NOT on page load, material changes, or when returning from other pages
+    const shouldShowPopup = !isPageLoading && !isMaterialChanging && 
+                            slabOptimizationSuggestions.length > 0 && 
+                            accurateSlabs > lastKnownSlabCount;
     
     if (shouldShowPopup) {
       hasShownSlabWarning = true;
+      sessionStorage.setItem('hasShownSlabWarning', 'true');
       setTimeout(() => {
         showSlabOptimizationPopup(accurateSlabs);
       }, 200);
@@ -9517,10 +9515,12 @@ function updateSummary() {
     // Reset warning flag if slabs decreased significantly
     if (accurateSlabs < lastKnownSlabCount - 1) {
       hasShownSlabWarning = false;
+      sessionStorage.setItem('hasShownSlabWarning', 'false');
     }
     
     // Always update lastKnownSlabCount
     lastKnownSlabCount = accurateSlabs;
+    sessionStorage.setItem('lastKnownSlabCount', accurateSlabs.toString());
   }
   
   // Show profile types
@@ -9884,23 +9884,40 @@ function getAccurateSlabCount() {
           slabOptimizationSuggestions = [];
           
           if (['upstand', 'splash', 'cill'].includes(piece.type)) {
-            slabOptimizationSuggestions.push({
-              piece: piece,
-              message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Splitting it could save a slab.`,
-              type: piece.type
-            });
+            // Only suggest if splitting would actually help (we already tried auto-split above)
+            // If we're here, auto-split didn't work, so don't suggest it
+            // (The auto-split check happens earlier and returns if successful)
+            const halfLen = Math.floor((pw - 3) / 2);
+            const half1Fits = canFitOnExistingSlabs(halfLen, ph);
+            const half2Fits = canFitOnExistingSlabs(pw - halfLen - 3, ph);
+            
+            if (half1Fits && half2Fits) {
+              // This shouldn't happen since auto-split should have caught it
+              slabOptimizationSuggestions.push({
+                piece: piece,
+                message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Splitting it could save a slab.`,
+                type: piece.type
+              });
+            }
+            // If splitting wouldn't help, don't mislead the user
           } else if (piece.type === 'worktop' && maxDim > SLAB_W * 0.6) {
-            slabOptimizationSuggestions.push({
-              piece: piece,
-              message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Adding a join could help fit pieces better.`,
-              type: piece.type
-            });
+            // Only suggest join if splitting would actually help
+            // Check if two halves would fit on existing slabs
+            const halfW = Math.floor((pw - 3) / 2);
+            const half1Fits = canFitOnExistingSlabs(halfW, ph);
+            const half2Fits = canFitOnExistingSlabs(pw - halfW - 3, ph);
+            
+            if (half1Fits && half2Fits) {
+              slabOptimizationSuggestions.push({
+                piece: piece,
+                message: `${piece.name} (${maxDim}mm) pushed design to slab ${newSlabNum}. Adding a join could save a slab.`,
+                type: piece.type
+              });
+            }
+            // If splitting wouldn't help, don't show any suggestion
           } else if (piece.type === 'dropdown') {
-            slabOptimizationSuggestions.push({
-              piece: piece,
-              message: `Dropdown (${maxDim}mm) pushed design to slab ${newSlabNum}.`,
-              type: piece.type
-            });
+            // Dropdowns can't really be split, so just note it pushed to new slab
+            // Don't suggest anything since there's no action user can take
           }
         }
       }
@@ -10006,8 +10023,10 @@ function enableSlabWarnings() {
 function resetSlabWarningIfNeeded(currentSlabCount) {
   if (currentSlabCount < lastKnownSlabCount) {
     hasShownSlabWarning = false;
+    sessionStorage.setItem('hasShownSlabWarning', 'false');
   }
   lastKnownSlabCount = currentSlabCount;
+  sessionStorage.setItem('lastKnownSlabCount', currentSlabCount.toString());
 }
 
 function updateSlabWarning(currentSlabCount) {
@@ -14285,6 +14304,8 @@ function clearDesignState() {
     slabOptimizationSuggestions = [];
     hasShownSlabWarning = false;
     lastKnownSlabCount = 0;
+    sessionStorage.setItem('hasShownSlabWarning', 'false');
+    sessionStorage.setItem('lastKnownSlabCount', '0');
     
     // Hide warning panel
     const warningDiv = document.getElementById('slabWarning');
